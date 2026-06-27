@@ -1,60 +1,53 @@
-# Creature model checklist
+# Creature model checklist (branching digivolution)
 
-Each creature line has 3 stages = star levels in-game:
-**1★ Rookie → 2★ Champion → 3★ Ultimate** (you combine 3 of a star to evolve).
+Stages climb the real Digimon ladder: **Rookie (1★) → Champion (2★) → Ultimate (3★)**.
+Evolution **branches** — combining 3 of a form lets you *choose* which next form to become.
+Branches can differ in Attribute/Family, so the choice is a strategic one.
 
-## Best source — keep the style consistent
+We build & download **one line at a time** (each line needs all its branch models).
 
-Start with **akennedy007's "Digimon Linkz" collection** (the same ripper as our Agumon):
-https://sketchfab.com/akennedy007/collections/digimon-linkz-32d3acdc57da4cd5ac4a69ba3c8c3fc5
+## Source & how to register
 
-These share an art style **and** the same animation clip names (`idle` / `move` / `attack01`),
-so they drop straight into the animation state machine. For forms not in that collection,
-search Sketchfab with the **Animated** filter and prefer models whose clips are named
-`idle` / `move` / `attack` — and roughly match the Linkz look so the roster stays cohesive.
+- Best source: **akennedy007's [Digimon Linkz collection](https://sketchfab.com/akennedy007/collections/digimon-linkz-32d3acdc57da4cd5ac4a69ba3c8c3fc5)**
+  — matching style + animation clips (`idle`/`move`/`attack01`). Fill gaps via Sketchfab's **Animated** filter.
+- Download the **GLB**, save in `public/models/` named by the form, lowercase: `greymon.glb`, `metalgreymon.glb`.
+- Tell me which files you dropped in — I register them in `src/three/models.ts` (keyed by form id), add CC-BY credit, verify scale/facing.
+- Add each model's credit to `CREDITS.md`.
 
-## How to save & register
+---
 
-1. Download the **GLB** for each form.
-2. Save it in `public/models/` named by the **form, lowercase, no spaces** — e.g.
-   `greymon.glb`, `metalgreymon.glb`, `wargrowlmon.glb`.
-3. Tell me which files are in `public/models/` and I'll register them all in
-   `src/three/models.ts` (keyed by base creature + star) and verify scale/facing.
+## Line 1 — Agumon  ← build/download first
 
-Registry shape (for reference):
-```ts
-agumon: { 1: "/models/agumon.glb", 2: "/models/greymon.glb", 3: "/models/metalgreymon.glb" },
+```
+Agumon (V, Dragon's Roar) ✅
+ ├─ Greymon (V)      → MetalGreymon (V)
+ ├─ GeoGreymon (V)   → RizeGreymon (V)
+ └─ Tyrannomon (D)   → MetalTyrannomon (Vi)
 ```
 
-> Missing stages are fine — a missing star falls back to the lower star's model, then to
-> the animated procedural blob. So you can do this gradually.
+Download (6): ⬜ `greymon` ⬜ `metalgreymon` ⬜ `geogreymon` ⬜ `risegreymon`
+⬜ `tyrannomon` ⬜ `metaltyrannomon`  *(MetalTyrannomon, Growlmon, WarGrowlmon are confirmed in the collection.)*
 
-## The 12 lines (36 forms)
+---
 
-Legend: ✅ already in repo · ⬜ to download · (V)accine / (D)ata / (Vi)rus
+## Remaining Rookies (branches TBD per line as we build them)
 
-| Base id | 1★ Rookie | 2★ Champion | 3★ Ultimate | Attr | Family |
-|---|---|---|---|---|---|
-| `agumon` | ✅ Agumon | ⬜ Greymon | ⬜ MetalGreymon | V | Dragon's Roar |
-| `gabumon` | ⬜ Gabumon | ⬜ Garurumon | ⬜ WereGarurumon | D | Nature Spirits |
-| `demidevimon` | ⬜ DemiDevimon | ⬜ Devimon | ⬜ Myotismon | Vi | Nightmare Soldiers |
-| `patamon` | ⬜ Patamon | ⬜ Angemon | ⬜ MagnaAngemon | V | Wind Guardians |
-| `tentomon` | ⬜ Tentomon | ⬜ Kabuterimon | ⬜ MegaKabuterimon | D | Nature Spirits |
-| `betamon` | ⬜ Betamon | ⬜ Seadramon | ⬜ MegaSeadramon | Vi | Deep Savers |
-| `bakemon` | ⬜ Bakemon | ⬜ Soulmon | ⬜ Phantomon | Vi | Nightmare Soldiers |
-| `biyomon` | ⬜ Biyomon | ⬜ Birdramon | ⬜ Garudamon | V | Wind Guardians |
-| `palmon` | ⬜ Palmon | ⬜ Togemon | ⬜ Lillymon | D | Nature Spirits |
-| `gomamon` | ⬜ Gomamon | ⬜ Ikkakumon | ⬜ Zudomon | V | Deep Savers |
-| `hawkmon` | ⬜ Hawkmon | ⬜ Aquilamon | ⬜ Silphymon | V | Wind Guardians |
-| `guilmon` | ⬜ Guilmon | ⬜ Growlmon | ⬜ WarGrowlmon | Vi | Dragon's Roar |
+We'll define 2–3 branches for each of these the same way, one line per build step.
+Canonical "main path" shown for reference; we'll add the alternate branches when we get to each:
 
-### Notes on the lines
+| Rookie | main-path Champion | main-path Ultimate | Attr · Family |
+|---|---|---|---|
+| Gabumon | Garurumon | WereGarurumon | D · Nature Spirits |
+| DemiDevimon | Devimon | Myotismon | Vi · Nightmare Soldiers |
+| Patamon | Angemon | MagnaAngemon | V · Wind Guardians |
+| Tentomon | Kabuterimon | MegaKabuterimon | D · Nature Spirits |
+| Betamon | Seadramon | MegaSeadramon | Vi · Deep Savers |
+| Bakemon | Soulmon | Phantomon | Vi · Nightmare Soldiers |
+| Biyomon | Birdramon | Garudamon | V · Wind Guardians |
+| Palmon | Togemon | Lillymon | D · Nature Spirits |
+| Gomamon | Ikkakumon | Zudomon | V · Deep Savers |
+| Hawkmon | Aquilamon | Silphymon | V · Wind Guardians |
+| Guilmon | Growlmon | WarGrowlmon | Vi · Dragon's Roar |
 
-- These follow the classic **Digimon Adventure** Rookie→Champion→Ultimate lines (Guilmon's is
-  from **Tamers**). A few are looser canon and easy to swap if you can't find a model:
-  - `demidevimon`: DemiDevimon → Devimon → **Myotismon** (thematic, not a strict line).
-  - `bakemon`: Bakemon → Soulmon → **Phantomon** (Nightmare Soldiers ghosts).
-  - `hawkmon`: Silphymon is technically a DNA-evolution — substitute freely.
-- akennedy007's collection is known to include e.g. **Gabumon, Growlmon, WarGrowlmon** and more;
-  grab whatever's there first, then fill gaps elsewhere.
-- Whichever form a CC-BY model comes from, add its credit to `CREDITS.md`.
+> Tip: while downloading, grab alternate Champions you like for any Rookie (e.g. Gabumon also
+> goes to Saberdramon/Garurumon variants) — more branch options = more strategic choices.
