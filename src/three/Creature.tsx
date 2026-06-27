@@ -45,7 +45,7 @@ export function Creature({
   const scale = 0.85 + (star - 1) * 0.18;
   const hpPct = Math.max(0, Math.min(1, hp / maxHp));
   const facing = team === "enemy" ? -1 : 1;
-  const url = modelFor(defId);
+  const url = modelFor(defId, star);
 
   const body = (
     <ProceduralCreature color={color} cooldown={cooldown} attackSpeed={attackSpeed} facing={facing} />
