@@ -418,5 +418,6 @@ export const useGame = create<GameState>((set, get) => ({
 
 // Dev convenience: poke the store from the browser console (balancing, debugging).
 if (import.meta.env.DEV) {
-  (window as unknown as { game: typeof useGame }).game = useGame;
+  (window as unknown as { game: typeof useGame; FORMS: typeof FORMS }).game = useGame;
+  (window as unknown as { FORMS: typeof FORMS }).FORMS = FORMS;
 }
