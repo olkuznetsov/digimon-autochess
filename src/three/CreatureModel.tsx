@@ -3,10 +3,11 @@ import { useFrame } from "@react-three/fiber";
 import { useGLTF, useAnimations } from "@react-three/drei";
 import { SkeletonUtils } from "three-stdlib";
 import * as THREE from "three";
-import { TARGET_HEIGHT } from "./models";
+import { TARGET_HEIGHT, type ModelTweak } from "./models";
 
 interface Props {
   url: string;
+  tweak?: ModelTweak;
   facing?: number; // +1 player, -1 enemy
   /** combat state (battle only) */
   cooldown?: number;
@@ -20,7 +21,7 @@ interface Props {
  * The desired clip is (re)asserted every frame, so it survives StrictMode/HMR remounts.
  * Models without clips get a subtle procedural bob so they aren't frozen.
  */
-export function CreatureModel({ url, facing = 1, cooldown, moving = false }: Props) {
+export function CreatureModel({ url, tweak, facing = 1, cooldown, moving = false }: Props) {
   const bob = useRef<THREE.Group>(null);
   const phase = useRef(Math.random() * Math.PI * 2);
   const { scene, animations } = useGLTF(url);
@@ -79,15 +80,33 @@ export function CreatureModel({ url, facing = 1, cooldown, moving = false }: Pro
   });
 
   const fit = useMemo(() => {
+    // Bake any orientation fix into the model BEFORE measuring, so grounding/centering
+    // are computed on the corrected pose.
+    if (tweak?.rot) cloned.rotation.set(tweak.rot[0], tweak.rot[1], tweak.rot[2]);
     cloned.updateWorldMatrix(true, true);
-    const box = new THREE.Box3().setFromObject(cloned);
+    // Skeleton-aware bounds: a plain Box3.setFromObject ignores skinning and grounds
+    // rigged models wrong (they float). Union each mesh's pose-aware box instead.
+    const box = new THREE.Box3();
+    const tmp = new THREE.Box3();
+    cloned.traverse((o) => {
+      const sk = o as THREE.SkinnedMesh;
+      const m = o as THREE.Mesh;
+      if (sk.isSkinnedMesh) {
+        sk.computeBoundingBox();
+        if (sk.boundingBox) box.union(tmp.copy(sk.boundingBox).applyMatrix4(sk.matrixWorld));
+      } else if (m.isMesh && m.geometry) {
+        if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+        if (m.geometry.boundingBox) box.union(tmp.copy(m.geometry.boundingBox).applyMatrix4(m.matrixWorld));
+      }
+    });
+    if (box.isEmpty()) box.setFromObject(cloned);
     const size = new THREE.Vector3();
     const center = new THREE.Vector3();
     box.getSize(size);
     box.getCenter(center);
-    const s = TARGET_HEIGHT / Math.max(size.y, size.x * 0.5, size.z * 0.5, 0.001);
+    const s = (TARGET_HEIGHT * (tweak?.scale ?? 1)) / Math.max(size.y, size.x * 0.5, size.z * 0.5, 0.001);
     return { s, offset: [-center.x * s, -box.min.y * s, -center.z * s] as [number, number, number] };
-  }, [cloned]);
+  }, [cloned, tweak]);
 
   // Player units (facing +1) look toward the enemy half (+z); enemies look back at
   // the player (-z). The model's front is +z at rotation 0, so flip the enemies.

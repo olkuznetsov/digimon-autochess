@@ -3,7 +3,7 @@ import { Html } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { ProceduralCreature } from "./ProceduralCreature";
 import { CreatureModel } from "./CreatureModel";
-import { modelFor } from "./models";
+import { modelFor, tweakFor } from "./models";
 
 interface CreatureProps {
   formId: string;
@@ -68,7 +68,7 @@ export function Creature({
       {/* the creature */}
       <Suspense fallback={body}>
         {url ? (
-          <CreatureModel url={url} facing={facing} cooldown={cooldown} moving={moving} />
+          <CreatureModel url={url} tweak={tweakFor(formId)} facing={facing} cooldown={cooldown} moving={moving} />
         ) : (
           body
         )}

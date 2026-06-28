@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# raw model sources (.dae/.fbx before conversion)
+model-sources/
