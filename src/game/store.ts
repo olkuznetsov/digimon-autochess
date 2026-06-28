@@ -1,8 +1,9 @@
 import { create } from "zustand";
-import type { Fighter, Phase, Placement, Unit } from "./types";
+import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types";
 import {
-  CREATURES,
-  CREATURE_IDS,
+  FORMS,
+  ROOKIE_IDS,
+  ALL_FORM_IDS,
   attributeMultiplier,
   statsFor,
 } from "./creatures";
@@ -29,8 +30,8 @@ const nextUid = () => `u${uidCounter++}`;
 
 function rollShop(): string[] {
   const pool: string[] = [];
-  for (const id of CREATURE_IDS) {
-    const w = COST_WEIGHT[CREATURES[id].cost] ?? 10;
+  for (const id of ROOKIE_IDS) {
+    const w = COST_WEIGHT[FORMS[id].cost ?? 2] ?? 10;
     for (let i = 0; i < w; i++) pool.push(id);
   }
   return Array.from({ length: SHOP_SIZE }, () => pool[Math.floor(Math.random() * pool.length)]);
@@ -55,20 +56,18 @@ const streakBonus = (streak: number) => {
 
 function makeEnemyWave(round: number): Fighter[] {
   const count = Math.min(3 + Math.floor((round - 1) / 2), 7);
-  const star: 1 | 2 | 3 = round >= 7 ? 3 : round >= 4 ? 2 : 1;
-  const hpScale = 1 + (round - 1) * 0.06;
-  const pool = CREATURE_IDS;
-  const fighters: Fighter[] = [];
-  for (let i = 0; i < count; i++) {
-    const defId = pool[(round * 3 + i * 5) % pool.length];
-    const def = CREATURES[defId];
-    const s = statsFor(def, star);
-    fighters.push({
+  const stage = round >= 7 ? 3 : round >= 4 ? 2 : 1;
+  const pool = ALL_FORM_IDS.filter((id) => FORMS[id].stage === stage);
+  const hpScale = 1 + (round - 1) * 0.05;
+  return Array.from({ length: count }, (_, i) => {
+    const formId = pool[(round * 3 + i * 5) % pool.length];
+    const form = FORMS[formId];
+    const s = statsFor(form);
+    return {
       uid: `e${i}`,
-      defId,
-      star,
-      team: "enemy",
-      attribute: def.attribute,
+      formId,
+      team: "enemy" as const,
+      attribute: form.attribute,
       hp: Math.round(s.hp * hpScale),
       maxHp: Math.round(s.hp * hpScale),
       attack: s.attack,
@@ -79,9 +78,59 @@ function makeEnemyWave(round: number): Fighter[] {
       cooldown: 0,
       moving: false,
       targetUid: null,
-    });
+    };
+  });
+}
+
+/**
+ * Resolve digivolutions after a unit changes. Auto-evolves any 3-of-a-kind whose
+ * form has a single branch (looping), and stops at the first 3-of-a-kind that has
+ * multiple branches — returning a PendingEvolution for the player to choose.
+ */
+function resolveEvolutions(units: Unit[]): { units: Unit[]; pending: PendingEvolution | null } {
+  let current = units;
+  // guard against pathological loops
+  for (let guard = 0; guard < 64; guard++) {
+    const groups = new Map<string, Unit[]>();
+    for (const u of current) {
+      const form = FORMS[u.formId];
+      if (!form.evolvesTo || form.evolvesTo.length === 0) continue;
+      const arr = groups.get(u.formId) ?? [];
+      arr.push(u);
+      groups.set(u.formId, arr);
+    }
+
+    let acted = false;
+    for (const [formId, arr] of groups) {
+      if (arr.length < 3) continue;
+      const form = FORMS[formId];
+      const onBoard = arr.find((u) => u.placement.kind === "board");
+      const keep = onBoard ?? arr[0];
+      const others = arr.filter((u) => u.uid !== keep.uid).slice(0, 2);
+
+      if (form.evolvesTo!.length === 1) {
+        const consumed = new Set(others.map((u) => u.uid));
+        current = current
+          .filter((u) => !consumed.has(u.uid))
+          .map((u) => (u.uid === keep.uid ? { ...u, formId: form.evolvesTo![0] } : u));
+        acted = true;
+        break; // re-scan from the top
+      }
+
+      // multiple branches → ask the player
+      return {
+        units: current,
+        pending: {
+          fromFormId: formId,
+          consume: [keep.uid, ...others.map((u) => u.uid)],
+          options: form.evolvesTo!,
+          placement: keep.placement,
+        },
+      };
+    }
+    if (!acted) break;
   }
-  return fighters;
+  return { units: current, pending: null };
 }
 
 interface GameState {
@@ -90,11 +139,12 @@ interface GameState {
   xp: number;
   health: number;
   round: number;
-  streak: number; // + win streak, - loss streak
+  streak: number;
   gameOver: boolean;
 
   shop: string[];
   units: Unit[];
+  pendingEvolution: PendingEvolution | null;
   phase: Phase;
   result: "win" | "lose" | null;
   lastDamage: number;
@@ -109,6 +159,7 @@ interface GameState {
   reroll: () => void;
   buy: (shopIndex: number) => void;
   buyXp: () => void;
+  chooseEvolution: (formId: string) => void;
   moveUnit: (uid: string, target: Placement) => void;
   setDrag: (uid: string | null, pos: { x: number; z: number } | null) => void;
   startBattle: () => void;
@@ -128,6 +179,7 @@ function initialState() {
     gameOver: false,
     shop: rollShop(),
     units: [] as Unit[],
+    pendingEvolution: null as PendingEvolution | null,
     phase: "prep" as Phase,
     result: null as "win" | "lose" | null,
     lastDamage: 0,
@@ -147,39 +199,7 @@ function firstEmptyBench(units: Unit[]): number | null {
   return null;
 }
 
-function boardCount(units: Unit[]): number {
-  return units.filter((u) => u.placement.kind === "board").length;
-}
-
-/** Combine any 3 matching (defId + star) units into one of the next star. */
-function digivolve(units: Unit[]): Unit[] {
-  let changed = true;
-  let result = [...units];
-  while (changed) {
-    changed = false;
-    const groups = new Map<string, Unit[]>();
-    for (const u of result) {
-      if (u.star === 3) continue;
-      const key = `${u.defId}:${u.star}`;
-      const arr = groups.get(key) ?? [];
-      arr.push(u);
-      groups.set(key, arr);
-    }
-    for (const [, arr] of groups) {
-      if (arr.length >= 3) {
-        const [keep, ...rest] = arr;
-        const consumed = new Set(rest.slice(0, 2).map((u) => u.uid));
-        result = result.filter((u) => !consumed.has(u.uid));
-        result = result.map((u) =>
-          u.uid === keep.uid ? { ...u, star: (keep.star + 1) as 1 | 2 | 3 } : u,
-        );
-        changed = true;
-        break;
-      }
-    }
-  }
-  return result;
-}
+const boardCount = (units: Unit[]) => units.filter((u) => u.placement.kind === "board").length;
 
 export const useGame = create<GameState>((set, get) => ({
   ...initialState(),
@@ -191,23 +211,40 @@ export const useGame = create<GameState>((set, get) => ({
   },
 
   buy: (shopIndex) => {
-    const { gold, shop, units } = get();
-    const defId = shop[shopIndex];
-    if (!defId) return;
-    const def = CREATURES[defId];
-    if (gold < def.cost) return;
+    const { gold, shop, units, pendingEvolution } = get();
+    if (pendingEvolution) return;
+    const formId = shop[shopIndex];
+    if (!formId) return;
+    const form = FORMS[formId];
+    if (gold < (form.cost ?? 99)) return;
     const slot = firstEmptyBench(units);
     if (slot === null) return; // bench full
-    const newUnit: Unit = { uid: nextUid(), defId, star: 1, placement: { kind: "bench", slot } };
+    const newUnit: Unit = { uid: nextUid(), formId, placement: { kind: "bench", slot } };
     const newShop = [...shop];
     newShop[shopIndex] = "";
-    set({ gold: gold - def.cost, shop: newShop, units: digivolve([...units, newUnit]) });
+    const resolved = resolveEvolutions([...units, newUnit]);
+    set({
+      gold: gold - (form.cost ?? 0),
+      shop: newShop,
+      units: resolved.units,
+      pendingEvolution: resolved.pending,
+    });
   },
 
   buyXp: () => {
     const { gold, level, xp } = get();
     if (level >= MAX_LEVEL || gold < XP_COST) return;
     set({ gold: gold - XP_COST, ...gainXp(level, xp, XP_PER_BUY) });
+  },
+
+  chooseEvolution: (formId) => {
+    const { pendingEvolution, units } = get();
+    if (!pendingEvolution || !pendingEvolution.options.includes(formId)) return;
+    const consumed = new Set(pendingEvolution.consume);
+    const remaining = units.filter((u) => !consumed.has(u.uid));
+    remaining.push({ uid: nextUid(), formId, placement: pendingEvolution.placement });
+    const resolved = resolveEvolutions(remaining);
+    set({ units: resolved.units, pendingEvolution: resolved.pending });
   },
 
   moveUnit: (uid, target) => {
@@ -226,13 +263,7 @@ export const useGame = create<GameState>((set, get) => ({
             (u.placement as { col: number; row: number }).row === (target as { col: number; row: number }).row)),
     );
 
-    // board cap = your level
-    if (
-      target.kind === "board" &&
-      moving.placement.kind === "bench" &&
-      !occupant &&
-      boardCount(units) >= level
-    ) {
+    if (target.kind === "board" && moving.placement.kind === "bench" && !occupant && boardCount(units) >= level) {
       return;
     }
 
@@ -248,20 +279,20 @@ export const useGame = create<GameState>((set, get) => ({
   setDrag: (uid, pos) => set({ dragId: uid, dragPos: pos }),
 
   startBattle: () => {
-    const { units, round } = get();
+    const { units, round, pendingEvolution } = get();
+    if (pendingEvolution) return;
     const onBoard = units.filter((u) => u.placement.kind === "board");
     if (onBoard.length === 0) return;
 
     const playerFighters: Fighter[] = onBoard.map((u) => {
-      const def = CREATURES[u.defId];
-      const s = statsFor(def, u.star);
+      const form = FORMS[u.formId];
+      const s = statsFor(form);
       const p = u.placement as { col: number; row: number };
       return {
         uid: u.uid,
-        defId: u.defId,
-        star: u.star,
+        formId: u.formId,
         team: "player",
-        attribute: def.attribute,
+        attribute: form.attribute,
         hp: s.hp,
         maxHp: s.hp,
         attack: s.attack,
@@ -293,52 +324,52 @@ export const useGame = create<GameState>((set, get) => ({
 
     const dist = (a: Fighter, b: Fighter) => Math.hypot(a.col - b.col, a.row - b.row);
 
-    for (const f of fighters) {
-      if (f.hp <= 0) continue;
-      f.cooldown = Math.max(0, f.cooldown - dt);
+    for (const fr of fighters) {
+      if (fr.hp <= 0) continue;
+      fr.cooldown = Math.max(0, fr.cooldown - dt);
 
-      let target = fighters.find((t) => t.uid === f.targetUid && t.hp > 0);
+      let target = fighters.find((t) => t.uid === fr.targetUid && t.hp > 0);
       if (!target) {
         let best: Fighter | null = null;
         let bestD = Infinity;
         for (const t of fighters) {
-          if (t.team === f.team || t.hp <= 0) continue;
-          const d = dist(f, t);
+          if (t.team === fr.team || t.hp <= 0) continue;
+          const d = dist(fr, t);
           if (d < bestD) {
             bestD = d;
             best = t;
           }
         }
         target = best ?? undefined;
-        f.targetUid = best?.uid ?? null;
+        fr.targetUid = best?.uid ?? null;
       }
       if (!target) continue;
 
-      const d = dist(f, target);
-      if (d <= f.range + 0.05) {
-        f.moving = false;
-        if (f.cooldown <= 0) {
-          const mult = attributeMultiplier(f.attribute, target.attribute);
-          target.hp -= f.attack * mult;
-          f.cooldown = 1 / f.attackSpeed;
+      const d = dist(fr, target);
+      if (d <= fr.range + 0.05) {
+        fr.moving = false;
+        if (fr.cooldown <= 0) {
+          const mult = attributeMultiplier(fr.attribute, target.attribute);
+          target.hp -= fr.attack * mult;
+          fr.cooldown = 1 / fr.attackSpeed;
         }
       } else {
-        f.moving = true;
+        fr.moving = true;
         const step = MOVE_SPEED * dt;
-        const ux = (target.col - f.col) / d;
-        const uy = (target.row - f.row) / d;
-        f.col += ux * Math.min(step, d);
-        f.row += uy * Math.min(step, d);
+        const ux = (target.col - fr.col) / d;
+        const uy = (target.row - fr.row) / d;
+        fr.col += ux * Math.min(step, d);
+        fr.row += uy * Math.min(step, d);
       }
     }
 
-    const alive = fighters.filter((f) => f.hp > 0);
-    const playersLeft = alive.some((f) => f.team === "player");
-    const enemiesLeft = alive.some((f) => f.team === "enemy");
+    const alive = fighters.filter((fr) => fr.hp > 0);
+    const playersLeft = alive.some((fr) => fr.team === "player");
+    const enemiesLeft = alive.some((fr) => fr.team === "enemy");
 
     if (!playersLeft || !enemiesLeft) {
       const win = playersLeft;
-      const survivingEnemies = alive.filter((f) => f.team === "enemy").length;
+      const survivingEnemies = alive.filter((fr) => fr.team === "enemy").length;
       const damage = win ? 0 : 4 + survivingEnemies * 2;
       const health = Math.max(0, state.health - damage);
       const streak = win
@@ -367,7 +398,7 @@ export const useGame = create<GameState>((set, get) => ({
     const state = get();
     if (state.gameOver) return;
     const income = BASE_INCOME + interest(state.gold) + streakBonus(state.streak);
-    const leveled = gainXp(state.level, state.xp, 1); // passive XP each round
+    const leveled = gainXp(state.level, state.xp, 1);
     set({
       phase: "prep",
       result: null,
@@ -382,9 +413,7 @@ export const useGame = create<GameState>((set, get) => ({
     });
   },
 
-  reset: () => {
-    set({ ...initialState() });
-  },
+  reset: () => set({ ...initialState() }),
 }));
 
 // Dev convenience: poke the store from the browser console (balancing, debugging).

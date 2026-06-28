@@ -1,4 +1,4 @@
-// Core game types. Kept renderer-agnostic on purpose: when Colyseus takes over,
+// Core game types. Renderer-agnostic on purpose: when Colyseus takes over,
 // this is roughly the schema the server would own.
 
 export type Attribute = "Vaccine" | "Data" | "Virus";
@@ -10,33 +10,30 @@ export type Family =
   | "Nightmare Soldiers"
   | "Deep Savers";
 
-/** A base creature definition (tier-1) plus its digivolution line. */
-export interface CreatureDef {
+/** Combat archetype — drives stats via a (role, stage) table. */
+export type Role = "tank" | "bruiser" | "assassin" | "ranged" | "caster";
+
+/**
+ * A single Digimon form (a node in the digivolution graph).
+ * stage: 1 = Rookie, 2 = Champion, 3 = Ultimate.
+ * Rookies have a `cost` (sold in the shop); higher stages are reached by evolving.
+ * `evolvesTo` lists the next-stage branches — >1 means the player chooses.
+ */
+export interface Form {
   id: string;
   name: string;
+  stage: 1 | 2 | 3;
   attribute: Attribute;
   family: Family;
-  cost: number; // shop cost in gold
-  /** Names of each star level: [1-star, 2-star, 3-star]. */
-  line: [string, string, string];
-  base: {
-    hp: number;
-    attack: number;
-    /** attacks per second */
-    attackSpeed: number;
-    /** attack reach in board cells */
-    range: number;
-  };
+  role: Role;
+  cost?: number;
+  evolvesTo?: string[];
 }
 
 /** A unit instance the player owns (on bench or board). */
 export interface Unit {
-  /** unique instance id */
   uid: string;
-  defId: string;
-  /** 1, 2 or 3 stars (digivolution level) */
-  star: 1 | 2 | 3;
-  /** "bench" slot index, or a board cell, depending on placement */
+  formId: string;
   placement: Placement;
 }
 
@@ -44,11 +41,21 @@ export type Placement =
   | { kind: "bench"; slot: number }
   | { kind: "board"; col: number; row: number };
 
+/** A pending digivolution waiting on the player to pick a branch. */
+export interface PendingEvolution {
+  fromFormId: string;
+  /** the 3 unit uids being consumed */
+  consume: string[];
+  /** candidate next-stage form ids to choose from */
+  options: string[];
+  /** where the evolved unit will be placed */
+  placement: Placement;
+}
+
 /** A combatant snapshot used only during the battle simulation. */
 export interface Fighter {
   uid: string;
-  defId: string;
-  star: 1 | 2 | 3;
+  formId: string;
   team: "player" | "enemy";
   attribute: Attribute;
   hp: number;
@@ -56,12 +63,9 @@ export interface Fighter {
   attack: number;
   attackSpeed: number;
   range: number;
-  /** live world-ish board coordinates (col, row as floats while moving) */
   col: number;
   row: number;
-  /** seconds until this fighter can attack again */
   cooldown: number;
-  /** true while walking toward a target (drives the "move" animation clip) */
   moving: boolean;
   targetUid: string | null;
 }

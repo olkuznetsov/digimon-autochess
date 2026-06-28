@@ -6,7 +6,7 @@ import { CreatureModel } from "./CreatureModel";
 import { modelFor } from "./models";
 
 interface CreatureProps {
-  defId: string;
+  formId: string;
   position: [number, number, number];
   color: string;
   name: string;
@@ -27,7 +27,7 @@ interface CreatureProps {
 // being either an AI-generated glTF model (if registered) or the animated
 // procedural fallback. The emissive glow is what the bloom pass turns neon.
 export function Creature({
-  defId,
+  formId,
   position,
   color,
   name,
@@ -45,7 +45,7 @@ export function Creature({
   const scale = 0.85 + (star - 1) * 0.18;
   const hpPct = Math.max(0, Math.min(1, hp / maxHp));
   const facing = team === "enemy" ? -1 : 1;
-  const url = modelFor(defId, star);
+  const url = modelFor(formId);
 
   const body = (
     <ProceduralCreature color={color} cooldown={cooldown} attackSpeed={attackSpeed} facing={facing} />

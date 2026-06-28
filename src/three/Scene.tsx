@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Board } from "./Board";
 import { Creature } from "./Creature";
 import { useGame } from "../game/store";
-import { CREATURES, ATTR_COLOR, displayName } from "../game/creatures";
+import { FORMS, ATTR_COLOR } from "../game/creatures";
 import {
   cellToWorld,
   benchToWorld,
@@ -33,7 +33,7 @@ function PrepUnits() {
   return (
     <>
       {units.map((u) => {
-        const def = CREATURES[u.defId];
+        const form = FORMS[u.formId];
         let pos: [number, number, number];
         if (u.uid === dragId && dragPos) {
           pos = [dragPos.x, 0.7, dragPos.z];
@@ -47,11 +47,11 @@ function PrepUnits() {
         return (
           <Creature
             key={u.uid}
-            defId={u.defId}
+            formId={u.formId}
             position={pos}
-            color={ATTR_COLOR[def.attribute]}
-            name={displayName(def, u.star)}
-            star={u.star}
+            color={ATTR_COLOR[form.attribute]}
+            name={form.name}
+            star={form.stage}
             hp={1}
             maxHp={1}
             showHealth={false}
@@ -72,16 +72,16 @@ function BattleUnits() {
   return (
     <>
       {fighters.map((f) => {
-        const def = CREATURES[f.defId];
+        const form = FORMS[f.formId];
         const [x, z] = cellToWorld(f.col, f.row);
         return (
           <Creature
             key={f.uid}
-            defId={f.defId}
+            formId={f.formId}
             position={[x, 0, z]}
             color={ATTR_COLOR[f.attribute]}
-            name={displayName(def, f.star)}
-            star={f.star}
+            name={form.name}
+            star={form.stage}
             hp={f.hp}
             maxHp={f.maxHp}
             team={f.team}

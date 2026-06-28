@@ -1,5 +1,5 @@
 import { useGame } from "../game/store";
-import { CREATURES, ATTR_COLOR } from "../game/creatures";
+import { FORMS, ATTR_COLOR } from "../game/creatures";
 
 export function Shop() {
   const phase = useGame((s) => s.phase);
@@ -23,24 +23,25 @@ export function Shop() {
         </button>
       </div>
       <div className="shop-slots">
-        {shop.map((defId, i) => {
-          if (!defId) return <div key={i} className="shop-card empty" />;
-          const def = CREATURES[defId];
-          const color = ATTR_COLOR[def.attribute];
+        {shop.map((formId, i) => {
+          if (!formId) return <div key={i} className="shop-card empty" />;
+          const form = FORMS[formId];
+          const cost = form.cost ?? 0;
+          const color = ATTR_COLOR[form.attribute];
           return (
             <button
               key={i}
               className="shop-card"
               style={{ borderColor: color }}
-              disabled={gold < def.cost}
+              disabled={gold < cost}
               onClick={() => buy(i)}
             >
               <span className="attr-dot" style={{ background: color }} />
-              <span className="card-name">{def.name}</span>
+              <span className="card-name">{form.name}</span>
               <span className="card-attr" style={{ color }}>
-                {def.attribute}
+                {form.attribute}
               </span>
-              <span className="card-cost">⛂ {def.cost}</span>
+              <span className="card-cost">⛂ {cost}</span>
             </button>
           );
         })}

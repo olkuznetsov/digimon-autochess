@@ -1,5 +1,5 @@
 import type { Fighter, Unit } from "./types";
-import { CREATURES, ATTR_COLOR, FAMILY_COLOR } from "./creatures";
+import { FORMS, ATTR_COLOR, FAMILY_COLOR } from "./creatures";
 
 export interface TraitTier {
   need: number;
@@ -74,11 +74,11 @@ export function traitCounts(units: Unit[]): Map<string, number> {
   const seen = new Set<string>();
   const counts = new Map<string, number>();
   for (const u of units) {
-    if (u.placement.kind !== "board" || seen.has(u.defId)) continue;
-    seen.add(u.defId);
-    const def = CREATURES[u.defId];
-    counts.set(def.attribute, (counts.get(def.attribute) ?? 0) + 1);
-    counts.set(def.family, (counts.get(def.family) ?? 0) + 1);
+    if (u.placement.kind !== "board" || seen.has(u.formId)) continue;
+    seen.add(u.formId);
+    const form = FORMS[u.formId];
+    counts.set(form.attribute, (counts.get(form.attribute) ?? 0) + 1);
+    counts.set(form.family, (counts.get(form.family) ?? 0) + 1);
   }
   return counts;
 }
@@ -125,8 +125,8 @@ export function applySynergies(fighters: Fighter[], units: Unit[]): void {
     if (!a) continue;
     const t = a.tier;
     for (const f of fighters) {
-      const cdef = CREATURES[f.defId];
-      const belongs = def.kind === "attribute" ? cdef.attribute === def.key : cdef.family === def.key;
+      const cform = FORMS[f.formId];
+      const belongs = def.kind === "attribute" ? cform.attribute === def.key : cform.family === def.key;
       if (!belongs) continue;
       if (t.rangedOnly && f.range < 2) continue;
       if (t.hpPct) f.maxHp *= 1 + t.hpPct;
