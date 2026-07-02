@@ -1,7 +1,22 @@
-import type { Fighter } from "./types";
+import type { Attribute, Fighter } from "./types";
 import { FORMS, attributeMultiplier, statsFor } from "./creatures";
 
 export const MOVE_SPEED = 2.2; // cells per second during battle
+
+/** Cosmetic events emitted by stepCombat for the FX layer (damage numbers,
+ *  projectiles, death bursts). The balance sim simply doesn't pass a collector. */
+export interface CombatEvent {
+  kind: "hit" | "death";
+  col: number;
+  row: number;
+  attr: Attribute;
+  /** hit only */
+  fromCol?: number;
+  fromRow?: number;
+  amount?: number;
+  mult?: number;
+  ranged?: boolean;
+}
 
 /** Build a combat-ready Fighter from a form. Used by the store and the balance sim. */
 export function makeFighter(
@@ -37,7 +52,7 @@ export function makeFighter(
  * place. Pure game logic — shared by the zustand store (browser) and the
  * headless balance simulator (Node).
  */
-export function stepCombat(fighters: Fighter[], dt: number): void {
+export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent[]): void {
   const dist = (a: Fighter, b: Fighter) => Math.hypot(a.col - b.col, a.row - b.row);
 
   for (const fr of fighters) {
@@ -66,8 +81,23 @@ export function stepCombat(fighters: Fighter[], dt: number): void {
       fr.moving = false;
       if (fr.cooldown <= 0) {
         const mult = attributeMultiplier(fr.attribute, target.attribute);
-        target.hp -= fr.attack * mult;
+        const dmg = fr.attack * mult;
+        target.hp -= dmg;
         fr.cooldown = 1 / fr.attackSpeed;
+        events?.push({
+          kind: "hit",
+          col: target.col,
+          row: target.row,
+          attr: fr.attribute,
+          fromCol: fr.col,
+          fromRow: fr.row,
+          amount: dmg,
+          mult,
+          ranged: fr.range > 1.5,
+        });
+        if (target.hp <= 0) {
+          events?.push({ kind: "death", col: target.col, row: target.row, attr: target.attribute });
+        }
       }
     } else {
       fr.moving = true;

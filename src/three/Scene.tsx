@@ -3,6 +3,7 @@ import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import { useEffect, useState } from "react";
 import { Board } from "./Board";
 import { Creature } from "./Creature";
+import { BattleFx } from "./BattleFx";
 import { useGame } from "../game/store";
 import { FORMS, ATTR_COLOR } from "../game/creatures";
 import {
@@ -155,6 +156,7 @@ function SceneContents() {
       {inPrep && <PrepUnits />}
       {!inPrep && <BattleUnits />}
       {phase === "battle" && <BattleRunner />}
+      {phase === "battle" && <BattleFx />}
 
       {/* invisible pointer catcher for dragging */}
       <mesh

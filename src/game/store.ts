@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types";
 import { FORMS, ROOKIE_IDS, ALL_FORM_IDS } from "./creatures";
-import { makeFighter, stepCombat } from "./battle";
+import { makeFighter, stepCombat, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
 import { XP_TO_NEXT, MAX_LEVEL } from "./xpView";
 import { BENCH_SLOTS, COLS } from "./board";
@@ -21,6 +21,16 @@ const COST_WEIGHT: Record<number, number> = { 1: 40, 2: 30, 3: 18, 4: 12 };
 
 let uidCounter = 0;
 const nextUid = () => `u${uidCounter++}`;
+
+/** A live combat effect (damage number, projectile, death burst) with its spawn time. */
+export interface Fx extends CombatEvent {
+  id: string;
+  born: number; // battleTime seconds
+  jx: number; // small positional jitter so stacked numbers don't overlap
+  jz: number;
+}
+let fxCounter = 0;
+const FX_TTL = 1.0; // seconds an effect stays in the list
 
 function rollShop(): string[] {
   const pool: string[] = [];
@@ -126,6 +136,8 @@ interface GameState {
   lastDamage: number;
 
   fighters: Fighter[];
+  fx: Fx[];
+  battleTime: number;
   tick: number;
   boardSnapshot: Unit[] | null;
 
@@ -160,6 +172,8 @@ function initialState() {
     result: null as "win" | "lose" | null,
     lastDamage: 0,
     fighters: [] as Fighter[],
+    fx: [] as Fx[],
+    battleTime: 0,
     tick: 0,
     boardSnapshot: null as Unit[] | null,
     dragId: null as string | null,
@@ -272,6 +286,8 @@ export const useGame = create<GameState>((set, get) => ({
       result: null,
       boardSnapshot: units,
       fighters: [...playerFighters, ...makeEnemyWave(round)],
+      fx: [],
+      battleTime: 0,
       tick: 0,
     });
   },
@@ -281,7 +297,9 @@ export const useGame = create<GameState>((set, get) => ({
     if (state.phase !== "battle") return;
     const fighters = state.fighters;
 
-    stepCombat(fighters, dt);
+    const events: CombatEvent[] = [];
+    stepCombat(fighters, dt, events);
+    const bt = state.battleTime + dt;
 
     const alive = fighters.filter((fr) => fr.hp > 0);
     const playersLeft = alive.some((fr) => fr.team === "player");
@@ -303,6 +321,8 @@ export const useGame = create<GameState>((set, get) => ({
         phase: "result",
         result: win ? "win" : "lose",
         fighters: alive,
+        fx: [],
+        battleTime: bt,
         streak,
         health,
         lastDamage: damage,
@@ -310,7 +330,21 @@ export const useGame = create<GameState>((set, get) => ({
         tick: state.tick + 1,
       });
     } else {
-      set({ fighters: alive, tick: state.tick + 1 });
+      let fx = state.fx;
+      const pruned = fx.filter((f) => bt - f.born < FX_TTL);
+      if (events.length > 0 || pruned.length !== fx.length) {
+        fx = [
+          ...pruned,
+          ...events.map((e) => ({
+            ...e,
+            id: `fx${fxCounter++}`,
+            born: bt,
+            jx: (Math.random() - 0.5) * 0.35,
+            jz: (Math.random() - 0.5) * 0.2,
+          })),
+        ];
+      }
+      set({ fighters: alive, fx, battleTime: bt, tick: state.tick + 1 });
     }
   },
 

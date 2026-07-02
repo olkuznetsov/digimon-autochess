@@ -561,3 +561,35 @@ body,
   font-size: 12px;
   color: #8893b5;
 }
+
+/* ---------- battle FX: floating damage numbers ---------- */
+.dmg-float {
+  pointer-events: none;
+  font-weight: 800;
+  font-size: 15px;
+  color: #ffe9a8;
+  text-shadow: 0 1px 3px #000, 0 0 8px rgba(0, 0, 0, 0.8);
+  animation: dmgfloat 0.9s ease-out forwards;
+  white-space: nowrap;
+}
+.dmg-float.strong {
+  color: #ff9a4d;
+  font-size: 18px;
+}
+.dmg-float.weak {
+  color: #93a0c4;
+  font-size: 13px;
+}
+@keyframes dmgfloat {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-36px);
+    opacity: 0;
+  }
+}

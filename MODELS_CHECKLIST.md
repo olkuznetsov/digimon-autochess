@@ -14,7 +14,7 @@ Legend: ✅ have it · (V)accine (D)ata (Vi)rus · `id` = filename to save as.
 ## Lines
 
 **Agumon** · Dragon's Roar
-`agumon`✅(V) → `greymon`(V)→`metalgreymon`(V) · `geogreymon`(V)→`risegreymon`(V) · `tyrannomon`(D)→`metaltyrannomon`(Vi)
+`agumon`✅(V) → `greymon`(V)→`wargreymon`(V) · `geogreymon`(V)→`risegreymon`(V) · `tyrannomon`(D)→`metaltyrannomon`(Vi)
 
 **Gabumon** · Nature Spirits
 `gabumon`(D) → `garurumon`(D)→[`weregarurumon`(D), `metalgarurumon`(D)] · `gaogamon`(D)→`machgaogamon`(D)
@@ -38,16 +38,16 @@ Legend: ✅ have it · (V)accine (D)ata (Vi)rus · `id` = filename to save as.
 `biyomon`(V) → `birdramon`(V)→`garudamon`(V) · `saberdramon`(Vi)→`hippogriffomon`(Vi)
 
 **Palmon** · Nature Spirits
-`palmon`(D) → `togemon`(D)→`lillymon`(D) · `woodmon`(D)→`cherrymon`(D)
+`palmon`(D) → `togemon`(D)→`rosemon`(D) · `woodmon`(D)→`cherrymon`(D)
 
 **Gomamon** · Deep Savers
-`gomamon`(V) → `ikkakumon`(V)→`zudomon`(V) · `dolphmon`(V)→`zudomon`
+`gomamon`(V) → `ikkakumon`(V)→`vikemon`(V) · `dolphmon`(V)→`vikemon`
 
 **Hawkmon** · Wind Guardians
 `hawkmon`(V) → `aquilamon`(V)→`silphymon`(V) · `halsemon`(V)→`silphymon`
 
 **Guilmon** · Dragon's Roar (4-cost)
-`guilmon`(Vi) → `growlmon`(Vi)→`wargrowlmon`(Vi)
+`guilmon`(Vi) → `growlmon`(Vi)→`gallantmon`(Vi)
 
 ---
 Totals: **12 Rookies · 24 Champions · 23 Ultimates = 59**. Names/attributes are pure data in

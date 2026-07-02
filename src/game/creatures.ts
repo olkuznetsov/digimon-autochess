@@ -18,10 +18,10 @@ const f = (
 export const FORMS: Record<string, Form> = {
   // ============ Agumon — Dragon's Roar ============
   agumon: f("agumon", "Agumon", 1, "Vaccine", "Dragon's Roar", "bruiser", { cost: 1, evolvesTo: ["greymon", "geogreymon", "tyrannomon"] }),
-  greymon: f("greymon", "Greymon", 2, "Vaccine", "Dragon's Roar", "bruiser", { evolvesTo: ["metalgreymon"] }),
+  greymon: f("greymon", "Greymon", 2, "Vaccine", "Dragon's Roar", "bruiser", { evolvesTo: ["wargreymon"] }),
   geogreymon: f("geogreymon", "GeoGreymon", 2, "Vaccine", "Dragon's Roar", "bruiser", { evolvesTo: ["risegreymon"] }),
   tyrannomon: f("tyrannomon", "Tyrannomon", 2, "Data", "Dragon's Roar", "tank", { evolvesTo: ["metaltyrannomon"] }),
-  metalgreymon: f("metalgreymon", "MetalGreymon", 3, "Vaccine", "Dragon's Roar", "bruiser"),
+  wargreymon: f("wargreymon", "WarGreymon", 3, "Vaccine", "Dragon's Roar", "bruiser"),
   risegreymon: f("risegreymon", "RizeGreymon", 3, "Vaccine", "Dragon's Roar", "ranged"),
   metaltyrannomon: f("metaltyrannomon", "MetalTyrannomon", 3, "Virus", "Dragon's Roar", "tank"),
 
@@ -77,16 +77,16 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Palmon — Nature Spirits ============
   palmon: f("palmon", "Palmon", 1, "Data", "Nature Spirits", "caster", { cost: 3, evolvesTo: ["togemon", "woodmon"] }),
-  togemon: f("togemon", "Togemon", 2, "Data", "Nature Spirits", "caster", { evolvesTo: ["lillymon"] }),
+  togemon: f("togemon", "Togemon", 2, "Data", "Nature Spirits", "caster", { evolvesTo: ["rosemon"] }),
   woodmon: f("woodmon", "Woodmon", 2, "Data", "Nature Spirits", "tank", { evolvesTo: ["cherrymon"] }),
-  lillymon: f("lillymon", "Lillymon", 3, "Data", "Nature Spirits", "ranged"),
+  rosemon: f("rosemon", "Rosemon", 3, "Data", "Nature Spirits", "ranged"),
   cherrymon: f("cherrymon", "Cherrymon", 3, "Data", "Nature Spirits", "tank"),
 
   // ============ Gomamon — Deep Savers ============
   gomamon: f("gomamon", "Gomamon", 1, "Vaccine", "Deep Savers", "tank", { cost: 3, evolvesTo: ["ikkakumon", "dolphmon"] }),
-  ikkakumon: f("ikkakumon", "Ikkakumon", 2, "Vaccine", "Deep Savers", "tank", { evolvesTo: ["zudomon"] }),
-  dolphmon: f("dolphmon", "Dolphmon", 2, "Vaccine", "Deep Savers", "ranged", { evolvesTo: ["zudomon"] }),
-  zudomon: f("zudomon", "Zudomon", 3, "Vaccine", "Deep Savers", "tank"),
+  ikkakumon: f("ikkakumon", "Ikkakumon", 2, "Vaccine", "Deep Savers", "tank", { evolvesTo: ["vikemon"] }),
+  dolphmon: f("dolphmon", "Dolphmon", 2, "Vaccine", "Deep Savers", "ranged", { evolvesTo: ["vikemon"] }),
+  vikemon: f("vikemon", "Vikemon", 3, "Vaccine", "Deep Savers", "tank"),
 
   // ============ Hawkmon — Wind Guardians ============
   hawkmon: f("hawkmon", "Hawkmon", 1, "Vaccine", "Wind Guardians", "caster", { cost: 3, evolvesTo: ["aquilamon", "halsemon"] }),
@@ -96,8 +96,8 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Guilmon — Dragon's Roar (4-cost) ============
   guilmon: f("guilmon", "Guilmon", 1, "Virus", "Dragon's Roar", "bruiser", { cost: 4, evolvesTo: ["growlmon"] }),
-  growlmon: f("growlmon", "Growlmon", 2, "Virus", "Dragon's Roar", "bruiser", { evolvesTo: ["wargrowlmon"] }),
-  wargrowlmon: f("wargrowlmon", "WarGrowlmon", 3, "Virus", "Dragon's Roar", "bruiser"),
+  growlmon: f("growlmon", "Growlmon", 2, "Virus", "Dragon's Roar", "bruiser", { evolvesTo: ["gallantmon"] }),
+  gallantmon: f("gallantmon", "Gallantmon", 3, "Virus", "Dragon's Roar", "bruiser"),
 };
 
 export const ALL_FORM_IDS = Object.keys(FORMS);
