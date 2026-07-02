@@ -1,12 +1,7 @@
 import { create } from "zustand";
 import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types";
-import {
-  FORMS,
-  ROOKIE_IDS,
-  ALL_FORM_IDS,
-  attributeMultiplier,
-  statsFor,
-} from "./creatures";
+import { FORMS, ROOKIE_IDS, ALL_FORM_IDS } from "./creatures";
+import { makeFighter, stepCombat } from "./battle";
 import { applySynergies } from "./synergies";
 import { XP_TO_NEXT, MAX_LEVEL } from "./xpView";
 import { BENCH_SLOTS, COLS } from "./board";
@@ -16,7 +11,6 @@ const SHOP_SIZE = 5;
 const BASE_INCOME = 5;
 const XP_COST = 4;
 const XP_PER_BUY = 4;
-const MOVE_SPEED = 2.2; // cells per second during battle
 
 const START_LEVEL = 3;
 const START_GOLD = 10;
@@ -59,27 +53,9 @@ function makeEnemyWave(round: number): Fighter[] {
   const stage = round >= 7 ? 3 : round >= 4 ? 2 : 1;
   const pool = ALL_FORM_IDS.filter((id) => FORMS[id].stage === stage);
   const hpScale = 1 + (round - 1) * 0.05;
-  return Array.from({ length: count }, (_, i) => {
-    const formId = pool[(round * 3 + i * 5) % pool.length];
-    const form = FORMS[formId];
-    const s = statsFor(form);
-    return {
-      uid: `e${i}`,
-      formId,
-      team: "enemy" as const,
-      attribute: form.attribute,
-      hp: Math.round(s.hp * hpScale),
-      maxHp: Math.round(s.hp * hpScale),
-      attack: s.attack,
-      attackSpeed: s.attackSpeed,
-      range: s.range,
-      col: i % COLS,
-      row: 5 - Math.floor(i / COLS),
-      cooldown: 0,
-      moving: false,
-      targetUid: null,
-    };
-  });
+  return Array.from({ length: count }, (_, i) =>
+    makeFighter(pool[(round * 3 + i * 5) % pool.length], `e${i}`, "enemy", i % COLS, 5 - Math.floor(i / COLS), hpScale),
+  );
 }
 
 /**
@@ -285,25 +261,8 @@ export const useGame = create<GameState>((set, get) => ({
     if (onBoard.length === 0) return;
 
     const playerFighters: Fighter[] = onBoard.map((u) => {
-      const form = FORMS[u.formId];
-      const s = statsFor(form);
       const p = u.placement as { col: number; row: number };
-      return {
-        uid: u.uid,
-        formId: u.formId,
-        team: "player",
-        attribute: form.attribute,
-        hp: s.hp,
-        maxHp: s.hp,
-        attack: s.attack,
-        attackSpeed: s.attackSpeed,
-        range: s.range,
-        col: p.col,
-        row: p.row,
-        cooldown: 0,
-        moving: false,
-        targetUid: null,
-      };
+      return makeFighter(u.formId, u.uid, "player", p.col, p.row);
     });
 
     applySynergies(playerFighters, onBoard);
@@ -322,46 +281,7 @@ export const useGame = create<GameState>((set, get) => ({
     if (state.phase !== "battle") return;
     const fighters = state.fighters;
 
-    const dist = (a: Fighter, b: Fighter) => Math.hypot(a.col - b.col, a.row - b.row);
-
-    for (const fr of fighters) {
-      if (fr.hp <= 0) continue;
-      fr.cooldown = Math.max(0, fr.cooldown - dt);
-
-      let target = fighters.find((t) => t.uid === fr.targetUid && t.hp > 0);
-      if (!target) {
-        let best: Fighter | null = null;
-        let bestD = Infinity;
-        for (const t of fighters) {
-          if (t.team === fr.team || t.hp <= 0) continue;
-          const d = dist(fr, t);
-          if (d < bestD) {
-            bestD = d;
-            best = t;
-          }
-        }
-        target = best ?? undefined;
-        fr.targetUid = best?.uid ?? null;
-      }
-      if (!target) continue;
-
-      const d = dist(fr, target);
-      if (d <= fr.range + 0.05) {
-        fr.moving = false;
-        if (fr.cooldown <= 0) {
-          const mult = attributeMultiplier(fr.attribute, target.attribute);
-          target.hp -= fr.attack * mult;
-          fr.cooldown = 1 / fr.attackSpeed;
-        }
-      } else {
-        fr.moving = true;
-        const step = MOVE_SPEED * dt;
-        const ux = (target.col - fr.col) / d;
-        const uy = (target.row - fr.row) / d;
-        fr.col += ux * Math.min(step, d);
-        fr.row += uy * Math.min(step, d);
-      }
-    }
+    stepCombat(fighters, dt);
 
     const alive = fighters.filter((fr) => fr.hp > 0);
     const playersLeft = alive.some((fr) => fr.team === "player");

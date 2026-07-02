@@ -79,13 +79,32 @@ export function CreatureModel({ url, tweak, facing = 1, cooldown, moving = false
     play(moving ? clips.move ?? clips.idle : clips.idle, false);
   });
 
-  const fit = useMemo(() => {
-    // Bake any orientation fix into the model BEFORE measuring, so grounding/centering
-    // are computed on the corrected pose.
+  // Bake any orientation fix into the model before anything measures it.
+  useMemo(() => {
     if (tweak?.rot) cloned.rotation.set(tweak.rot[0], tweak.rot[1], tweak.rot[2]);
+  }, [cloned, tweak]);
+
+  // Deferred fit: FBX rips often bake unit-conversion scale into the ANIMATION
+  // tracks, so the bind pose measures wrong. We keep the model hidden for the
+  // first couple of frames, let the mixer pose it, then measure the posed bounds
+  // in fitG-local space and normalize to TARGET_HEIGHT with feet at y=0.
+  const fitG = useRef<THREE.Group>(null);
+  const fitted = useRef(false);
+  const fitFrames = useRef(0);
+
+  useFrame(() => {
+    if (fitted.current || !fitG.current) return;
+    fitFrames.current++;
+    if (fitFrames.current < 3) return;
+
     cloned.updateWorldMatrix(true, true);
-    // Skeleton-aware bounds: a plain Box3.setFromObject ignores skinning and grounds
-    // rigged models wrong (they float). Union each mesh's pose-aware box instead.
+    cloned.traverse((o) => {
+      const sk = o as THREE.SkinnedMesh;
+      if (sk.isSkinnedMesh) sk.skeleton.update();
+    });
+
+    const inv = new THREE.Matrix4().copy(fitG.current.matrixWorld).invert();
+    const rel = new THREE.Matrix4();
     const box = new THREE.Box3();
     const tmp = new THREE.Box3();
     cloned.traverse((o) => {
@@ -93,27 +112,37 @@ export function CreatureModel({ url, tweak, facing = 1, cooldown, moving = false
       const m = o as THREE.Mesh;
       if (sk.isSkinnedMesh) {
         sk.computeBoundingBox();
-        if (sk.boundingBox) box.union(tmp.copy(sk.boundingBox).applyMatrix4(sk.matrixWorld));
+        if (sk.boundingBox) {
+          rel.multiplyMatrices(inv, sk.matrixWorld);
+          box.union(tmp.copy(sk.boundingBox).applyMatrix4(rel));
+        }
       } else if (m.isMesh && m.geometry) {
         if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
-        if (m.geometry.boundingBox) box.union(tmp.copy(m.geometry.boundingBox).applyMatrix4(m.matrixWorld));
+        if (m.geometry.boundingBox) {
+          rel.multiplyMatrices(inv, m.matrixWorld);
+          box.union(tmp.copy(m.geometry.boundingBox).applyMatrix4(rel));
+        }
       }
     });
-    if (box.isEmpty()) box.setFromObject(cloned);
+    if (box.isEmpty()) return;
+
     const size = new THREE.Vector3();
     const center = new THREE.Vector3();
     box.getSize(size);
     box.getCenter(center);
     const s = (TARGET_HEIGHT * (tweak?.scale ?? 1)) / Math.max(size.y, size.x * 0.5, size.z * 0.5, 0.001);
-    return { s, offset: [-center.x * s, -box.min.y * s, -center.z * s] as [number, number, number] };
-  }, [cloned, tweak]);
+    fitG.current.scale.setScalar(s);
+    fitG.current.position.set(-center.x * s, -box.min.y * s, -center.z * s);
+    fitG.current.visible = true;
+    fitted.current = true;
+  });
 
   // Player units (facing +1) look toward the enemy half (+z); enemies look back at
   // the player (-z). The model's front is +z at rotation 0, so flip the enemies.
   return (
     <group rotation={[0, facing > 0 ? 0 : Math.PI, 0]}>
       <group ref={bob}>
-        <group position={fit.offset} scale={fit.s}>
+        <group ref={fitG} visible={false}>
           <primitive object={cloned} />
         </group>
       </group>

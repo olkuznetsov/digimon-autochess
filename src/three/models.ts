@@ -15,6 +15,20 @@ export const MODEL_PATHS: Partial<Record<string, string>> = {
   agumon: "/models/digimon_linkz_-_agumon.glb",
   // GeoGreymon — Cyber Sleuth rip (The Models Resource), .dae→.glb via assimp. Static (no clips).
   geogreymon: "/models/geogreymon.glb",
+  // Cyber Sleuth rips (animated FBX from the PiSuGames/DigiChess repo), .fbx→.glb via assimp.
+  // All ship idle/move/attack01 clips matching the animation state machine. See CREDITS.md.
+  greymon: "/models/greymon.glb",
+  gabumon: "/models/gabumon.glb",
+  garurumon: "/models/garurumon.glb",
+  metalgarurumon: "/models/metalgarurumon.glb",
+  gomamon: "/models/gomamon.glb",
+  ikkakumon: "/models/ikkakumon.glb",
+  guilmon: "/models/guilmon.glb",
+  growlmon: "/models/growlmon.glb",
+  patamon: "/models/patamon.glb",
+  angemon: "/models/angemon.glb",
+  magnaangemon: "/models/magnaangemon.glb",
+  togemon: "/models/togemon.glb",
 };
 
 /** Target on-board height (world units) every model is normalized to. */
