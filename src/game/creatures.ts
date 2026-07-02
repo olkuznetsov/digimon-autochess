@@ -125,8 +125,9 @@ export const FAMILY_COLOR: Record<Family, string> = {
  */
 export function attributeMultiplier(attacker: Attribute, defender: Attribute): number {
   const beats: Record<Attribute, Attribute> = { Vaccine: "Virus", Virus: "Data", Data: "Vaccine" };
-  if (beats[attacker] === defender) return 1.3;
-  if (beats[defender] === attacker) return 0.77;
+  // tuned by scripts/balance-sim.ts: 1.3/0.77 made mono-attribute fights 100% deterministic
+  if (beats[attacker] === defender) return 1.15;
+  if (beats[defender] === attacker) return 0.87;
   return 1;
 }
 
@@ -137,32 +138,36 @@ interface Stat {
   range: number;
 }
 
-// Stats by [role][stage-1]. Higher stages are sharply stronger (3-of-a-kind cost).
+// Stats by [role][stage-1]. Tuned with scripts/balance-sim.ts:
+// - stage multiplier ~2.25x so a champion respects its 3-rookie cost
+//   (3 rookies slightly favored vs 1 champion; 2 rookies clearly lose)
+// - tanks carry real threat (they were pure HP sponges at 12% win rate)
+// - assassins trimmed (they hard-dominated every melee matchup)
 const STATS: Record<Role, [Stat, Stat, Stat]> = {
   tank: [
-    { hp: 95, attack: 10, attackSpeed: 0.6, range: 1 },
-    { hp: 180, attack: 18, attackSpeed: 0.6, range: 1 },
-    { hp: 320, attack: 33, attackSpeed: 0.6, range: 1 },
+    { hp: 130, attack: 10, attackSpeed: 0.6, range: 1 },
+    { hp: 292, attack: 22, attackSpeed: 0.6, range: 1 },
+    { hp: 645, attack: 48, attackSpeed: 0.6, range: 1 },
   ],
   bruiser: [
-    { hp: 75, attack: 12, attackSpeed: 0.7, range: 1 },
-    { hp: 140, attack: 23, attackSpeed: 0.7, range: 1 },
-    { hp: 250, attack: 42, attackSpeed: 0.72, range: 1 },
+    { hp: 95, attack: 13, attackSpeed: 0.7, range: 1 },
+    { hp: 214, attack: 29, attackSpeed: 0.7, range: 1 },
+    { hp: 470, attack: 64, attackSpeed: 0.72, range: 1 },
   ],
   assassin: [
-    { hp: 58, attack: 16, attackSpeed: 0.8, range: 1 },
-    { hp: 105, attack: 31, attackSpeed: 0.85, range: 1 },
-    { hp: 190, attack: 56, attackSpeed: 0.9, range: 1 },
+    { hp: 62, attack: 17, attackSpeed: 0.8, range: 1 },
+    { hp: 140, attack: 38, attackSpeed: 0.85, range: 1 },
+    { hp: 310, attack: 84, attackSpeed: 0.9, range: 1 },
   ],
   ranged: [
-    { hp: 52, attack: 14, attackSpeed: 0.8, range: 3 },
-    { hp: 95, attack: 27, attackSpeed: 0.82, range: 3 },
-    { hp: 165, attack: 48, attackSpeed: 0.85, range: 3 },
+    { hp: 58, attack: 15, attackSpeed: 0.8, range: 3 },
+    { hp: 130, attack: 35, attackSpeed: 0.82, range: 3 },
+    { hp: 285, attack: 78, attackSpeed: 0.85, range: 3 },
   ],
   caster: [
-    { hp: 62, attack: 13, attackSpeed: 0.7, range: 2 },
-    { hp: 115, attack: 25, attackSpeed: 0.72, range: 2 },
-    { hp: 205, attack: 45, attackSpeed: 0.75, range: 2 },
+    { hp: 72, attack: 16, attackSpeed: 0.7, range: 2 },
+    { hp: 162, attack: 36, attackSpeed: 0.72, range: 2 },
+    { hp: 355, attack: 80, attackSpeed: 0.75, range: 2 },
   ],
 };
 
