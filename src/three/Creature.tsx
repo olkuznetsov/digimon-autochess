@@ -48,7 +48,14 @@ export function Creature({
   const url = modelFor(formId);
 
   const body = (
-    <ProceduralCreature color={color} cooldown={cooldown} attackSpeed={attackSpeed} facing={facing} />
+    <ProceduralCreature
+      formId={formId}
+      color={color}
+      cooldown={cooldown}
+      attackSpeed={attackSpeed}
+      moving={moving}
+      facing={facing}
+    />
   );
 
   return (
