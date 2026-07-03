@@ -16,6 +16,9 @@ import {
   BENCH_BOUNDARY,
 } from "../game/board";
 
+// pointer-down position of the current drag, to tell a click from a drag
+let dragStart: { x: number; z: number } | null = null;
+
 function CameraRig() {
   const camera = useThree((s) => s.camera);
   const scene = useThree((s) => s.scene);
@@ -67,6 +70,7 @@ function PrepUnits() {
                 useGame.getState().equipItem(u.uid);
                 return;
               }
+              dragStart = { x: e.point.x, z: e.point.z };
               setDrag(u.uid, { x: e.point.x, z: e.point.z });
             }}
           />
@@ -100,6 +104,10 @@ function BattleUnits() {
             mana={f.mana}
             maxMana={f.maxMana}
             itemEmojis={(f.items ?? []).map((id) => ITEMS[id]?.emoji ?? "")}
+            onPointerDown={(e: ThreeEvent<PointerEvent>) => {
+              e.stopPropagation();
+              useGame.getState().setInspected(f.uid);
+            }}
           />
         );
       })}
@@ -123,6 +131,15 @@ function SceneContents() {
   const commitDrag = () => {
     const { dragId: id, dragPos } = useGame.getState();
     if (!id || !dragPos) return;
+    // barely moved = a click, not a drag -> open the unit inspector
+    const moved = dragStart ? Math.hypot(dragPos.x - dragStart.x, dragPos.z - dragStart.z) : 99;
+    dragStart = null;
+    if (moved < 0.2) {
+      useGame.getState().setInspected(id);
+      setDrag(null, null);
+      setHovered(null);
+      return;
+    }
     if (dragPos.z < BENCH_BOUNDARY) {
       moveUnit(id, { kind: "bench", slot: worldToBenchSlot(dragPos.x) });
     } else {

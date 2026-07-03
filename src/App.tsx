@@ -4,6 +4,7 @@ import { Shop } from "./ui/Shop";
 import { SynergyPanel } from "./ui/SynergyPanel";
 import { EvolutionChoice } from "./ui/EvolutionChoice";
 import { ItemTray } from "./ui/ItemTray";
+import { UnitPanel } from "./ui/UnitPanel";
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
       <SynergyPanel />
       <Shop />
       <ItemTray />
+      <UnitPanel />
       <EvolutionChoice />
     </div>
   );

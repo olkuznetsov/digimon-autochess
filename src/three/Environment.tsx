@@ -50,7 +50,8 @@ function DataMotes({ count = 220 }: { count?: number }) {
     for (let i = 0; i < count; i++) {
       p[i * 3] = (Math.random() - 0.5) * 44;
       p[i * 3 + 1] = Math.random() * 12;
-      p[i * 3 + 2] = (Math.random() - 0.5) * 44 + 4;
+      // keep motes in front of the camera plane so none renders as a giant square point
+      p[i * 3 + 2] = Math.random() * 34 - 2;
       const col = palette[i % palette.length];
       c[i * 3] = col.r;
       c[i * 3 + 1] = col.g;

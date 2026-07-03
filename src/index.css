@@ -678,3 +678,125 @@ body,
 .unit-items {
   font-size: 10px;
 }
+
+/* ---------- unit inspector panel ---------- */
+.unit-panel {
+  position: absolute;
+  right: 16px;
+  bottom: 96px;
+  width: 224px;
+  z-index: 7;
+  background: rgba(12, 15, 30, 0.95);
+  border: 1px solid #2a3358;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+.up-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.up-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #f2f6ff;
+}
+.up-stage {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #8893b5;
+  flex: 1;
+}
+.up-close {
+  pointer-events: auto;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: #8893b5;
+  font-size: 13px;
+  padding: 2px 4px;
+}
+.up-close:hover {
+  color: #fff;
+}
+.up-tags {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.up-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: #05060f;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+.up-tag.fam {
+  color: #cfe0ff;
+  background: transparent;
+  border: 1px solid;
+}
+.up-tag.role {
+  color: #cfd8f5;
+  background: rgba(255, 255, 255, 0.08);
+  text-transform: capitalize;
+}
+.up-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #dbe6ff;
+}
+.up-shield {
+  color: #9be7ff;
+  font-style: normal;
+}
+.up-mana .mana-track.big {
+  width: 100%;
+  height: 6px;
+  display: block;
+}
+.up-ability {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  padding: 7px 9px;
+}
+.up-ab-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffd34d;
+}
+.up-ab-desc {
+  font-size: 11px;
+  color: #93a0c4;
+}
+.up-items {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.up-item {
+  font-size: 11px;
+  font-weight: 700;
+  color: #eef3ff;
+}
+.up-item em {
+  font-style: normal;
+  font-weight: 500;
+  color: #8893b5;
+}
+.up-noitems {
+  font-size: 11px;
+  color: #8893b5;
+}

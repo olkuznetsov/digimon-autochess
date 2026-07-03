@@ -133,6 +133,7 @@ interface GameState {
   units: Unit[];
   inventory: string[];
   selectedItem: string | null;
+  inspected: string | null;
   pendingEvolution: PendingEvolution | null;
   phase: Phase;
   result: "win" | "lose" | null;
@@ -153,6 +154,7 @@ interface GameState {
   chooseEvolution: (formId: string) => void;
   selectItem: (id: string | null) => void;
   equipItem: (uid: string) => void;
+  setInspected: (uid: string | null) => void;
   moveUnit: (uid: string, target: Placement) => void;
   setDrag: (uid: string | null, pos: { x: number; z: number } | null) => void;
   startBattle: () => void;
@@ -174,6 +176,7 @@ function initialState() {
     units: [] as Unit[],
     inventory: [] as string[],
     selectedItem: null as string | null,
+    inspected: null as string | null,
     pendingEvolution: null as PendingEvolution | null,
     phase: "prep" as Phase,
     result: null as "win" | "lose" | null,
@@ -250,6 +253,8 @@ export const useGame = create<GameState>((set, get) => ({
   },
 
   selectItem: (id) => set({ selectedItem: id }),
+
+  setInspected: (uid) => set({ inspected: uid }),
 
   equipItem: (uid) => {
     const { selectedItem, inventory, units } = get();

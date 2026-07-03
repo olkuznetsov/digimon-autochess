@@ -21,10 +21,32 @@ interface Props {
  * The desired clip is (re)asserted every frame, so it survives StrictMode/HMR remounts.
  * Models without clips get a subtle procedural bob so they aren't frozen.
  */
+/** FBX rips bake unit-conversion scale into animation tracks — and it can DIFFER
+ *  per clip, so a model measured during "idle" explodes when "attack01" plays.
+ *  Constant (non-animating) scale tracks are pure unit conversion: drop them so
+ *  every clip plays at bind scale. Real squash-and-stretch (varying) tracks stay.
+ *  Must run before the mixer builds actions; clips are cached per URL, so guard. */
+function stripConstantScaleTracks(animations: THREE.AnimationClip[]) {
+  for (const clip of animations) {
+    const c = clip as THREE.AnimationClip & { __scaleStripped?: boolean };
+    if (c.__scaleStripped) continue;
+    clip.tracks = clip.tracks.filter((t) => {
+      if (!t.name.endsWith(".scale")) return true;
+      const v = t.values;
+      for (let i = 3; i < v.length; i++) {
+        if (Math.abs(v[i] - v[i % 3]) > 1e-3) return true; // genuinely animated
+      }
+      return false; // constant scale = baked unit conversion
+    });
+    c.__scaleStripped = true;
+  }
+}
+
 export function CreatureModel({ url, tweak, facing = 1, cooldown, moving = false }: Props) {
   const bob = useRef<THREE.Group>(null);
   const phase = useRef(Math.random() * Math.PI * 2);
   const { scene, animations } = useGLTF(url);
+  useMemo(() => stripConstantScaleTracks(animations), [animations]);
   // Root the mixer on the CLONE so clips bind to the cloned skeleton's bones.
   const cloned = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   const { actions, names } = useAnimations(animations, cloned);
