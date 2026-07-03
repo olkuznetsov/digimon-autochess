@@ -1,54 +1,32 @@
-# Creature model checklist — full branching roster (59 Digimon)
+# Roster — 46 forms, 100% real animated models
 
-Stages: **Rookie (1★) → Champion (2★) → Ultimate (3★)**. Combining 3 of a form lets you
-**choose** the next branch. Models are optional — any form without one uses the animated
-procedural fallback, so the whole tree is already playable.
+Every form has an animated model at `public/models/<formId>.glb` (idle/move/attack01… clips
+drive the combat state machine). The roster is deliberately shaped around sourceable models.
+To add a form: convert with `python3 scripts/convert_model.py <src.fbx> <formid>` and add it
+to `src/game/creatures.ts` — the model registry picks it up by convention.
 
-## How to register
-- Best source: **akennedy007's [Digimon Linkz collection](https://sketchfab.com/akennedy007/collections/digimon-linkz-32d3acdc57da4cd5ac4a69ba3c8c3fc5)** (matching style + `idle`/`move`/`attack01` clips). Gaps: Sketchfab **Animated** filter.
-- Save the **GLB** in `public/models/` named by the **form id** (the lowercase id below), e.g. `greymon.glb`.
-- Tell me which files landed — I register them in `src/three/models.ts` (keyed by form id) + add CC-BY credit + verify.
+Legend: (V)accine (D)ata (Vi)rus · **[a | b]** = player chooses a branch.
 
-Legend: ✅ have it · (V)accine (D)ata (Vi)rus · `id` = filename to save as.
+| Line (cost) | Rookie | Champion | Ultimate | Family |
+|---|---|---|---|---|
+| Agumon (1) | `agumon`(V) | `greymon`(V) | **[`wargreymon`(V) \| `blitzgreymon`(Vi)]** | Dragon's Roar |
+| Gabumon (1) | `gabumon`(D) | `garurumon`(D) | **[`metalgarurumon`(D) \| `cresgarurumon`(V)]** | Nature Spirits |
+| DemiDevimon (1) | `demidevimon`(Vi) | `skullsatamon`(Vi) | `belzemon`(Vi) | Nightmare Soldiers |
+| Hagurumon (2) | `hagurumon`(Vi) | `guardromon`(Vi) | `machinedramon`(Vi) | Nightmare Soldiers |
+| Patamon (2) | `patamon`(V) | `angemon`(V) | `magnaangemon`(V) | Wind Guardians |
+| Dracomon (2) | `dracomon`(D) | `coredramon`(D) | `breakdramon`(D) | Nature Spirits |
+| Keramon (2) | `keramon`(Vi) | `infermon`(Vi) | `diaboromon`(Vi) | Deep Savers |
+| Candlemon (2) | `candlemon`(Vi) | `meramon`(Vi) | `gankoomon`(Vi) | Nightmare Soldiers |
+| Palmon (3) | `palmon`(D) | `togemon`(D) | **[`rosemon`(D) \| `rosemonbm`(Vi)]** | Nature Spirits |
+| Gomamon (3) | `gomamon`(V) | `ikkakumon`(V) | `vikemon`(V) | Deep Savers |
+| Veemon (3) | `veemon`(V) | **[`exveemon`(V) \| `paildramon`(D)]** | `imperialdramon`(V) | Wind Guardians |
+| Wormmon (3) | `wormmon`(V) | `stingmon`(V) | `banchostingmon`(V) | Wind Guardians |
+| Guilmon (4) | `guilmon`(Vi) | `growlmon`(Vi) | `gallantmon`(Vi) | Dragon's Roar |
+| Dorumon (4) | `dorumon`(D) | `dorugamon`(D) | `alphamon`(D) | Dragon's Roar |
 
-## Lines
+Removed (no animated rips exist anywhere): GeoGreymon/RizeGreymon, Tyrannomon/MetalTyrannomon,
+Gaogamon/MachGaogamon, WereGarurumon, Devimon/IceDevimon/Myotismon, Pegasusmon,
+Woodmon/Cherrymon, Dolphmon. They can return later via Meshy/AI generation.
 
-**Agumon** · Dragon's Roar
-`agumon`✅(V) → `greymon`(V)→`wargreymon`(V) · `geogreymon`(V)→`risegreymon`(V) · `tyrannomon`(D)→`metaltyrannomon`(Vi)
-
-**Gabumon** · Nature Spirits
-`gabumon`(D) → `garurumon`(D)→[`weregarurumon`(D), `metalgarurumon`(D)] · `gaogamon`(D)→`machgaogamon`(D)
-
-**DemiDevimon** · Nightmare Soldiers
-`demidevimon`(Vi) → `devimon`(Vi)→[`myotismon`(Vi), `skullsatamon`(Vi)] · `icedevimon`(Vi)→`skullsatamon`
-
-**Patamon** · Wind Guardians
-`patamon`(V) → `angemon`(V)→`magnaangemon`(V) · `pegasusmon`(V)→`magnaangemon`
-
-**Dracomon** · Nature Spirits ✅ *(swapped in for Tentomon — animated)*
-`dracomon`✅(D) → `coredramon`✅(D) → `breakdramon`✅(D)
-
-**Keramon** · Deep Savers ✅ *(swapped in for Betamon — animated)*
-`keramon`✅(Vi) → `infermon`✅(Vi) → `diaboromon`✅(Vi)
-
-**Candlemon** · Nightmare Soldiers ✅ *(swapped in for Bakemon — animated)*
-`candlemon`✅(Vi) → `meramon`✅(Vi) → `gankoomon`✅(Vi)
-
-**Veemon** · Wind Guardians ✅ *(swapped in for Biyomon — animated)*
-`veemon`✅(V) → `paildramon`✅(V) → `imperialdramon`✅(V)
-
-**Palmon** · Nature Spirits
-`palmon`(D) → `togemon`(D)→`rosemon`(D) · `woodmon`(D)→`cherrymon`(D)
-
-**Gomamon** · Deep Savers
-`gomamon`(V) → `ikkakumon`(V)→`vikemon`(V) · `dolphmon`(V)→`vikemon`
-
-**Wormmon** · Wind Guardians ✅ *(swapped in for Hawkmon — animated)*
-`wormmon`✅(V) → `stingmon`✅(V) → `banchostingmon`✅(V)
-
-**Guilmon** · Dragon's Roar (4-cost)
-`guilmon`(Vi) → `growlmon`(Vi)→`gallantmon`(Vi)
-
----
-Totals: **49 forms** (12 lines). 36 have real animated models; 13 alt-branch forms use the animated procedural creature. Names/attributes are pure data in
-`src/game/creatures.ts` — tell me any you want changed.
+Unused animated lines still available in the DigiChess source (future "set 2"):
+Coronamon→Apollomon, Flamemon→Aldamon→Susanoomon, Herrismon, Tapirmon/Piximon, Zeed, Gracenovamon.
