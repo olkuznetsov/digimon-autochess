@@ -36,6 +36,22 @@ export const MODEL_PATHS: Partial<Record<string, string>> = {
   palmon: "/models/palmon.glb",
   demidevimon: "/models/demidevimon.glb",
   skullsatamon: "/models/skullsatamon.glb",
+  // Swapped-in fully-animated lines (replaced Tentomon/Betamon/Bakemon/Biyomon/Hawkmon).
+  dracomon: "/models/dracomon.glb",
+  coredramon: "/models/coredramon.glb",
+  breakdramon: "/models/breakdramon.glb",
+  keramon: "/models/keramon.glb",
+  infermon: "/models/infermon.glb",
+  diaboromon: "/models/diaboromon.glb",
+  candlemon: "/models/candlemon.glb",
+  meramon: "/models/meramon.glb",
+  gankoomon: "/models/gankoomon.glb",
+  veemon: "/models/veemon.glb",
+  paildramon: "/models/paildramon.glb",
+  imperialdramon: "/models/imperialdramon.glb",
+  wormmon: "/models/wormmon.glb",
+  stingmon: "/models/stingmon.glb",
+  banchostingmon: "/models/banchostingmon.glb",
 };
 
 /** Target on-board height (world units) every model is normalized to. */

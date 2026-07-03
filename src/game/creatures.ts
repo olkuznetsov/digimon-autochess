@@ -46,34 +46,25 @@ export const FORMS: Record<string, Form> = {
   pegasusmon: f("pegasusmon", "Pegasusmon", 2, "Vaccine", "Wind Guardians", "ranged", { evolvesTo: ["magnaangemon"] }),
   magnaangemon: f("magnaangemon", "MagnaAngemon", 3, "Vaccine", "Wind Guardians", "assassin"),
 
-  // ============ Tentomon — Nature Spirits ============
-  tentomon: f("tentomon", "Tentomon", 1, "Data", "Nature Spirits", "tank", { cost: 2, evolvesTo: ["kabuterimon", "kuwagamon"] }),
-  kabuterimon: f("kabuterimon", "Kabuterimon", 2, "Data", "Nature Spirits", "tank", { evolvesTo: ["megakabuterimon", "atlurkabuterimon"] }),
-  kuwagamon: f("kuwagamon", "Kuwagamon", 2, "Virus", "Nature Spirits", "bruiser", { evolvesTo: ["okuwamon"] }),
-  megakabuterimon: f("megakabuterimon", "MegaKabuterimon", 3, "Data", "Nature Spirits", "tank"),
-  atlurkabuterimon: f("atlurkabuterimon", "AtlurKabuterimon", 3, "Data", "Nature Spirits", "bruiser"),
-  okuwamon: f("okuwamon", "Okuwamon", 3, "Virus", "Nature Spirits", "tank"),
+  // ============ Dracomon — Nature Spirits (animated) ============
+  dracomon: f("dracomon", "Dracomon", 1, "Data", "Nature Spirits", "tank", { cost: 2, evolvesTo: ["coredramon"] }),
+  coredramon: f("coredramon", "Coredramon", 2, "Data", "Nature Spirits", "bruiser", { evolvesTo: ["breakdramon"] }),
+  breakdramon: f("breakdramon", "Breakdramon", 3, "Data", "Nature Spirits", "tank"),
 
-  // ============ Betamon — Deep Savers ============
-  betamon: f("betamon", "Betamon", 1, "Virus", "Deep Savers", "tank", { cost: 2, evolvesTo: ["seadramon", "gesomon"] }),
-  seadramon: f("seadramon", "Seadramon", 2, "Virus", "Deep Savers", "tank", { evolvesTo: ["megaseadramon", "metalseadramon"] }),
-  gesomon: f("gesomon", "Gesomon", 2, "Virus", "Deep Savers", "assassin", { evolvesTo: ["marinedevimon"] }),
-  megaseadramon: f("megaseadramon", "MegaSeadramon", 3, "Virus", "Deep Savers", "tank"),
-  metalseadramon: f("metalseadramon", "MetalSeadramon", 3, "Virus", "Deep Savers", "ranged"),
-  marinedevimon: f("marinedevimon", "MarineDevimon", 3, "Virus", "Deep Savers", "tank"),
+  // ============ Keramon — Deep Savers (animated) ============
+  keramon: f("keramon", "Keramon", 1, "Virus", "Deep Savers", "caster", { cost: 2, evolvesTo: ["infermon"] }),
+  infermon: f("infermon", "Infermon", 2, "Virus", "Deep Savers", "assassin", { evolvesTo: ["diaboromon"] }),
+  diaboromon: f("diaboromon", "Diaboromon", 3, "Virus", "Deep Savers", "tank"),
 
-  // ============ Bakemon — Nightmare Soldiers ============
-  bakemon: f("bakemon", "Bakemon", 1, "Virus", "Nightmare Soldiers", "caster", { cost: 2, evolvesTo: ["soulmon", "devidramon"] }),
-  soulmon: f("soulmon", "Soulmon", 2, "Virus", "Nightmare Soldiers", "caster", { evolvesTo: ["phantomon"] }),
-  devidramon: f("devidramon", "Devidramon", 2, "Virus", "Nightmare Soldiers", "bruiser", { evolvesTo: ["phantomon"] }),
-  phantomon: f("phantomon", "Phantomon", 3, "Virus", "Nightmare Soldiers", "caster"),
+  // ============ Candlemon — Nightmare Soldiers (animated) ============
+  candlemon: f("candlemon", "Candlemon", 1, "Virus", "Nightmare Soldiers", "caster", { cost: 2, evolvesTo: ["meramon"] }),
+  meramon: f("meramon", "Meramon", 2, "Virus", "Nightmare Soldiers", "bruiser", { evolvesTo: ["gankoomon"] }),
+  gankoomon: f("gankoomon", "Gankoomon", 3, "Virus", "Nightmare Soldiers", "bruiser"),
 
-  // ============ Biyomon — Wind Guardians ============
-  biyomon: f("biyomon", "Biyomon", 1, "Vaccine", "Wind Guardians", "ranged", { cost: 3, evolvesTo: ["birdramon", "saberdramon"] }),
-  birdramon: f("birdramon", "Birdramon", 2, "Vaccine", "Wind Guardians", "ranged", { evolvesTo: ["garudamon"] }),
-  saberdramon: f("saberdramon", "Saberdramon", 2, "Virus", "Wind Guardians", "ranged", { evolvesTo: ["hippogriffomon"] }),
-  garudamon: f("garudamon", "Garudamon", 3, "Vaccine", "Wind Guardians", "ranged"),
-  hippogriffomon: f("hippogriffomon", "Hippogriffomon", 3, "Virus", "Wind Guardians", "ranged"),
+  // ============ Veemon — Wind Guardians (animated) ============
+  veemon: f("veemon", "Veemon", 1, "Vaccine", "Wind Guardians", "bruiser", { cost: 3, evolvesTo: ["paildramon"] }),
+  paildramon: f("paildramon", "Paildramon", 2, "Vaccine", "Wind Guardians", "ranged", { evolvesTo: ["imperialdramon"] }),
+  imperialdramon: f("imperialdramon", "Imperialdramon", 3, "Vaccine", "Wind Guardians", "ranged"),
 
   // ============ Palmon — Nature Spirits ============
   palmon: f("palmon", "Palmon", 1, "Data", "Nature Spirits", "caster", { cost: 3, evolvesTo: ["togemon", "woodmon"] }),
@@ -88,11 +79,10 @@ export const FORMS: Record<string, Form> = {
   dolphmon: f("dolphmon", "Dolphmon", 2, "Vaccine", "Deep Savers", "ranged", { evolvesTo: ["vikemon"] }),
   vikemon: f("vikemon", "Vikemon", 3, "Vaccine", "Deep Savers", "tank"),
 
-  // ============ Hawkmon — Wind Guardians ============
-  hawkmon: f("hawkmon", "Hawkmon", 1, "Vaccine", "Wind Guardians", "caster", { cost: 3, evolvesTo: ["aquilamon", "halsemon"] }),
-  aquilamon: f("aquilamon", "Aquilamon", 2, "Vaccine", "Wind Guardians", "ranged", { evolvesTo: ["silphymon"] }),
-  halsemon: f("halsemon", "Halsemon", 2, "Vaccine", "Wind Guardians", "assassin", { evolvesTo: ["silphymon"] }),
-  silphymon: f("silphymon", "Silphymon", 3, "Vaccine", "Wind Guardians", "assassin"),
+  // ============ Wormmon — Wind Guardians (animated) ============
+  wormmon: f("wormmon", "Wormmon", 1, "Vaccine", "Wind Guardians", "caster", { cost: 3, evolvesTo: ["stingmon"] }),
+  stingmon: f("stingmon", "Stingmon", 2, "Vaccine", "Wind Guardians", "assassin", { evolvesTo: ["banchostingmon"] }),
+  banchostingmon: f("banchostingmon", "BanchoStingmon", 3, "Vaccine", "Wind Guardians", "assassin"),
 
   // ============ Guilmon — Dragon's Roar (4-cost) ============
   guilmon: f("guilmon", "Guilmon", 1, "Virus", "Dragon's Roar", "bruiser", { cost: 4, evolvesTo: ["growlmon"] }),

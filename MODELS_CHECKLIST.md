@@ -25,17 +25,17 @@ Legend: ✅ have it · (V)accine (D)ata (Vi)rus · `id` = filename to save as.
 **Patamon** · Wind Guardians
 `patamon`(V) → `angemon`(V)→`magnaangemon`(V) · `pegasusmon`(V)→`magnaangemon`
 
-**Tentomon** · Nature Spirits
-`tentomon`(D) → `kabuterimon`(D)→[`megakabuterimon`(D), `atlurkabuterimon`(D)] · `kuwagamon`(Vi)→`okuwamon`(Vi)
+**Dracomon** · Nature Spirits ✅ *(swapped in for Tentomon — animated)*
+`dracomon`✅(D) → `coredramon`✅(D) → `breakdramon`✅(D)
 
-**Betamon** · Deep Savers
-`betamon`(Vi) → `seadramon`(Vi)→[`megaseadramon`(Vi), `metalseadramon`(Vi)] · `gesomon`(Vi)→`marinedevimon`(Vi)
+**Keramon** · Deep Savers ✅ *(swapped in for Betamon — animated)*
+`keramon`✅(Vi) → `infermon`✅(Vi) → `diaboromon`✅(Vi)
 
-**Bakemon** · Nightmare Soldiers
-`bakemon`(Vi) → `soulmon`(Vi)→`phantomon`(Vi) · `devidramon`(Vi)→`phantomon`
+**Candlemon** · Nightmare Soldiers ✅ *(swapped in for Bakemon — animated)*
+`candlemon`✅(Vi) → `meramon`✅(Vi) → `gankoomon`✅(Vi)
 
-**Biyomon** · Wind Guardians
-`biyomon`(V) → `birdramon`(V)→`garudamon`(V) · `saberdramon`(Vi)→`hippogriffomon`(Vi)
+**Veemon** · Wind Guardians ✅ *(swapped in for Biyomon — animated)*
+`veemon`✅(V) → `paildramon`✅(V) → `imperialdramon`✅(V)
 
 **Palmon** · Nature Spirits
 `palmon`(D) → `togemon`(D)→`rosemon`(D) · `woodmon`(D)→`cherrymon`(D)
@@ -43,12 +43,12 @@ Legend: ✅ have it · (V)accine (D)ata (Vi)rus · `id` = filename to save as.
 **Gomamon** · Deep Savers
 `gomamon`(V) → `ikkakumon`(V)→`vikemon`(V) · `dolphmon`(V)→`vikemon`
 
-**Hawkmon** · Wind Guardians
-`hawkmon`(V) → `aquilamon`(V)→`silphymon`(V) · `halsemon`(V)→`silphymon`
+**Wormmon** · Wind Guardians ✅ *(swapped in for Hawkmon — animated)*
+`wormmon`✅(V) → `stingmon`✅(V) → `banchostingmon`✅(V)
 
 **Guilmon** · Dragon's Roar (4-cost)
 `guilmon`(Vi) → `growlmon`(Vi)→`gallantmon`(Vi)
 
 ---
-Totals: **12 Rookies · 24 Champions · 23 Ultimates = 59**. Names/attributes are pure data in
+Totals: **49 forms** (12 lines). 36 have real animated models; 13 alt-branch forms use the animated procedural creature. Names/attributes are pure data in
 `src/game/creatures.ts` — tell me any you want changed.
