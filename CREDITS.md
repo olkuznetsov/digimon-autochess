@@ -7,7 +7,8 @@
 - **GeoGreymon** — model ripped from *Digimon Story: Cyber Sleuth* (Bandai), via
   [The Models Resource](https://www.models-resource.com/). Converted .dae→.glb (assimp). Static (no animation).
 - **Greymon, Gabumon, Garurumon, MetalGarurumon, Gomamon, Ikkakumon, Guilmon, Growlmon,
-  Patamon, Angemon, MagnaAngemon, Togemon, WarGreymon, Gallantmon, Vikemon, Rosemon** — animated models ripped from *Digimon Story:
+  Patamon, Angemon, MagnaAngemon, Togemon, WarGreymon, Gallantmon, Vikemon, Rosemon,
+  Palmon, DemiDevimon, SkullSatamon** — animated models ripped from *Digimon Story:
   Cyber Sleuth* (Bandai), obtained via the open-source
   [PiSuGames/DigiChess](https://github.com/PiSuGames/DigiChess) Unity project
   (assets credited there to asoliddev's Auto Chess template collection).

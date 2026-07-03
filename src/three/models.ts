@@ -33,6 +33,9 @@ export const MODEL_PATHS: Partial<Record<string, string>> = {
   gallantmon: "/models/gallantmon.glb",
   vikemon: "/models/vikemon.glb",
   rosemon: "/models/rosemon.glb",
+  palmon: "/models/palmon.glb",
+  demidevimon: "/models/demidevimon.glb",
+  skullsatamon: "/models/skullsatamon.glb",
 };
 
 /** Target on-board height (world units) every model is normalized to. */
