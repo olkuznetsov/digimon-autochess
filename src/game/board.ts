@@ -15,7 +15,7 @@ export function cellToWorld(col: number, row: number): [number, number] {
 }
 
 /** Z line where the bench row sits (negative = toward the camera / player side). */
-export const BENCH_Z = -((ROWS - 1) / 2) * CELL - CELL * 1.4;
+export const BENCH_Z = -((ROWS - 1) / 2) * CELL - CELL * 0.95;
 
 /** Bench sits in front of the player half (toward the camera). */
 export function benchToWorld(slot: number): [number, number] {

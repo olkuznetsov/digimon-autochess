@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Board } from "./Board";
 import { Creature } from "./Creature";
 import { BattleFx } from "./BattleFx";
+import { DigitalEnvironment } from "./Environment";
 import { useGame } from "../game/store";
 import { FORMS, ATTR_COLOR } from "../game/creatures";
 import {
@@ -18,8 +19,9 @@ function CameraRig() {
   const camera = useThree((s) => s.camera);
   const scene = useThree((s) => s.scene);
   useEffect(() => {
-    camera.position.set(0, 7.2, -8.4);
-    camera.lookAt(0, 0, -0.4);
+    // Framed so the bench stays on screen while the horizon (data sun) is visible.
+    camera.position.set(0, 6.6, -9.2);
+    camera.lookAt(0, 0.3, 3.2);
     if (import.meta.env.DEV) (window as unknown as { __scene: unknown }).__scene = scene;
   }, [camera, scene]);
   return null;
@@ -137,7 +139,9 @@ function SceneContents() {
   return (
     <>
       <color attach="background" args={["#05060f"]} />
-      <fog attach="fog" args={["#05060f", 12, 26]} />
+      <fog attach="fog" args={["#05060f", 14, 38]} />
+
+      <DigitalEnvironment />
 
       <CameraRig />
       <ambientLight intensity={0.5} />
@@ -186,7 +190,7 @@ function SceneContents() {
 
 export function Scene() {
   return (
-    <Canvas shadows camera={{ position: [0, 7.2, -8.4], fov: 42 }} dpr={[1, 2]}>
+    <Canvas shadows camera={{ position: [0, 6.6, -9.2], fov: 55 }} dpr={[1, 2]}>
       <SceneContents />
     </Canvas>
   );
