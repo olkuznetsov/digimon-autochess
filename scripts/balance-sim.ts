@@ -79,6 +79,7 @@ function syntheticTeam(role: Role, stage: 1 | 2 | 3, attribute: Attribute, team:
     formId: `syn-${role}`,
     team,
     attribute,
+    role,
     hp: s.hp,
     maxHp: s.hp,
     attack: s.attack,
@@ -89,6 +90,12 @@ function syntheticTeam(role: Role, stage: 1 | 2 | 3, attribute: Attribute, team:
     cooldown: 0,
     moving: false,
     targetUid: null,
+    mana: 0,
+    maxMana: 100,
+    shield: 0,
+    lifesteal: 0,
+    manaMult: 1,
+    items: [],
   }));
 }
 

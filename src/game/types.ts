@@ -35,6 +35,8 @@ export interface Unit {
   uid: string;
   formId: string;
   placement: Placement;
+  /** equipped item ids (max 2), persist through digivolution */
+  items: string[];
 }
 
 export type Placement =
@@ -58,6 +60,7 @@ export interface Fighter {
   formId: string;
   team: "player" | "enemy";
   attribute: Attribute;
+  role: Role;
   hp: number;
   maxHp: number;
   attack: number;
@@ -68,6 +71,17 @@ export interface Fighter {
   cooldown: number;
   moving: boolean;
   targetUid: string | null;
+  /** ability resource: gained on attack/hit; casts the role ability when full */
+  mana: number;
+  maxMana: number;
+  /** temporary absorb applied before hp (tank ability) */
+  shield: number;
+  /** fraction of dealt damage returned as healing (items) */
+  lifesteal: number;
+  /** multiplier on mana gain (items) */
+  manaMult: number;
+  /** equipped item ids (cosmetic reference) */
+  items: string[];
 }
 
 export type Phase = "prep" | "battle" | "result";

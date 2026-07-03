@@ -95,6 +95,28 @@ function DeathRing({ fx }: { fx: Fx }) {
   );
 }
 
+/** Bright expanding ring under a unit the moment it casts its ability. */
+function CastRing({ fx }: { fx: Fx }) {
+  const ref = useRef<THREE.Mesh>(null);
+  const mat = useRef<THREE.MeshStandardMaterial>(null);
+  const [x, z] = cellToWorld(fx.col, fx.row);
+  const c = ATTR_COLOR[fx.attr];
+  useFrame(() => {
+    const t = Math.min(1, age(fx) / 0.5);
+    if (ref.current) {
+      ref.current.scale.setScalar(0.5 + t * 1.1);
+      ref.current.visible = t < 1;
+    }
+    if (mat.current) mat.current.opacity = (1 - t);
+  });
+  return (
+    <mesh ref={ref} position={[x, 0.1, z]} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[0.42, 0.6, 28]} />
+      <meshStandardMaterial ref={mat} transparent depthWrite={false} color="#ffffff" emissive={c} emissiveIntensity={4} />
+    </mesh>
+  );
+}
+
 export function BattleFx() {
   const fx = useGame((s) => s.fx);
   return (
@@ -106,6 +128,8 @@ export function BattleFx() {
             <Impact fx={f} />
             <DmgNumber fx={f} />
           </group>
+        ) : f.kind === "cast" ? (
+          <CastRing key={f.id} fx={f} />
         ) : (
           <DeathRing key={f.id} fx={f} />
         ),

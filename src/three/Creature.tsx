@@ -20,6 +20,11 @@ interface CreatureProps {
   cooldown?: number;
   attackSpeed?: number;
   moving?: boolean;
+  /** mana for the ability bar (battle only) */
+  mana?: number;
+  maxMana?: number;
+  /** equipped item emojis shown under the name */
+  itemEmojis?: string[];
   onPointerDown?: (e: ThreeEvent<PointerEvent>) => void;
 }
 
@@ -40,6 +45,9 @@ export function Creature({
   cooldown,
   attackSpeed,
   moving = false,
+  mana,
+  maxMana,
+  itemEmojis,
   onPointerDown,
 }: CreatureProps) {
   const scale = 0.85 + (star - 1) * 0.18;
@@ -109,10 +117,18 @@ export function Creature({
 
       <Html center position={[0, 1.55, 0]} distanceFactor={9} zIndexRange={[10, 0]}>
         <div className={`unit-label ${team}`}>
-          <span className="unit-name">{name}</span>
+          <span className="unit-name">
+            {name}
+            {itemEmojis && itemEmojis.length > 0 && <span className="unit-items"> {itemEmojis.join("")}</span>}
+          </span>
           {showHealth && (
             <span className="hp-track">
               <span className="hp-fill" style={{ width: `${hpPct * 100}%` }} />
+            </span>
+          )}
+          {showHealth && maxMana != null && (
+            <span className="mana-track">
+              <span className="mana-fill" style={{ width: `${Math.min(100, ((mana ?? 0) / maxMana) * 100)}%` }} />
             </span>
           )}
         </div>

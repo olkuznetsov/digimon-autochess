@@ -3,6 +3,7 @@ import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types"
 import { FORMS, ROOKIE_IDS, ALL_FORM_IDS } from "./creatures";
 import { makeFighter, stepCombat, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
+import { ITEM_IDS } from "./items";
 import { XP_TO_NEXT, MAX_LEVEL } from "./xpView";
 import { BENCH_SLOTS, COLS } from "./board";
 
@@ -130,6 +131,8 @@ interface GameState {
 
   shop: string[];
   units: Unit[];
+  inventory: string[];
+  selectedItem: string | null;
   pendingEvolution: PendingEvolution | null;
   phase: Phase;
   result: "win" | "lose" | null;
@@ -148,6 +151,8 @@ interface GameState {
   buy: (shopIndex: number) => void;
   buyXp: () => void;
   chooseEvolution: (formId: string) => void;
+  selectItem: (id: string | null) => void;
+  equipItem: (uid: string) => void;
   moveUnit: (uid: string, target: Placement) => void;
   setDrag: (uid: string | null, pos: { x: number; z: number } | null) => void;
   startBattle: () => void;
@@ -167,6 +172,8 @@ function initialState() {
     gameOver: false,
     shop: rollShop(),
     units: [] as Unit[],
+    inventory: [] as string[],
+    selectedItem: null as string | null,
     pendingEvolution: null as PendingEvolution | null,
     phase: "prep" as Phase,
     result: null as "win" | "lose" | null,
@@ -209,7 +216,7 @@ export const useGame = create<GameState>((set, get) => ({
     if (gold < (form.cost ?? 99)) return;
     const slot = firstEmptyBench(units);
     if (slot === null) return; // bench full
-    const newUnit: Unit = { uid: nextUid(), formId, placement: { kind: "bench", slot } };
+    const newUnit: Unit = { uid: nextUid(), formId, placement: { kind: "bench", slot }, items: [] };
     const newShop = [...shop];
     newShop[shopIndex] = "";
     const resolved = resolveEvolutions([...units, newUnit]);
@@ -228,13 +235,36 @@ export const useGame = create<GameState>((set, get) => ({
   },
 
   chooseEvolution: (formId) => {
-    const { pendingEvolution, units } = get();
+    const { pendingEvolution, units, inventory } = get();
     if (!pendingEvolution || !pendingEvolution.options.includes(formId)) return;
     const consumed = new Set(pendingEvolution.consume);
+    const pooled = units.filter((u) => consumed.has(u.uid)).flatMap((u) => u.items ?? []);
     const remaining = units.filter((u) => !consumed.has(u.uid));
-    remaining.push({ uid: nextUid(), formId, placement: pendingEvolution.placement });
+    remaining.push({ uid: nextUid(), formId, placement: pendingEvolution.placement, items: pooled.slice(0, 2) });
     const resolved = resolveEvolutions(remaining);
-    set({ units: resolved.units, pendingEvolution: resolved.pending });
+    set({
+      units: resolved.units,
+      pendingEvolution: resolved.pending,
+      inventory: [...inventory, ...pooled.slice(2)],
+    });
+  },
+
+  selectItem: (id) => set({ selectedItem: id }),
+
+  equipItem: (uid) => {
+    const { selectedItem, inventory, units } = get();
+    if (!selectedItem) return;
+    const unit = units.find((u) => u.uid === uid);
+    if (!unit || (unit.items ?? []).length >= 2) return;
+    const idx = inventory.indexOf(selectedItem);
+    if (idx < 0) return;
+    const nextInv = [...inventory];
+    nextInv.splice(idx, 1);
+    set({
+      units: units.map((u) => (u.uid === uid ? { ...u, items: [...(u.items ?? []), selectedItem] } : u)),
+      inventory: nextInv,
+      selectedItem: null,
+    });
   },
 
   moveUnit: (uid, target) => {
@@ -276,7 +306,7 @@ export const useGame = create<GameState>((set, get) => ({
 
     const playerFighters: Fighter[] = onBoard.map((u) => {
       const p = u.placement as { col: number; row: number };
-      return makeFighter(u.formId, u.uid, "player", p.col, p.row);
+      return makeFighter(u.formId, u.uid, "player", p.col, p.row, 1, u.items ?? []);
     });
 
     applySynergies(playerFighters, onBoard);
@@ -317,6 +347,10 @@ export const useGame = create<GameState>((set, get) => ({
         : state.streak <= 0
           ? state.streak - 1
           : -1;
+      const inventory =
+        win && state.inventory.length < 8 && Math.random() < 0.55
+          ? [...state.inventory, ITEM_IDS[Math.floor(Math.random() * ITEM_IDS.length)]]
+          : state.inventory;
       set({
         phase: "result",
         result: win ? "win" : "lose",
@@ -324,6 +358,7 @@ export const useGame = create<GameState>((set, get) => ({
         fx: [],
         battleTime: bt,
         streak,
+        inventory,
         health,
         lastDamage: damage,
         gameOver: health <= 0,

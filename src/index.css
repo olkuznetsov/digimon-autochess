@@ -594,3 +594,87 @@ body,
     opacity: 0;
   }
 }
+
+/* ---------- item tray ---------- */
+.item-tray {
+  position: absolute;
+  right: 16px;
+  top: 120px;
+  width: 172px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tray-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #7e8bb0;
+}
+.tray-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.item-chip {
+  pointer-events: auto;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+  text-align: left;
+  background: rgba(14, 17, 34, 0.92);
+  border: 1.5px solid #2c3358;
+  border-radius: 10px;
+  padding: 6px 9px;
+  transition: transform 0.08s ease, border-color 0.12s ease, box-shadow 0.15s ease;
+}
+.item-chip:hover {
+  transform: translateX(-2px);
+}
+.item-chip.sel {
+  border-color: var(--gold);
+  box-shadow: 0 0 16px rgba(255, 211, 77, 0.35);
+}
+.item-emoji {
+  grid-row: 1 / span 2;
+  font-size: 18px;
+}
+.item-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #eef3ff;
+}
+.item-desc {
+  font-size: 10px;
+  color: #8893b5;
+}
+.tray-hint {
+  font-size: 11px;
+  color: var(--gold);
+  text-align: center;
+}
+
+/* ---------- mana bar + item pips on units ---------- */
+.mana-track {
+  width: 46px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  margin-top: 1px;
+}
+.mana-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #4d7dff, #9be7ff);
+  transition: width 0.12s linear;
+}
+.unit-items {
+  font-size: 10px;
+}

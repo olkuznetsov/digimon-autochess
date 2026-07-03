@@ -6,6 +6,7 @@ import { Creature } from "./Creature";
 import { BattleFx } from "./BattleFx";
 import { DigitalEnvironment } from "./Environment";
 import { useGame } from "../game/store";
+import { ITEMS } from "../game/items";
 import { FORMS, ATTR_COLOR } from "../game/creatures";
 import {
   cellToWorld,
@@ -59,8 +60,13 @@ function PrepUnits() {
             maxHp={1}
             showHealth={false}
             dragging={u.uid === dragId}
+            itemEmojis={(u.items ?? []).map((id) => ITEMS[id]?.emoji ?? "")}
             onPointerDown={(e: ThreeEvent<PointerEvent>) => {
               e.stopPropagation();
+              if (useGame.getState().selectedItem) {
+                useGame.getState().equipItem(u.uid);
+                return;
+              }
               setDrag(u.uid, { x: e.point.x, z: e.point.z });
             }}
           />
@@ -91,6 +97,9 @@ function BattleUnits() {
             cooldown={f.cooldown}
             attackSpeed={f.attackSpeed}
             moving={f.moving}
+            mana={f.mana}
+            maxMana={f.maxMana}
+            itemEmojis={(f.items ?? []).map((id) => ITEMS[id]?.emoji ?? "")}
           />
         );
       })}

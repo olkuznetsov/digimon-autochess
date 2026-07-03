@@ -3,6 +3,7 @@ import { Hud } from "./ui/Hud";
 import { Shop } from "./ui/Shop";
 import { SynergyPanel } from "./ui/SynergyPanel";
 import { EvolutionChoice } from "./ui/EvolutionChoice";
+import { ItemTray } from "./ui/ItemTray";
 
 export default function App() {
   return (
@@ -11,6 +12,7 @@ export default function App() {
       <Hud />
       <SynergyPanel />
       <Shop />
+      <ItemTray />
       <EvolutionChoice />
     </div>
   );
