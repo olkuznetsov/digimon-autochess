@@ -25,3 +25,6 @@ dist-ssr
 
 # raw model sources (.dae/.fbx before conversion)
 model-sources/
+
+# wrangler local cache
+.wrangler/

@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "balance": "esbuild scripts/balance-sim.ts --bundle --platform=node --outfile=node_modules/.cache/balance-sim.cjs --log-level=warning && node node_modules/.cache/balance-sim.cjs"
+    "balance": "esbuild scripts/balance-sim.ts --bundle --platform=node --outfile=node_modules/.cache/balance-sim.cjs --log-level=warning && node node_modules/.cache/balance-sim.cjs",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name=digimon-autochess --commit-dirty=true"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
