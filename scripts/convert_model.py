@@ -37,13 +37,25 @@ def convert(src, form_id):
         print(f"{form_id}: FAILED — {r.stderr.strip()[-200:]}")
         return False
     j, rest = load_glb(out)
+    # drop duplicate clip names (CS rips carry a partial second "attack01" take
+    # that collides in the runtime animation map and mangles attack poses)
+    anims = j.get("animations", [])
+    best = {}
+    for a in anims:
+        n = a.get("name", "?")
+        if n not in best or len(a["channels"]) > len(best[n]["channels"]):
+            best[n] = a
+    deduped = [a for a in anims if best[a.get("name", "?")] is a]
+    dropped_dups = len(anims) - len(deduped)
+    if dropped_dups:
+        j["animations"] = deduped
     stripped = 0
     for mesh in j.get("meshes", []):
         for prim in mesh.get("primitives", []):
             if "COLOR_0" in prim.get("attributes", {}):
                 del prim["attributes"]["COLOR_0"]
                 stripped += 1
-    if stripped:
+    if stripped or dropped_dups:
         save_glb(out, j, rest)
     anims = len(j.get("animations", []))
     src_dir = os.path.dirname(src)
@@ -57,7 +69,8 @@ def convert(src, form_id):
             shutil.copy(cand, os.path.join(OUT_DIR, uri))
             copied.append(uri)
     size_kb = os.path.getsize(out) // 1024
-    print(f"{form_id}: anims={anims} stripped_colors={stripped} textures={copied} size={size_kb}KB")
+    anim_count = len(j.get("animations", []))
+    print(f"{form_id}: anims={anim_count} dropped_dups={dropped_dups} stripped_colors={stripped} textures={copied} size={size_kb}KB")
     return True
 
 
