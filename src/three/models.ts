@@ -6,8 +6,12 @@ import { ALL_FORM_IDS, ROOKIE_IDS } from "../game/creatures";
  * the roster is deliberately shaped around sourceable models (see CREDITS.md).
  * The procedural creature remains as a Suspense fallback while a model streams in.
  */
+/** Bump when model FILES change without renaming — the URLs stay the same across
+ *  deploys and browsers cache .glb aggressively, so this busts stale caches. */
+const MODELS_VERSION = 2;
+
 export const MODEL_PATHS: Partial<Record<string, string>> = Object.fromEntries(
-  ALL_FORM_IDS.map((id) => [id, `/models/${id}.glb`]),
+  ALL_FORM_IDS.map((id) => [id, `/models/${id}.glb?v=${MODELS_VERSION}`]),
 );
 
 /** Target on-board height (world units) every model is normalized to. */
@@ -32,4 +36,4 @@ export function tweakFor(formId: string): ModelTweak | undefined {
 
 // Preload only the Rookies (what the shop shows first); higher stages stream in
 // on evolve with the procedural creature as the loading fallback.
-for (const id of ROOKIE_IDS) useGLTF.preload(`/models/${id}.glb`);
+for (const id of ROOKIE_IDS) useGLTF.preload(`/models/${id}.glb?v=${MODELS_VERSION}`);

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types";
-import { FORMS, ROOKIE_IDS, ALL_FORM_IDS } from "./creatures";
+import { FORMS, ROOKIE_IDS, ALL_FORM_IDS, sellValue } from "./creatures";
 import { makeFighter, stepCombat, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
 import { ITEM_IDS } from "./items";
@@ -155,6 +155,7 @@ interface GameState {
   selectItem: (id: string | null) => void;
   equipItem: (uid: string) => void;
   setInspected: (uid: string | null) => void;
+  sellUnit: (uid: string) => void;
   moveUnit: (uid: string, target: Placement) => void;
   setDrag: (uid: string | null, pos: { x: number; z: number } | null) => void;
   startBattle: () => void;
@@ -218,8 +219,13 @@ export const useGame = create<GameState>((set, get) => ({
     const form = FORMS[formId];
     if (gold < (form.cost ?? 99)) return;
     const slot = firstEmptyBench(units);
-    if (slot === null) return; // bench full
-    const newUnit: Unit = { uid: nextUid(), formId, placement: { kind: "bench", slot }, items: [] };
+    // a full bench still allows buying the 3rd copy of something you own twice —
+    // the digivolve merge consumes the copies, so space frees up immediately
+    const copies = units.filter((u) => u.formId === formId).length;
+    if (slot === null && copies < 2) return; // bench truly full
+    const placement: Placement =
+      slot !== null ? { kind: "bench", slot } : { kind: "bench", slot: 98 }; // temp; consumed by the merge
+    const newUnit: Unit = { uid: nextUid(), formId, placement, items: [] };
     const newShop = [...shop];
     newShop[shopIndex] = "";
     const resolved = resolveEvolutions([...units, newUnit]);
@@ -255,6 +261,19 @@ export const useGame = create<GameState>((set, get) => ({
   selectItem: (id) => set({ selectedItem: id }),
 
   setInspected: (uid) => set({ inspected: uid }),
+
+  sellUnit: (uid) => {
+    const { units, gold, inventory, phase } = get();
+    if (phase !== "prep") return;
+    const u = units.find((x) => x.uid === uid);
+    if (!u) return;
+    set({
+      units: units.filter((x) => x.uid !== uid),
+      gold: gold + sellValue(u.formId),
+      inventory: [...inventory, ...(u.items ?? [])],
+      inspected: null,
+    });
+  },
 
   equipItem: (uid) => {
     const { selectedItem, inventory, units } = get();

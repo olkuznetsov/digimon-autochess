@@ -800,3 +800,20 @@ body,
   font-size: 11px;
   color: #8893b5;
 }
+
+.up-sell {
+  pointer-events: auto;
+  cursor: pointer;
+  margin-top: 2px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 77, 109, 0.45);
+  background: rgba(255, 77, 109, 0.12);
+  color: #ff8aa0;
+  font-weight: 700;
+  font-size: 12px;
+  transition: filter 0.12s ease;
+}
+.up-sell:hover {
+  filter: brightness(1.3);
+}

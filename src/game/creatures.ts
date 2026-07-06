@@ -95,6 +95,24 @@ export const FORMS: Record<string, Form> = {
 export const ALL_FORM_IDS = Object.keys(FORMS);
 export const ROOKIE_IDS = ALL_FORM_IDS.filter((id) => FORMS[id].stage === 1);
 
+/** Rookie cost of the line each form belongs to (for sell value). */
+export const LINE_COST: Record<string, number> = {};
+for (const id of ROOKIE_IDS) {
+  const cost = FORMS[id].cost ?? 1;
+  const stack = [id];
+  while (stack.length) {
+    const cur = stack.pop()!;
+    LINE_COST[cur] = cost;
+    for (const nxt of FORMS[cur].evolvesTo ?? []) stack.push(nxt);
+  }
+}
+
+/** Gold refunded when selling a form: the rookies invested in it (cost × 3^(stage-1)). */
+export function sellValue(formId: string): number {
+  const form = FORMS[formId];
+  return (LINE_COST[formId] ?? 1) * Math.pow(3, form.stage - 1);
+}
+
 /** Attribute → display color (Vaccine green, Data blue, Virus purple). */
 export const ATTR_COLOR: Record<Attribute, string> = {
   Vaccine: "#27e0a3",

@@ -1,5 +1,5 @@
 import { useGame } from "../game/store";
-import { FORMS, ATTR_COLOR, FAMILY_COLOR } from "../game/creatures";
+import { FORMS, ATTR_COLOR, FAMILY_COLOR, sellValue } from "../game/creatures";
 import { ROLE_ABILITIES } from "../game/abilities";
 import { makeFighter } from "../game/battle";
 import { ITEMS } from "../game/items";
@@ -13,6 +13,8 @@ export function UnitPanel() {
   const unit = useGame((s) => s.units.find((u) => u.uid === s.inspected));
   const fighter = useGame((s) => s.fighters.find((f) => f.uid === s.inspected));
   const setInspected = useGame((s) => s.setInspected);
+  const phase = useGame((s) => s.phase);
+  const sellUnit = useGame((s) => s.sellUnit);
 
   if (!inspected) return null;
   const formId = fighter?.formId ?? unit?.formId;
@@ -80,6 +82,11 @@ export function UnitPanel() {
           })
         )}
       </div>
+      {phase === "prep" && unit && (
+        <button className="up-sell" onClick={() => sellUnit(unit.uid)}>
+          Sell for {sellValue(formId)} ⛂
+        </button>
+      )}
     </div>
   );
 }
