@@ -5,6 +5,7 @@ import { makeFighter, stepCombat, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
 import { ITEM_IDS } from "./items";
 import { XP_TO_NEXT, MAX_LEVEL } from "./xpView";
+import { sfx, battleSfx } from "../audio/sfx";
 import { BENCH_SLOTS, COLS } from "./board";
 
 const REROLL_COST = 2;
@@ -74,8 +75,11 @@ function makeEnemyWave(round: number): Fighter[] {
  * form has a single branch (looping), and stops at the first 3-of-a-kind that has
  * multiple branches — returning a PendingEvolution for the player to choose.
  */
-function resolveEvolutions(units: Unit[]): { units: Unit[]; pending: PendingEvolution | null } {
+function resolveEvolutions(
+  units: Unit[],
+): { units: Unit[]; pending: PendingEvolution | null; evolved: { from: string; to: string }[] } {
   let current = units;
+  const evolved: { from: string; to: string }[] = [];
   // guard against pathological loops
   for (let guard = 0; guard < 64; guard++) {
     const groups = new Map<string, Unit[]>();
@@ -100,6 +104,7 @@ function resolveEvolutions(units: Unit[]): { units: Unit[]; pending: PendingEvol
         current = current
           .filter((u) => !consumed.has(u.uid))
           .map((u) => (u.uid === keep.uid ? { ...u, formId: form.evolvesTo![0] } : u));
+        evolved.push({ from: formId, to: form.evolvesTo![0] });
         acted = true;
         break; // re-scan from the top
       }
@@ -113,11 +118,12 @@ function resolveEvolutions(units: Unit[]): { units: Unit[]; pending: PendingEvol
           options: form.evolvesTo!,
           placement: keep.placement,
         },
+        evolved,
       };
     }
     if (!acted) break;
   }
-  return { units: current, pending: null };
+  return { units: current, pending: null, evolved };
 }
 
 interface GameState {
@@ -134,6 +140,7 @@ interface GameState {
   inventory: string[];
   selectedItem: string | null;
   inspected: string | null;
+  evoFlash: { from: string; to: string; key: number } | null;
   pendingEvolution: PendingEvolution | null;
   phase: Phase;
   result: "win" | "lose" | null;
@@ -155,6 +162,7 @@ interface GameState {
   selectItem: (id: string | null) => void;
   equipItem: (uid: string) => void;
   setInspected: (uid: string | null) => void;
+  clearEvoFlash: () => void;
   sellUnit: (uid: string) => void;
   moveUnit: (uid: string, target: Placement) => void;
   setDrag: (uid: string | null, pos: { x: number; z: number } | null) => void;
@@ -178,6 +186,7 @@ function initialState() {
     inventory: [] as string[],
     selectedItem: null as string | null,
     inspected: null as string | null,
+    evoFlash: null as { from: string; to: string; key: number } | null,
     pendingEvolution: null as PendingEvolution | null,
     phase: "prep" as Phase,
     result: null as "win" | "lose" | null,
@@ -208,6 +217,7 @@ export const useGame = create<GameState>((set, get) => ({
   reroll: () => {
     const { gold } = get();
     if (gold < REROLL_COST) return;
+    sfx.reroll();
     set({ gold: gold - REROLL_COST, shop: rollShop() });
   },
 
@@ -229,17 +239,22 @@ export const useGame = create<GameState>((set, get) => ({
     const newShop = [...shop];
     newShop[shopIndex] = "";
     const resolved = resolveEvolutions([...units, newUnit]);
+    sfx.buy();
+    const last = resolved.evolved[resolved.evolved.length - 1];
+    if (last) sfx.evolve();
     set({
       gold: gold - (form.cost ?? 0),
       shop: newShop,
       units: resolved.units,
       pendingEvolution: resolved.pending,
+      ...(last ? { evoFlash: { ...last, key: Date.now() } } : {}),
     });
   },
 
   buyXp: () => {
     const { gold, level, xp } = get();
     if (level >= MAX_LEVEL || gold < XP_COST) return;
+    sfx.click();
     set({ gold: gold - XP_COST, ...gainXp(level, xp, XP_PER_BUY) });
   },
 
@@ -251,10 +266,14 @@ export const useGame = create<GameState>((set, get) => ({
     const remaining = units.filter((u) => !consumed.has(u.uid));
     remaining.push({ uid: nextUid(), formId, placement: pendingEvolution.placement, items: pooled.slice(0, 2) });
     const resolved = resolveEvolutions(remaining);
+    sfx.evolve();
+    const last = resolved.evolved[resolved.evolved.length - 1];
+    const flash = last ?? { from: pendingEvolution.fromFormId, to: formId };
     set({
       units: resolved.units,
       pendingEvolution: resolved.pending,
       inventory: [...inventory, ...pooled.slice(2)],
+      evoFlash: { ...flash, key: Date.now() },
     });
   },
 
@@ -262,11 +281,14 @@ export const useGame = create<GameState>((set, get) => ({
 
   setInspected: (uid) => set({ inspected: uid }),
 
+  clearEvoFlash: () => set({ evoFlash: null }),
+
   sellUnit: (uid) => {
     const { units, gold, inventory, phase } = get();
     if (phase !== "prep") return;
     const u = units.find((x) => x.uid === uid);
     if (!u) return;
+    sfx.sell();
     set({
       units: units.filter((x) => x.uid !== uid),
       gold: gold + sellValue(u.formId),
@@ -284,6 +306,7 @@ export const useGame = create<GameState>((set, get) => ({
     if (idx < 0) return;
     const nextInv = [...inventory];
     nextInv.splice(idx, 1);
+    sfx.equip();
     set({
       units: units.map((u) => (u.uid === uid ? { ...u, items: [...(u.items ?? []), selectedItem] } : u)),
       inventory: nextInv,
@@ -334,6 +357,7 @@ export const useGame = create<GameState>((set, get) => ({
     });
 
     applySynergies(playerFighters, onBoard);
+    sfx.battleStart();
 
     set({
       phase: "battle",
@@ -353,6 +377,7 @@ export const useGame = create<GameState>((set, get) => ({
 
     const events: CombatEvent[] = [];
     stepCombat(fighters, dt, events);
+    for (const e of events) battleSfx(e.kind === "hit" ? (e.ranged ? "shot" : "hit") : e.kind);
     const bt = state.battleTime + dt;
 
     const alive = fighters.filter((fr) => fr.hp > 0);
@@ -375,6 +400,16 @@ export const useGame = create<GameState>((set, get) => ({
         win && state.inventory.length < 8 && Math.random() < 0.55
           ? [...state.inventory, ITEM_IDS[Math.floor(Math.random() * ITEM_IDS.length)]]
           : state.inventory;
+      if (win) sfx.win();
+      else sfx.lose();
+      if (inventory.length > state.inventory.length) sfx.drop();
+      if (health <= 0) {
+        try {
+          const best = Number(localStorage.getItem("dac-best-round") ?? 0);
+          if (state.round > best) localStorage.setItem("dac-best-round", String(state.round));
+          localStorage.removeItem("dac-save");
+        } catch { /* ignore */ }
+      }
       set({
         phase: "result",
         result: win ? "win" : "lose",
@@ -426,8 +461,50 @@ export const useGame = create<GameState>((set, get) => ({
     });
   },
 
-  reset: () => set({ ...initialState() }),
+  reset: () => {
+    try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
+    set({ ...initialState() });
+  },
 }));
+
+// ---------- run persistence (localStorage) ----------
+const SAVE_KEY = "dac-save";
+
+function saveRun() {
+  const s = useGame.getState();
+  if (s.phase !== "prep" || s.gameOver || s.pendingEvolution) return;
+  try {
+    localStorage.setItem(
+      SAVE_KEY,
+      JSON.stringify({
+        gold: s.gold, level: s.level, xp: s.xp, health: s.health, round: s.round,
+        streak: s.streak, units: s.units, inventory: s.inventory, shop: s.shop,
+        uidCounter,
+      }),
+    );
+  } catch { /* ignore */ }
+}
+
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+useGame.subscribe(() => {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveRun, 400);
+});
+
+try {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (raw) {
+    const d = JSON.parse(raw);
+    if (Array.isArray(d.units) && typeof d.round === "number") {
+      uidCounter = Math.max(Number(d.uidCounter) || 0, 1000);
+      useGame.setState({
+        gold: d.gold, level: d.level, xp: d.xp, health: d.health, round: d.round,
+        streak: d.streak, units: d.units, inventory: d.inventory ?? [], shop: d.shop,
+        phase: "prep",
+      });
+    }
+  }
+} catch { /* ignore */ }
 
 // Dev convenience: poke the store from the browser console (balancing, debugging).
 if (import.meta.env.DEV) {

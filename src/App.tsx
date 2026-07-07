@@ -5,6 +5,7 @@ import { SynergyPanel } from "./ui/SynergyPanel";
 import { EvolutionChoice } from "./ui/EvolutionChoice";
 import { ItemTray } from "./ui/ItemTray";
 import { UnitPanel } from "./ui/UnitPanel";
+import { EvoBanner } from "./ui/EvoBanner";
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
       <Shop />
       <ItemTray />
       <UnitPanel />
+      <EvoBanner />
       <EvolutionChoice />
     </div>
   );
