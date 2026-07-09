@@ -20,6 +20,8 @@ interface CreatureProps {
   cooldown?: number;
   attackSpeed?: number;
   moving?: boolean;
+  /** bumped when the unit casts its ultimate → plays the special01 animation */
+  castKey?: number;
   /** mana for the ability bar (battle only) */
   mana?: number;
   maxMana?: number;
@@ -45,6 +47,7 @@ export function Creature({
   cooldown,
   attackSpeed,
   moving = false,
+  castKey,
   mana,
   maxMana,
   itemEmojis,
@@ -83,7 +86,14 @@ export function Creature({
       {/* the creature */}
       <Suspense fallback={body}>
         {url ? (
-          <CreatureModel url={url} tweak={tweakFor(formId)} facing={facing} cooldown={cooldown} moving={moving} />
+          <CreatureModel
+            url={url}
+            tweak={tweakFor(formId)}
+            facing={facing}
+            cooldown={cooldown}
+            moving={moving}
+            castKey={castKey}
+          />
         ) : (
           body
         )}

@@ -1,6 +1,7 @@
-import type { Attribute, Fighter, Role } from "./types";
+import type { Attribute, Fighter } from "./types";
 import { FORMS, attributeMultiplier, statsFor } from "./creatures";
 import { applyItems } from "./items";
+import { ultimateFor, type UltCtx } from "./ultimates";
 
 export const MOVE_SPEED = 2.2; // cells per second during battle
 
@@ -56,6 +57,8 @@ export function makeFighter(
     shield: 0,
     lifesteal: 0,
     manaMult: 1,
+    stunned: 0,
+    castKey: 0,
     items,
   };
   applyItems(f, items);
@@ -89,51 +92,26 @@ function dealDamage(src: Fighter, tgt: Fighter, amount: number, events?: CombatE
   if (tgt.hp <= 0) events?.push({ kind: "death", col: tgt.col, row: tgt.row, attr: tgt.attribute });
 }
 
-/** Role abilities, cast automatically at full mana. Tuned via scripts/balance-sim.ts. */
+/** Cast a fighter's signature ultimate (per-form, role fallback). Auto-fires at full mana.
+ *  Bumps castKey so the renderer plays the unit's special01 animation. */
 function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], events?: CombatEvent[]) {
   events?.push({ kind: "cast", col: fr.col, row: fr.row, attr: fr.attribute });
-  const enemies = fighters.filter((t) => t.team !== fr.team && t.hp > 0);
-  const role: Role = fr.role;
-  switch (role) {
-    case "tank": {
-      // Iron Guard: shield for 30% of max HP
-      fr.shield += fr.maxHp * 0.3;
-      break;
-    }
-    case "bruiser": {
-      // Power Strike: one crushing blow
-      const m = attributeMultiplier(fr.attribute, target.attribute);
-      dealDamage(fr, target, fr.attack * 2.5 * m, events, m * 2.5);
-      break;
-    }
-    case "assassin": {
-      // Triple Slash: three quick hits on the current target
-      for (let i = 0; i < 3 && target.hp > 0; i++) {
-        const m = attributeMultiplier(fr.attribute, target.attribute);
-        dealDamage(fr, target, fr.attack * 1.15 * m, events, m * 1.15);
-      }
-      break;
-    }
-    case "ranged": {
-      // Multishot: hit the 3 nearest enemies
-      const targets = enemies.sort((a, b) => dist(fr, a) - dist(fr, b)).slice(0, 3);
-      for (const t of targets) {
-        const m = attributeMultiplier(fr.attribute, t.attribute);
-        dealDamage(fr, t, fr.attack * 1.3 * m, events, m * 1.3);
-      }
-      break;
-    }
-    case "caster": {
-      // Data Burst: AoE around the current target
-      for (const t of enemies) {
-        if (dist(target, t) <= 1.6) {
-          const m = attributeMultiplier(fr.attribute, t.attribute);
-          dealDamage(fr, t, fr.attack * 1.45 * m, events, m * 1.45);
-        }
-      }
-      break;
-    }
-  }
+  fr.castKey++;
+  const ctx: UltCtx = {
+    caster: fr,
+    target,
+    allies: fighters.filter((t) => t.team === fr.team && t.hp > 0),
+    enemies: fighters.filter((t) => t.team !== fr.team && t.hp > 0),
+    deal: (tgt, factor) => {
+      const m = attributeMultiplier(fr.attribute, tgt.attribute);
+      dealDamage(fr, tgt, fr.attack * factor * m, events, m * factor);
+    },
+    stun: (tgt, seconds) => {
+      tgt.stunned = Math.max(tgt.stunned, seconds);
+    },
+    dist,
+  };
+  ultimateFor(fr.formId, fr.role).cast(ctx);
 }
 
 /**
@@ -145,6 +123,12 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
   for (const fr of fighters) {
     if (fr.hp <= 0) continue;
     fr.cooldown = Math.max(0, fr.cooldown - dt);
+    // frozen units can't move, attack, or cast until the stun wears off
+    if (fr.stunned > 0) {
+      fr.stunned = Math.max(0, fr.stunned - dt);
+      fr.moving = false;
+      continue;
+    }
 
     let target = fighters.find((t) => t.uid === fr.targetUid && t.hp > 0);
     if (!target) {

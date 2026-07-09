@@ -80,6 +80,10 @@ export interface Fighter {
   lifesteal: number;
   /** multiplier on mana gain (items) */
   manaMult: number;
+  /** seconds of stun remaining (frozen ultimates); blocks all action while > 0 */
+  stunned: number;
+  /** bumped every time this fighter casts its ultimate — drives the special01 animation */
+  castKey: number;
   /** equipped item ids (cosmetic reference) */
   items: string[];
 }

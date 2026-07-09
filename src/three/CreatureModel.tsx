@@ -12,6 +12,8 @@ interface Props {
   /** combat state (battle only) */
   cooldown?: number;
   moving?: boolean;
+  /** bumped when the unit casts its ultimate → plays the special01 (signature move) clip */
+  castKey?: number;
 }
 
 /**
@@ -25,7 +27,7 @@ interface Props {
 // DUPLICATE partial "attack01" takes inside the Cyber Sleuth rips — fixed offline
 // by scripts/dedup_clips.py (run over public/models/*.glb). Don't mutate tracks here.
 
-export function CreatureModel({ url, tweak, facing = 1, cooldown, moving = false }: Props) {
+export function CreatureModel({ url, tweak, facing = 1, cooldown, moving = false, castKey }: Props) {
   const bob = useRef<THREE.Group>(null);
   const phase = useRef(Math.random() * Math.PI * 2);
   const { scene, animations } = useGLTF(url);
@@ -41,13 +43,20 @@ export function CreatureModel({ url, tweak, facing = 1, cooldown, moving = false
       }
       return undefined;
     };
-    return { idle: find("idle"), move: find("move", "walk", "run"), attack: find("attack01", "attack", "attack02") };
+    return {
+      idle: find("idle"),
+      move: find("move", "walk", "run"),
+      attack: find("attack01", "attack", "attack02"),
+      special: find("special01", "special02", "special", "attack02"),
+    };
   }, [actions, names]);
 
   const hasClips = names.length > 0;
   const current = useRef<THREE.AnimationAction | null>(null);
   const attacking = useRef(false);
+  const casting = useRef(false);
   const prevCd = useRef<number | undefined>(undefined);
+  const prevCast = useRef<number | undefined>(undefined);
 
   const play = (next: THREE.AnimationAction | undefined, oneShot: boolean) => {
     if (!next || current.current === next) return;
@@ -68,14 +77,35 @@ export function CreatureModel({ url, tweak, facing = 1, cooldown, moving = false
     }
     if (!hasClips) return;
 
-    // new attack? cooldown jumps up the instant a hit lands
-    if (cooldown != null && prevCd.current != null && cooldown > prevCd.current + 0.01 && clips.attack) {
+    // new cast? castKey bumps the instant an ultimate fires — the signature move
+    // takes priority over a normal attack landing on the same tick.
+    const castStarted =
+      castKey != null && prevCast.current != null && castKey !== prevCast.current && !!clips.special;
+    if (castStarted) {
+      casting.current = true;
+      attacking.current = false;
+      play(clips.special, true);
+    }
+    prevCast.current = castKey;
+
+    // new attack? cooldown jumps up the instant a hit lands (skip if we just cast)
+    if (
+      !casting.current &&
+      cooldown != null &&
+      prevCd.current != null &&
+      cooldown > prevCd.current + 0.01 &&
+      clips.attack
+    ) {
       attacking.current = true;
       play(clips.attack, true);
     }
     prevCd.current = cooldown;
 
-    // hold the attack clip until it finishes, then resume idle/move
+    // hold a one-shot clip until it finishes, then resume idle/move
+    if (casting.current) {
+      if (clips.special && clips.special.isRunning()) return;
+      casting.current = false;
+    }
     if (attacking.current) {
       if (clips.attack && clips.attack.isRunning()) return;
       attacking.current = false;

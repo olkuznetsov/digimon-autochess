@@ -1,6 +1,6 @@
 import { useGame } from "../game/store";
 import { FORMS, ATTR_COLOR, FAMILY_COLOR, sellValue } from "../game/creatures";
-import { ROLE_ABILITIES } from "../game/abilities";
+import { ultimateFor } from "../game/ultimates";
 import { makeFighter } from "../game/battle";
 import { ITEMS } from "../game/items";
 
@@ -24,7 +24,7 @@ export function UnitPanel() {
 
   // live fighter in battle; otherwise a preview with items applied
   const stats = fighter ?? makeFighter(formId, "preview", "player", 0, 0, 1, items);
-  const ability = ROLE_ABILITIES[form.role];
+  const ability = ultimateFor(formId, form.role);
   const attr = ATTR_COLOR[form.attribute];
   const fam = FAMILY_COLOR[form.family];
 

@@ -95,6 +95,8 @@ function syntheticTeam(role: Role, stage: 1 | 2 | 3, attribute: Attribute, team:
     shield: 0,
     lifesteal: 0,
     manaMult: 1,
+    stunned: 0,
+    castKey: 0,
     items: [],
   }));
 }
