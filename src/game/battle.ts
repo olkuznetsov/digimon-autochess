@@ -1,7 +1,7 @@
 import type { Attribute, Fighter } from "./types";
 import { FORMS, attributeMultiplier, statsFor } from "./creatures";
 import { applyItems } from "./items";
-import { ultimateFor, type UltCtx } from "./ultimates";
+import { ultimateFor, type UltCtx, type UltFx } from "./ultimates";
 
 export const MOVE_SPEED = 2.2; // cells per second during battle
 
@@ -22,6 +22,8 @@ export interface CombatEvent {
   amount?: number;
   mult?: number;
   ranged?: boolean;
+  /** cast only: which ultimate visual to draw */
+  ult?: UltFx;
 }
 
 /** Build a combat-ready Fighter from a form. Used by the store and the balance sim. */
@@ -95,7 +97,8 @@ function dealDamage(src: Fighter, tgt: Fighter, amount: number, events?: CombatE
 /** Cast a fighter's signature ultimate (per-form, role fallback). Auto-fires at full mana.
  *  Bumps castKey so the renderer plays the unit's special01 animation. */
 function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], events?: CombatEvent[]) {
-  events?.push({ kind: "cast", col: fr.col, row: fr.row, attr: fr.attribute });
+  const ult = ultimateFor(fr.formId, fr.role);
+  events?.push({ kind: "cast", col: fr.col, row: fr.row, attr: fr.attribute, ult: ult.fx });
   fr.castKey++;
   const ctx: UltCtx = {
     caster: fr,
@@ -111,7 +114,7 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], events?:
     },
     dist,
   };
-  ultimateFor(fr.formId, fr.role).cast(ctx);
+  ult.cast(ctx);
 }
 
 /**

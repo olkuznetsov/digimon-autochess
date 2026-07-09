@@ -23,74 +23,110 @@ export interface UltCtx {
   dist: (a: Fighter, b: Fighter) => number;
 }
 
+/** Which cast visual the FX layer draws for this ability. */
+export type UltFx = "blast" | "strike" | "frost" | "barrage" | "guard" | "heal" | "buff";
+
 export interface Ultimate {
   name: string;
   icon: string;
   desc: string;
+  fx: UltFx;
   cast: (ctx: UltCtx) => void;
+}
+
+/** An effect archetype pairs a cast function with the visual it triggers. */
+interface Effect {
+  fx: UltFx;
+  cast: (c: UltCtx) => void;
 }
 
 // ---------- effect archetypes ----------
 // Tuned to sit near the old role abilities so balance holds (verify with npm run balance).
 
 /** One devastating blow to the current target. */
-const bolt = (factor: number) => (c: UltCtx) => c.deal(c.target, factor);
+const bolt = (factor: number): Effect => ({ fx: "strike", cast: (c) => c.deal(c.target, factor) });
 
 /** A flurry of quick strikes on the current target. */
-const barrage = (hits: number, factor: number) => (c: UltCtx) => {
-  for (let i = 0; i < hits && c.target.hp > 0; i++) c.deal(c.target, factor);
-};
+const barrage = (hits: number, factor: number): Effect => ({
+  fx: "barrage",
+  cast: (c) => {
+    for (let i = 0; i < hits && c.target.hp > 0; i++) c.deal(c.target, factor);
+  },
+});
 
 /** An explosion centered on the target, hitting everything within radius. */
-const nova = (factor: number, radius: number) => (c: UltCtx) => {
-  for (const e of c.enemies) if (c.dist(c.target, e) <= radius) c.deal(e, factor);
-};
+const nova = (factor: number, radius: number): Effect => ({
+  fx: "blast",
+  cast: (c) => {
+    for (const e of c.enemies) if (c.dist(c.target, e) <= radius) c.deal(e, factor);
+  },
+});
 
 /** Independent projectiles at the N nearest enemies. */
-const volley = (count: number, factor: number) => (c: UltCtx) => {
-  const ts = [...c.enemies].sort((a, b) => c.dist(c.caster, a) - c.dist(c.caster, b)).slice(0, count);
-  for (const t of ts) c.deal(t, factor);
-};
+const volley = (count: number, factor: number): Effect => ({
+  fx: "barrage",
+  cast: (c) => {
+    const ts = [...c.enemies].sort((a, b) => c.dist(c.caster, a) - c.dist(c.caster, b)).slice(0, count);
+    for (const t of ts) c.deal(t, factor);
+  },
+});
 
 /** Raise a shield for a fraction of max HP (optionally shielding the whole team). */
-const bulwark = (pct: number, team = false) => (c: UltCtx) => {
-  const targets = team ? c.allies : [c.caster];
-  for (const a of targets) a.shield += c.caster.maxHp * pct;
-};
+const bulwark = (pct: number, team = false): Effect => ({
+  fx: "guard",
+  cast: (c) => {
+    const targets = team ? c.allies : [c.caster];
+    for (const a of targets) a.shield += c.caster.maxHp * pct;
+  },
+});
 
 /** AoE burst that also freezes everything it hits. */
-const freeze = (factor: number, radius: number, seconds: number) => (c: UltCtx) => {
-  for (const e of c.enemies)
-    if (c.dist(c.target, e) <= radius) {
-      c.deal(e, factor);
-      c.stun(e, seconds);
-    }
-};
+const freeze = (factor: number, radius: number, seconds: number): Effect => ({
+  fx: "frost",
+  cast: (c) => {
+    for (const e of c.enemies)
+      if (c.dist(c.target, e) <= radius) {
+        c.deal(e, factor);
+        c.stun(e, seconds);
+      }
+  },
+});
 
 /** Extra punishing against a wounded target (below `threshold` HP fraction). */
-const execute = (factor: number, threshold: number, bonus: number) => (c: UltCtx) =>
-  c.deal(c.target, c.target.hp / c.target.maxHp <= threshold ? factor * bonus : factor);
+const execute = (factor: number, threshold: number, bonus: number): Effect => ({
+  fx: "strike",
+  cast: (c) => c.deal(c.target, c.target.hp / c.target.maxHp <= threshold ? factor * bonus : factor),
+});
 
 /** Multi-hit that heals the caster for part of the damage (lifesteal-flavored). */
-const siphon = (hits: number, factor: number, heal: number) => (c: UltCtx) => {
-  const before = c.caster.lifesteal;
-  c.caster.lifesteal += heal;
-  for (let i = 0; i < hits && c.target.hp > 0; i++) c.deal(c.target, factor);
-  c.caster.lifesteal = before;
-};
+const siphon = (hits: number, factor: number, heal: number): Effect => ({
+  fx: "heal",
+  cast: (c) => {
+    const before = c.caster.lifesteal;
+    c.caster.lifesteal += heal;
+    for (let i = 0; i < hits && c.target.hp > 0; i++) c.deal(c.target, factor);
+    c.caster.lifesteal = before;
+  },
+});
 
 /** Big hit on the target plus splash to neighbors. */
-const smite = (factor: number, splash: number, radius: number) => (c: UltCtx) => {
-  c.deal(c.target, factor);
-  for (const e of c.enemies) if (e.uid !== c.target.uid && c.dist(c.target, e) <= radius) c.deal(e, splash);
-};
+const smite = (factor: number, splash: number, radius: number): Effect => ({
+  fx: "blast",
+  cast: (c) => {
+    c.deal(c.target, factor);
+    for (const e of c.enemies) if (e.uid !== c.target.uid && c.dist(c.target, e) <= radius) c.deal(e, splash);
+  },
+});
 
 /** Rally the team: a one-time permanent (for this battle) attack buff to all allies. */
-const rally = (atkPct: number) => (c: UltCtx) => {
-  for (const a of c.allies) a.attack = Math.round(a.attack * (1 + atkPct));
-};
+const rally = (atkPct: number): Effect => ({
+  fx: "buff",
+  cast: (c) => {
+    for (const a of c.allies) a.attack = Math.round(a.attack * (1 + atkPct));
+  },
+});
 
-const u = (name: string, icon: string, desc: string, cast: (c: UltCtx) => void): Ultimate => ({ name, icon, desc, cast });
+const u = (name: string, icon: string, desc: string, e: Effect): Ultimate => ({ name, icon, desc, fx: e.fx, cast: e.cast });
 
 // ---------- role fallbacks (rookies) — mirror the previous generic abilities ----------
 const ROLE_ULT: Record<Role, Ultimate> = {
