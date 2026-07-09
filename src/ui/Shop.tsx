@@ -16,10 +16,10 @@ export function Shop() {
     <div className="shop">
       <div className="shop-econ">
         <button className="econ-btn xp" onClick={buyXp} disabled={gold < 4 || level >= 8}>
-          ▲ Buy XP <span className="cost">4</span>
+          ▲ <span className="econ-word">Buy XP </span><span className="cost">4</span>
         </button>
         <button className="econ-btn reroll" onClick={reroll} disabled={gold < 2}>
-          ⟳ Reroll <span className="cost">2</span>
+          ⟳ <span className="econ-word">Reroll </span><span className="cost">2</span>
         </button>
       </div>
       <div className="shop-slots">

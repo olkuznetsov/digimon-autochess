@@ -1,4 +1,5 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import type * as THREE from "three";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import { useEffect, useState } from "react";
 import { Board } from "./Board";
@@ -21,13 +22,26 @@ let dragStart: { x: number; z: number } | null = null;
 
 function CameraRig() {
   const camera = useThree((s) => s.camera);
+  const size = useThree((s) => s.size);
   const scene = useThree((s) => s.scene);
   useEffect(() => {
     // Framed so the bench stays on screen while the horizon (data sun) is visible.
-    camera.position.set(0, 6.6, -9.2);
-    camera.lookAt(0, 0.3, 3.2);
+    // Portrait phones need a wider fov and a higher, farther camera or the board
+    // gets cropped at the sides.
+    const cam = camera as THREE.PerspectiveCamera;
+    const portrait = size.width / size.height < 0.9;
+    if (portrait) {
+      cam.fov = 70;
+      cam.position.set(0, 8.2, -10.6);
+      cam.lookAt(0, 0.4, 3.4);
+    } else {
+      cam.fov = 55;
+      cam.position.set(0, 6.6, -9.2);
+      cam.lookAt(0, 0.3, 3.2);
+    }
+    cam.updateProjectionMatrix();
     if (import.meta.env.DEV) (window as unknown as { __scene: unknown }).__scene = scene;
-  }, [camera, scene]);
+  }, [camera, scene, size]);
   return null;
 }
 
