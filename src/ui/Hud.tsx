@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGame } from "../game/store";
+import { useGame, isBossRound } from "../game/store";
 import { XP_TO_NEXT as XP_VIEW } from "../game/xpView";
 import { isMuted, setMuted, sfx } from "../audio/sfx";
 
@@ -60,7 +60,10 @@ export function Hud() {
           </button>
         </div>
         <div className="stats">
-          <div className="stat round">Round {round}</div>
+          <div className={`stat round${isBossRound(round) ? " boss" : ""}`}>
+            Round {round}
+            {isBossRound(round) && <span className="boss-chip">☠ BOSS</span>}
+          </div>
           <div className="stat health">♥ {health}</div>
           {streakLabel && <div className="stat streak">{streakLabel}</div>}
           <div className="stat gold">⛂ {gold}</div>
@@ -83,6 +86,7 @@ export function Hud() {
         {phase === "result" && !gameOver && !beatTheRun && (
           <div className={`result ${result}`}>
             <span className="result-text">{result === "win" ? "VICTORY" : "DEFEAT"}</span>
+            {result === "win" && isBossRound(round) && <span className="boss-reward">👑 Boss bonus: +item +3⛂</span>}
             {result === "lose" && lastDamage > 0 && <span className="dmg">-{lastDamage} ♥</span>}
             <button className="action" onClick={toPrep}>
               Continue ▸
@@ -128,6 +132,7 @@ export function Hud() {
               <li>⚔ Battles run themselves. Units gain <b>mana</b> and cast role abilities when full.</li>
               <li>🎒 Win rounds to earn <b>items</b> — click an item, then a Digimon to equip it.</li>
               <li>🔍 <b>Click any Digimon</b> to see its stats, ability and items — or to sell it.</li>
+              <li>☠ Every <b>5th round is a BOSS</b> — beat it for a guaranteed item + bonus gold.</li>
               <li>🏆 Survive <b>round {VICTORY_ROUND}</b> to complete the run. Losing costs ♥ — at 0 it's game over.</li>
             </ul>
             <button className="action" onClick={() => setShowHelp(false)}>

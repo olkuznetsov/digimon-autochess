@@ -22,6 +22,8 @@ interface CreatureProps {
   moving?: boolean;
   /** bumped when the unit casts its ultimate → plays the special01 animation */
   castKey?: number;
+  /** oversized boss styling (boss rounds) */
+  boss?: boolean;
   /** mana for the ability bar (battle only) */
   mana?: number;
   maxMana?: number;
@@ -48,12 +50,13 @@ export function Creature({
   attackSpeed,
   moving = false,
   castKey,
+  boss = false,
   mana,
   maxMana,
   itemEmojis,
   onPointerDown,
 }: CreatureProps) {
-  const scale = 0.85 + (star - 1) * 0.18;
+  const scale = (0.85 + (star - 1) * 0.18) * (boss ? 1.55 : 1);
   const hpPct = Math.max(0, Math.min(1, hp / maxHp));
   const facing = team === "enemy" ? -1 : 1;
   const url = modelFor(formId);
@@ -75,9 +78,9 @@ export function Creature({
       <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.34, 0.48, 32]} />
         <meshStandardMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={dragging ? 3 : 1.4}
+          color={boss ? "#ff3355" : color}
+          emissive={boss ? "#ff3355" : color}
+          emissiveIntensity={dragging ? 3 : boss ? 2.2 : 1.4}
           transparent
           opacity={0.9}
         />
@@ -128,6 +131,7 @@ export function Creature({
       <Html center position={[0, 1.55, 0]} distanceFactor={9} zIndexRange={[10, 0]}>
         <div className={`unit-label ${team}`}>
           <span className="unit-name">
+            {boss ? "👑 " : ""}
             {name}
             {itemEmojis && itemEmojis.length > 0 && <span className="unit-items"> {itemEmojis.join("")}</span>}
           </span>

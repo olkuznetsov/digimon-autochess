@@ -116,6 +116,7 @@ function BattleUnits() {
             attackSpeed={f.attackSpeed}
             moving={f.moving}
             castKey={f.castKey}
+            boss={f.boss}
             mana={f.mana}
             maxMana={f.maxMana}
             itemEmojis={(f.items ?? []).map((id) => ITEMS[id]?.emoji ?? "")}

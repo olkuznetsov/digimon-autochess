@@ -1023,3 +1023,23 @@ html, body {
   .go-title { font-size: 36px; letter-spacing: 4px; }
   .go-sub { font-size: 14px; }
 }
+
+/* ---------- boss rounds ---------- */
+.stat.round.boss {
+  color: #ff8aa0;
+  border-color: rgba(255, 51, 85, 0.55);
+  box-shadow: 0 0 16px rgba(255, 51, 85, 0.3);
+}
+.boss-chip {
+  margin-left: 7px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #ff3355;
+  animation: pulse 1.1s ease-in-out infinite;
+}
+.boss-reward {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+}

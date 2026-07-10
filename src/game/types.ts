@@ -84,6 +84,8 @@ export interface Fighter {
   stunned: number;
   /** bumped every time this fighter casts its ultimate — drives the special01 animation */
   castKey: number;
+  /** true for the oversized boss unit on boss rounds (visual + reward) */
+  boss?: boolean;
   /** equipped item ids (cosmetic reference) */
   items: string[];
 }

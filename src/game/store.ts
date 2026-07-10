@@ -60,14 +60,58 @@ const streakBonus = (streak: number) => {
   return a >= 4 ? 3 : a >= 3 ? 2 : a >= 2 ? 1 : 0;
 };
 
+// ---------- enemy waves & bosses ----------
+// Every 5th round is a BOSS: one oversized villain with big HP (+2 adds) and a
+// guaranteed item reward. Non-boss rounds ramp gently: the player needs 9 rookies
+// for one Mega, so enemy Megas only start appearing (mixed in) from round 11.
+const BOSS_IDS: Record<number, string> = { 5: "skullsatamon", 10: "machinedramon", 15: "diaboromon" };
+const ENDLESS_BOSSES = ["gankoomon", "imperialdramon", "alphamon", "machinedramon", "diaboromon"];
+
+export const isBossRound = (round: number) => round % 5 === 0;
+
+function bossIdFor(round: number): string {
+  return BOSS_IDS[round] ?? ENDLESS_BOSSES[(round / 5) % ENDLESS_BOSSES.length];
+}
+
 function makeEnemyWave(round: number): Fighter[] {
-  const count = Math.min(3 + Math.floor((round - 1) / 2), 7);
-  const stage = round >= 7 ? 3 : round >= 4 ? 2 : 1;
-  const pool = ALL_FORM_IDS.filter((id) => FORMS[id].stage === stage);
-  const hpScale = 1 + (round - 1) * 0.05;
-  return Array.from({ length: count }, (_, i) =>
-    makeFighter(pool[(round * 3 + i * 5) % pool.length], `e${i}`, "enemy", i % COLS, 5 - Math.floor(i / COLS), hpScale),
-  );
+  // gentler global HP ramp (was 5%/round); endless (16+) accelerates again
+  const hpScale = 1 + (round - 1) * 0.035 + (round > 15 ? (round - 15) * 0.06 : 0);
+  const pick = (stage: 1 | 2 | 3, i: number) => {
+    const pool = ALL_FORM_IDS.filter((id) => FORMS[id].stage === stage);
+    return pool[(round * 3 + i * 5) % pool.length];
+  };
+  const at = (i: number) => ({ col: i % COLS, row: 5 - Math.floor(i / COLS) });
+
+  if (isBossRound(round)) {
+    const tier = round <= 5 ? 1 : round <= 10 ? 2 : 3;
+    const boss = makeFighter(bossIdFor(round), "boss", "enemy", 2, 4, hpScale);
+    // one huge focused threat instead of a wall: big HP, harder hits, boss flag
+    const bossHp = tier === 1 ? 3.4 : tier === 2 ? 3.6 : 4.2;
+    boss.hp = Math.round(boss.hp * bossHp);
+    boss.maxHp = boss.hp;
+    boss.attack = Math.round(boss.attack * (tier === 1 ? 1.35 : tier === 2 ? 1.45 : 1.6));
+    boss.boss = true;
+    const addStage = (tier === 1 ? 1 : tier === 2 ? 2 : 3) as 1 | 2 | 3;
+    const addCount = round > 15 ? 3 : 2;
+    const adds = Array.from({ length: addCount }, (_, i) => {
+      const p = at(i * 2 + 1); // flank the boss
+      return makeFighter(pick(addStage, i), `e${i}`, "enemy", p.col, p.row, hpScale * 0.9);
+    });
+    return [boss, ...adds];
+  }
+
+  // non-boss rounds: counts + stage mix tuned so a well-played run reaches 15
+  //           r:  1  2  3  4  -  6  7  8  9  -  11 12 13 14
+  const counts = [0, 3, 3, 4, 4, 0, 4, 5, 5, 6, 0, 6, 6, 6, 7][round] ?? 7;
+  return Array.from({ length: counts }, (_, i) => {
+    let stage: 1 | 2 | 3;
+    if (round <= 4) stage = 1;
+    else if (round <= 9) stage = i === 0 && round >= 8 ? 3 : 2; // rounds 8-9 sneak in one Mega
+    else if (round <= 14) stage = i < round - 10 ? 3 : 2; // 11-14: growing Mega count
+    else stage = 3; // endless
+    const p = at(i);
+    return makeFighter(pick(stage, i), `e${i}`, "enemy", p.col, p.row, hpScale);
+  });
 }
 
 /**
@@ -396,8 +440,9 @@ export const useGame = create<GameState>((set, get) => ({
         : state.streak <= 0
           ? state.streak - 1
           : -1;
+      const bossBonus = win && isBossRound(state.round);
       const inventory =
-        win && state.inventory.length < 8 && Math.random() < 0.55
+        win && state.inventory.length < 8 && (bossBonus || Math.random() < 0.55)
           ? [...state.inventory, ITEM_IDS[Math.floor(Math.random() * ITEM_IDS.length)]]
           : state.inventory;
       if (win) sfx.win();
@@ -418,6 +463,7 @@ export const useGame = create<GameState>((set, get) => ({
         battleTime: bt,
         streak,
         inventory,
+        gold: state.gold + (bossBonus ? 3 : 0),
         health,
         lastDamage: damage,
         gameOver: health <= 0,
