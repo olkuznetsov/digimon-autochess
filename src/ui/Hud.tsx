@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useGame, isBossRound } from "../game/store";
 import { XP_TO_NEXT as XP_VIEW } from "../game/xpView";
 import { isMuted, setMuted, sfx } from "../audio/sfx";
+import { PvpModal } from "./PvpModal";
+import { pvpClose } from "../net/pvp";
 
 const VICTORY_ROUND = 15;
 
@@ -30,11 +32,15 @@ export function Hud() {
   const boardUnits = useGame((s) => s.units.filter((u) => u.placement.kind === "board").length);
   const [muted, setMutedUi] = useState(isMuted());
   const [showHelp, setShowHelp] = useState(false);
+  const [showPvp, setShowPvp] = useState(false);
+  const pvp = useGame((s) => s.pvp);
+  const pvpReadyUp = useGame((s) => s.pvpReadyUp);
+  const pvpQuit = useGame((s) => s.pvpQuit);
 
   const xpNeed = XP_VIEW[level];
   const xpPct = xpNeed ? Math.min(1, xp / xpNeed) : 1;
   const streakLabel = streak > 0 ? `🔥 ${streak}W` : streak < 0 ? `💀 ${-streak}L` : "";
-  const beatTheRun = result === "win" && round === VICTORY_ROUND;
+  const beatTheRun = !pvp && result === "win" && round === VICTORY_ROUND;
 
   return (
     <>
@@ -58,13 +64,24 @@ export function Hud() {
           <button className="icon-btn" title="How to play" onClick={() => setShowHelp(true)}>
             ❓
           </button>
+          {!pvp && (
+            <button className="icon-btn vs" title="Play vs a friend" onClick={() => setShowPvp(true)}>
+              ⚔ VS
+            </button>
+          )}
         </div>
         <div className="stats">
-          <div className={`stat round${isBossRound(round) ? " boss" : ""}`}>
+          <div className={`stat round${!pvp && isBossRound(round) ? " boss" : ""}`}>
             Round {round}
-            {isBossRound(round) && <span className="boss-chip">☠ BOSS</span>}
+            {!pvp && isBossRound(round) && <span className="boss-chip">☠ BOSS</span>}
           </div>
           <div className="stat health">♥ {health}</div>
+          {pvp && (
+            <div className="stat opp">
+              🗡 {pvp.oppName ?? pvp.code} ♥ {pvp.oppHealth}
+              {pvp.oppReady && phase === "prep" && <span className="opp-ready">✓</span>}
+            </div>
+          )}
           {streakLabel && <div className="stat streak">{streakLabel}</div>}
           <div className="stat gold">⛂ {gold}</div>
           <div className="stat level">
@@ -77,9 +94,18 @@ export function Hud() {
       </div>
 
       <div className="actionbar">
-        {phase === "prep" && (
+        {phase === "prep" && !pvp && (
           <button className="action" disabled={boardUnits === 0} onClick={startBattle}>
             ⚔ Start Battle
+          </button>
+        )}
+        {phase === "prep" && pvp && !pvp.matchOver && (
+          <button className="action" disabled={boardUnits === 0 || pvp.myReady || !pvp.oppOnline} onClick={pvpReadyUp}>
+            {!pvp.oppOnline
+              ? `Waiting for a friend… (${pvp.code})`
+              : pvp.myReady
+                ? `Waiting for ${pvp.oppName ?? "opponent"}…`
+                : "⚔ Ready"}
           </button>
         )}
         {phase === "battle" && <div className="phase-tag battling">Battle in progress…</div>}
@@ -107,7 +133,33 @@ export function Hud() {
         )}
       </div>
 
-      {gameOver && (
+      {pvp?.matchOver && (
+        <div className="gameover">
+          <div className={`go-title ${pvp.matchOver}`}>
+            {pvp.matchOver === "win" ? "🏆 MATCH WON" : pvp.matchOver === "lose" ? "💀 MATCH LOST" : "🤝 DRAW"}
+          </div>
+          <div className="go-sub">
+            {pvp.oppLeft
+              ? `${pvp.oppName ?? "Opponent"} fled the Digital World`
+              : pvp.matchOver === "win"
+                ? `You defeated ${pvp.oppName ?? "your opponent"}!`
+                : pvp.matchOver === "lose"
+                  ? `${pvp.oppName ?? "Opponent"} takes the crown`
+                  : "Both tamers fall together"}
+          </div>
+          <button
+            className="action"
+            onClick={() => {
+              pvpClose();
+              pvpQuit();
+            }}
+          >
+            ↻ Back to Solo
+          </button>
+        </div>
+      )}
+
+      {gameOver && !pvp && (
         <div className="gameover">
           <div className="go-title">GAME OVER</div>
           <div className="go-sub">
@@ -119,6 +171,8 @@ export function Hud() {
           </button>
         </div>
       )}
+
+      {showPvp && <PvpModal onClose={() => setShowPvp(false)} />}
 
       {showHelp && (
         <div className="help-overlay" onClick={() => setShowHelp(false)}>
@@ -133,6 +187,7 @@ export function Hud() {
               <li>🎒 Win rounds to earn <b>items</b> — click an item, then a Digimon to equip it.</li>
               <li>🔍 <b>Click any Digimon</b> to see its stats, ability and items — or to sell it.</li>
               <li>☠ Every <b>5th round is a BOSS</b> — beat it for a guaranteed item + bonus gold.</li>
+              <li>⚔ <b>VS mode</b>: create a room, send the 4-letter code to a friend — your boards fight each round. First to 0 ♥ loses.</li>
               <li>🏆 Survive <b>round {VICTORY_ROUND}</b> to complete the run. Losing costs ♥ — at 0 it's game over.</li>
             </ul>
             <button className="action" onClick={() => setShowHelp(false)}>

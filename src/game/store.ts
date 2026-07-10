@@ -7,6 +7,7 @@ import { ITEM_IDS } from "./items";
 import { XP_TO_NEXT, MAX_LEVEL } from "./xpView";
 import { sfx, battleSfx } from "../audio/sfx";
 import { BENCH_SLOTS, COLS } from "./board";
+import { net } from "../net/bus";
 
 const REROLL_COST = 2;
 const SHOP_SIZE = 5;
@@ -23,6 +24,28 @@ const COST_WEIGHT: Record<number, number> = { 1: 40, 2: 30, 3: 18, 4: 12 };
 
 let uidCounter = 0;
 const nextUid = () => `u${uidCounter++}`;
+
+/** A board unit as sent over the wire in VS matches. */
+export interface PvpBoardUnit {
+  uid: string;
+  formId: string;
+  col: number;
+  row: number;
+  items: string[];
+}
+
+/** Live VS-friend match state (null = solo). */
+export interface PvpState {
+  code: string;
+  side: "A" | "B";
+  oppName: string | null;
+  oppOnline: boolean;
+  myReady: boolean;
+  oppReady: boolean;
+  oppHealth: number;
+  matchOver: "win" | "lose" | "draw" | null;
+  oppLeft: boolean;
+}
 
 /** A live combat effect (damage number, projectile, death burst) with its spawn time. */
 export interface Fx extends CombatEvent {
@@ -199,6 +222,8 @@ interface GameState {
   dragId: string | null;
   dragPos: { x: number; z: number } | null;
 
+  pvp: PvpState | null;
+
   reroll: () => void;
   buy: (shopIndex: number) => void;
   buyXp: () => void;
@@ -214,6 +239,15 @@ interface GameState {
   stepBattle: (dt: number) => void;
   toPrep: () => void;
   reset: () => void;
+
+  pvpJoined: (code: string, side: "A" | "B", players: { A: string | null; B: string | null; online: string[] }) => void;
+  pvpPeer: (players: { A: string | null; B: string | null; online: string[] }) => void;
+  pvpReadyUp: () => void;
+  pvpOppReady: () => void;
+  pvpFight: (boards: Record<"A" | "B", PvpBoardUnit[]>) => void;
+  pvpResult: (winner: "A" | "B" | "draw", damage: number) => void;
+  pvpLeft: () => void;
+  pvpQuit: () => void;
 }
 
 function initialState() {
@@ -242,6 +276,7 @@ function initialState() {
     boardSnapshot: null as Unit[] | null,
     dragId: null as string | null,
     dragPos: null as { x: number; z: number } | null,
+    pvp: null as PvpState | null,
   };
 }
 
@@ -430,6 +465,30 @@ export const useGame = create<GameState>((set, get) => ({
 
     if (!playersLeft || !enemiesLeft) {
       const win = playersLeft;
+      if (state.pvp) {
+        // VS match: the HOST simulation is authoritative — it reports the result,
+        // and BOTH clients apply health when the relayed message arrives.
+        if (state.pvp.side === "A") {
+          const winners = alive.length;
+          net.send?.({
+            t: "result",
+            round: state.round,
+            winner: win && !enemiesLeft ? "A" : enemiesLeft && !playersLeft ? "B" : "draw",
+            damage: 4 + winners * 2,
+          });
+        }
+        if (win) sfx.win();
+        else sfx.lose();
+        set({
+          phase: "result",
+          result: win ? "win" : "lose",
+          fighters: alive,
+          fx: [],
+          battleTime: bt,
+          tick: state.tick + 1,
+        });
+        return;
+      }
       const survivingEnemies = alive.filter((fr) => fr.team === "enemy").length;
       const damage = win ? 0 : 4 + survivingEnemies * 2;
       const health = Math.max(0, state.health - damage);
@@ -504,11 +563,145 @@ export const useGame = create<GameState>((set, get) => ({
       level: leveled.level,
       xp: leveled.xp,
       shop: rollShop(),
+      ...(state.pvp ? { pvp: { ...state.pvp, myReady: false, oppReady: false } } : {}),
     });
   },
 
   reset: () => {
     try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
+    set({ ...initialState() });
+  },
+
+  // ---------- VS friend (multiplayer) ----------
+  pvpJoined: (code, side, players) => {
+    const other = side === "A" ? "B" : "A";
+    set({
+      pvp: {
+        code,
+        side,
+        oppName: players[other],
+        oppOnline: players.online.includes(other),
+        myReady: false,
+        oppReady: false,
+        oppHealth: START_HEALTH,
+        matchOver: null,
+        oppLeft: false,
+      },
+      // a fresh match starts a fresh run for fairness
+      gold: START_GOLD,
+      level: START_LEVEL,
+      xp: 0,
+      health: START_HEALTH,
+      round: 1,
+      streak: 0,
+      gameOver: false,
+      units: [],
+      inventory: [],
+      shop: rollShop(),
+      phase: "prep",
+      result: null,
+      fighters: [],
+      pendingEvolution: null,
+      inspected: null,
+    });
+  },
+
+  pvpPeer: (players) => {
+    const { pvp } = get();
+    if (!pvp) return;
+    const other = pvp.side === "A" ? "B" : "A";
+    const nowOnline = players.online.includes(other);
+    if (nowOnline && !pvp.oppOnline) sfx.buy(); // little "friend joined" pop
+    set({ pvp: { ...pvp, oppName: players[other], oppOnline: nowOnline } });
+  },
+
+  pvpReadyUp: () => {
+    const { pvp, units, round, pendingEvolution } = get();
+    if (!pvp || pvp.myReady || pendingEvolution) return;
+    const board: PvpBoardUnit[] = units
+      .filter((u) => u.placement.kind === "board")
+      .map((u) => {
+        const p = u.placement as { col: number; row: number };
+        return { uid: u.uid, formId: u.formId, col: p.col, row: p.row, items: u.items ?? [] };
+      });
+    if (board.length === 0) return;
+    net.send?.({ t: "ready", round, board });
+    sfx.click();
+    set({ pvp: { ...pvp, myReady: true } });
+  },
+
+  pvpOppReady: () => {
+    const { pvp } = get();
+    if (pvp) set({ pvp: { ...pvp, oppReady: true } });
+  },
+
+  pvpFight: (boards) => {
+    const state = get();
+    const pvp = state.pvp;
+    if (!pvp) return;
+    const mine = boards[pvp.side] ?? [];
+    const theirs = boards[pvp.side === "A" ? "B" : "A"] ?? [];
+
+    const myFighters = mine.map((u) =>
+      makeFighter(u.formId, `m_${u.uid}`, "player", u.col, u.row, 1, u.items),
+    );
+    applySynergies(
+      myFighters,
+      mine.map((u) => ({ uid: `m_${u.uid}`, formId: u.formId, placement: { kind: "board" as const, col: u.col, row: u.row }, items: u.items })),
+    );
+    // opponent board mirrored onto the red half
+    const oppFighters = theirs.map((u) =>
+      makeFighter(u.formId, `o_${u.uid}`, "enemy", COLS - 1 - u.col, 5 - u.row, 1, u.items),
+    );
+    applySynergies(
+      oppFighters,
+      theirs.map((u) => ({ uid: `o_${u.uid}`, formId: u.formId, placement: { kind: "board" as const, col: u.col, row: u.row }, items: u.items })),
+    );
+
+    sfx.battleStart();
+    set({
+      phase: "battle",
+      result: null,
+      boardSnapshot: state.units,
+      fighters: [...myFighters, ...oppFighters],
+      fx: [],
+      battleTime: 0,
+      tick: 0,
+    });
+  },
+
+  pvpResult: (winner, damage) => {
+    const state = get();
+    const pvp = state.pvp;
+    if (!pvp || pvp.matchOver) return;
+    const iWon = winner === pvp.side;
+    const draw = winner === "draw";
+    const health = Math.max(0, state.health - (draw ? 4 : iWon ? 0 : damage));
+    const oppHealth = Math.max(0, pvp.oppHealth - (draw ? 4 : iWon ? damage : 0));
+    const streak = draw ? 0 : iWon ? Math.max(1, state.streak + 1) : Math.min(-1, state.streak - 1);
+    const inventory =
+      iWon && state.inventory.length < 8 && Math.random() < 0.55
+        ? [...state.inventory, ITEM_IDS[Math.floor(Math.random() * ITEM_IDS.length)]]
+        : state.inventory;
+    const matchOver: PvpState["matchOver"] =
+      health <= 0 && oppHealth <= 0 ? "draw" : health <= 0 ? "lose" : oppHealth <= 0 ? "win" : null;
+    set({
+      health,
+      streak,
+      inventory,
+      lastDamage: iWon || draw ? 0 : damage,
+      pvp: { ...pvp, oppHealth, matchOver },
+    });
+  },
+
+  pvpLeft: () => {
+    const { pvp } = get();
+    if (!pvp) return;
+    // a fled opponent forfeits (unless the match already ended)
+    set({ pvp: { ...pvp, oppOnline: false, oppLeft: true, matchOver: pvp.matchOver ?? "win" } });
+  },
+
+  pvpQuit: () => {
     set({ ...initialState() });
   },
 }));
@@ -518,7 +711,7 @@ const SAVE_KEY = "dac-save";
 
 function saveRun() {
   const s = useGame.getState();
-  if (s.phase !== "prep" || s.gameOver || s.pendingEvolution) return;
+  if (s.phase !== "prep" || s.gameOver || s.pendingEvolution || s.pvp) return;
   try {
     localStorage.setItem(
       SAVE_KEY,

@@ -1043,3 +1043,81 @@ html, body {
   font-weight: 700;
   color: var(--gold);
 }
+
+/* ---------- VS friend (multiplayer) ---------- */
+.icon-btn.vs {
+  color: #ff8aa0;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.stat.opp {
+  color: #ffb3c1;
+  border-color: rgba(255, 77, 109, 0.45);
+}
+.opp-ready {
+  margin-left: 5px;
+  color: var(--vaccine);
+  font-weight: 800;
+}
+.help-modal.pvp {
+  width: min(340px, 92vw);
+}
+.pvp-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #2c3358;
+  background: rgba(20, 24, 44, 0.9);
+  color: #eef3ff;
+  font-size: 14px;
+  outline: none;
+}
+.pvp-input.code {
+  width: 110px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 6px;
+}
+.pvp-join {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.pvp-or {
+  color: #8893b5;
+  font-size: 12px;
+}
+.pvp-note {
+  color: #8893b5;
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.4;
+}
+.pvp-error {
+  color: #ff8aa0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.pvp-code-label {
+  color: #c6d2f0;
+  font-size: 13px;
+}
+.pvp-code {
+  font-size: 44px;
+  font-weight: 900;
+  letter-spacing: 10px;
+  color: var(--gold);
+  text-shadow: 0 0 24px rgba(255, 211, 77, 0.5);
+}
+.pvp-waiting {
+  color: #8893b5;
+  font-size: 13px;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.go-title.lose {
+  color: #ff4d6d;
+}
+.go-title.draw {
+  color: #cdd6f0;
+}
