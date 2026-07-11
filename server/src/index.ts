@@ -103,6 +103,8 @@ export class MatchRoom extends DurableObject<Env> {
     } else if (m.t === "result") {
       if (a.side !== "A") return; // host simulation is authoritative
       this.broadcast({ t: "result", round: m.round, winner: m.winner, damage: m.damage });
+    } else if (m.t === "surrender") {
+      this.broadcast({ t: "surrender", side: a.side });
     }
   }
 

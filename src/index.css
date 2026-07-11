@@ -1121,3 +1121,12 @@ html, body {
 .go-title.draw {
   color: #cdd6f0;
 }
+
+.icon-btn.flag {
+  pointer-events: auto;
+}
+.icon-btn.flag.confirm {
+  color: #ff4d6d;
+  border-color: rgba(255, 77, 109, 0.6);
+  font-weight: 700;
+}

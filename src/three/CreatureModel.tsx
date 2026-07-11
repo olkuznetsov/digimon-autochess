@@ -60,10 +60,15 @@ export function CreatureModel({ url, tweak, facing = 1, cooldown, moving = false
 
   const play = (next: THREE.AnimationAction | undefined, oneShot: boolean) => {
     if (!next || current.current === next) return;
+    const first = current.current === null;
     next.reset();
     next.setLoop(oneShot ? THREE.LoopOnce : THREE.LoopRepeat, oneShot ? 1 : Infinity);
     next.clampWhenFinished = oneShot;
-    next.fadeIn(0.15).play();
+    // the FIRST clip starts at full weight: the deferred fit measures the posed
+    // skeleton on frame ~3, and a fade-in would make it measure a half-applied
+    // pose (rigs whose clips carry baked scale would then normalize wrong → giants)
+    if (first) next.play();
+    else next.fadeIn(0.15).play();
     current.current?.fadeOut(0.15);
     current.current = next;
   };

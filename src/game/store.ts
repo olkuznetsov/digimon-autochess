@@ -247,6 +247,8 @@ interface GameState {
   pvpFight: (boards: Record<"A" | "B", PvpBoardUnit[]>) => void;
   pvpResult: (winner: "A" | "B" | "draw", damage: number) => void;
   pvpLeft: () => void;
+  pvpSurrender: () => void;
+  pvpSurrendered: (side: "A" | "B") => void;
   pvpQuit: () => void;
 }
 
@@ -699,6 +701,20 @@ export const useGame = create<GameState>((set, get) => ({
     if (!pvp) return;
     // a fled opponent forfeits (unless the match already ended)
     set({ pvp: { ...pvp, oppOnline: false, oppLeft: true, matchOver: pvp.matchOver ?? "win" } });
+  },
+
+  pvpSurrender: () => {
+    const { pvp } = get();
+    if (!pvp || pvp.matchOver) return;
+    net.send?.({ t: "surrender" });
+    // the relay echoes to everyone (including us) — matchOver applies there
+  },
+
+  pvpSurrendered: (side) => {
+    const { pvp } = get();
+    if (!pvp || pvp.matchOver) return;
+    sfx.lose();
+    set({ pvp: { ...pvp, matchOver: side === pvp.side ? "lose" : "win" } });
   },
 
   pvpQuit: () => {

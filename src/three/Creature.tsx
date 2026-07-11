@@ -56,7 +56,8 @@ export function Creature({
   itemEmojis,
   onPointerDown,
 }: CreatureProps) {
-  const scale = (0.85 + (star - 1) * 0.18) * (boss ? 1.55 : 1);
+  // visible digivolution growth: Rookie 0.75 -> Champion 1.02 -> Mega 1.29
+  const scale = (0.75 + (star - 1) * 0.27) * (boss ? 1.5 : 1);
   const hpPct = Math.max(0, Math.min(1, hp / maxHp));
   const facing = team === "enemy" ? -1 : 1;
   const url = modelFor(formId);
@@ -90,6 +91,10 @@ export function Creature({
       <Suspense fallback={body}>
         {url ? (
           <CreatureModel
+            /* key forces a FULL remount when the form changes (digivolution keeps
+               the unit uid!) — otherwise the previous model's fit scale and
+               animation refs leak onto the new model (giant/tiny/frozen units) */
+            key={url}
             url={url}
             tweak={tweakFor(formId)}
             facing={facing}

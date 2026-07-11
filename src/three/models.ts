@@ -8,7 +8,7 @@ import { ALL_FORM_IDS, ROOKIE_IDS } from "../game/creatures";
  */
 /** Bump when model FILES change without renaming — the URLs stay the same across
  *  deploys and browsers cache .glb aggressively, so this busts stale caches. */
-const MODELS_VERSION = 2;
+const MODELS_VERSION = 3;
 
 export const MODEL_PATHS: Partial<Record<string, string>> = Object.fromEntries(
   ALL_FORM_IDS.map((id) => [id, `/models/${id}.glb?v=${MODELS_VERSION}`]),

@@ -41,6 +41,9 @@ export function pvpConnect(code: string, name: string, onError?: (why: string) =
       case "result":
         g.pvpResult(m.winner as "A" | "B" | "draw", (m.damage as number) ?? 4);
         break;
+      case "surrender":
+        g.pvpSurrendered(m.side as "A" | "B");
+        break;
       case "left":
         g.pvpLeft();
         break;

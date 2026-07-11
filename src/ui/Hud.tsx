@@ -36,6 +36,8 @@ export function Hud() {
   const pvp = useGame((s) => s.pvp);
   const pvpReadyUp = useGame((s) => s.pvpReadyUp);
   const pvpQuit = useGame((s) => s.pvpQuit);
+  const pvpSurrender = useGame((s) => s.pvpSurrender);
+  const [confirmFlag, setConfirmFlag] = useState(false);
 
   const xpNeed = XP_VIEW[level];
   const xpPct = xpNeed ? Math.min(1, xp / xpNeed) : 1;
@@ -81,6 +83,23 @@ export function Hud() {
               🗡 {pvp.oppName ?? pvp.code} ♥ {pvp.oppHealth}
               {pvp.oppReady && phase === "prep" && <span className="opp-ready">✓</span>}
             </div>
+          )}
+          {pvp && !pvp.matchOver && (
+            <button
+              className={`icon-btn flag${confirmFlag ? " confirm" : ""}`}
+              title="Surrender the match"
+              onClick={() => {
+                if (!confirmFlag) {
+                  setConfirmFlag(true);
+                  setTimeout(() => setConfirmFlag(false), 2500);
+                } else {
+                  setConfirmFlag(false);
+                  pvpSurrender();
+                }
+              }}
+            >
+              {confirmFlag ? "Really?" : "🏳️"}
+            </button>
           )}
           {streakLabel && <div className="stat streak">{streakLabel}</div>}
           <div className="stat gold">⛂ {gold}</div>
