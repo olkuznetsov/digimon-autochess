@@ -3,6 +3,7 @@ import { useGame, isBossRound } from "../game/store";
 import { XP_TO_NEXT as XP_VIEW } from "../game/xpView";
 import { isMuted, setMuted, sfx } from "../audio/sfx";
 import { PvpModal } from "./PvpModal";
+import { LeaderboardModal } from "./LeaderboardModal";
 import { pvpClose } from "../net/pvp";
 
 const VICTORY_ROUND = 15;
@@ -33,6 +34,9 @@ export function Hud() {
   const [muted, setMutedUi] = useState(isMuted());
   const [showHelp, setShowHelp] = useState(false);
   const [showPvp, setShowPvp] = useState(false);
+  const [showLb, setShowLb] = useState(false);
+  const ghost = useGame((s) => s.ghost);
+  const ghostReturn = useGame((s) => s.ghostReturn);
   const pvp = useGame((s) => s.pvp);
   const pvpReadyUp = useGame((s) => s.pvpReadyUp);
   const pvpQuit = useGame((s) => s.pvpQuit);
@@ -42,7 +46,7 @@ export function Hud() {
   const xpNeed = XP_VIEW[level];
   const xpPct = xpNeed ? Math.min(1, xp / xpNeed) : 1;
   const streakLabel = streak > 0 ? `🔥 ${streak}W` : streak < 0 ? `💀 ${-streak}L` : "";
-  const beatTheRun = !pvp && result === "win" && round === VICTORY_ROUND;
+  const beatTheRun = !pvp && !ghost && result === "win" && round === VICTORY_ROUND;
 
   return (
     <>
@@ -69,6 +73,11 @@ export function Hud() {
           {!pvp && (
             <button className="icon-btn vs" title="Play vs a friend" onClick={() => setShowPvp(true)}>
               ⚔ VS
+            </button>
+          )}
+          {!pvp && (
+            <button className="icon-btn" title="Leaderboard & ghost battles" onClick={() => setShowLb(true)}>
+              🏆
             </button>
           )}
         </div>
@@ -128,7 +137,18 @@ export function Hud() {
           </button>
         )}
         {phase === "battle" && <div className="phase-tag battling">Battle in progress…</div>}
-        {phase === "result" && !gameOver && !beatTheRun && (
+        {phase === "result" && ghost && (
+          <div className={`result ${result}`}>
+            <span className="result-text">
+              {result === "win" ? "GHOST VICTORY" : "GHOST DEFEAT"}
+            </span>
+            <span className="runwon-sub">vs {ghost.name} — your run is untouched</span>
+            <button className="action" onClick={ghostReturn}>
+              Return ▸
+            </button>
+          </div>
+        )}
+        {phase === "result" && !ghost && !gameOver && !beatTheRun && (
           <div className={`result ${result}`}>
             <span className="result-text">{result === "win" ? "VICTORY" : "DEFEAT"}</span>
             {result === "win" && isBossRound(round) && <span className="boss-reward">👑 Boss bonus: +item +3⛂</span>}
@@ -192,6 +212,7 @@ export function Hud() {
       )}
 
       {showPvp && <PvpModal onClose={() => setShowPvp(false)} />}
+      {showLb && <LeaderboardModal onClose={() => setShowLb(false)} />}
 
       {showHelp && (
         <div className="help-overlay" onClick={() => setShowHelp(false)}>
@@ -206,7 +227,8 @@ export function Hud() {
               <li>🎒 Win rounds to earn <b>items</b> — click an item, then a Digimon to equip it.</li>
               <li>🔍 <b>Click any Digimon</b> to see its stats, ability and items — or to sell it.</li>
               <li>☠ Every <b>5th round is a BOSS</b> — beat it for a guaranteed item + bonus gold.</li>
-              <li>⚔ <b>VS mode</b>: create a room, send the 4-letter code to a friend — your boards fight each round. First to 0 ♥ loses.</li>
+              <li>⚔ <b>VS mode</b>: create a room, send the 4-letter code to a friend — your boards fight each round. First to 0 ♥ loses. 🏳️ to surrender.</li>
+              <li>🏆 <b>Leaderboard</b>: finish a run to post your best round — and <b>fight other players' saved boards</b> as risk-free ghost battles.</li>
               <li>🏆 Survive <b>round {VICTORY_ROUND}</b> to complete the run. Losing costs ♥ — at 0 it's game over.</li>
             </ul>
             <button className="action" onClick={() => setShowHelp(false)}>

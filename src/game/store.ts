@@ -8,6 +8,7 @@ import { XP_TO_NEXT, MAX_LEVEL } from "./xpView";
 import { sfx, battleSfx } from "../audio/sfx";
 import { BENCH_SLOTS, COLS } from "./board";
 import { net } from "../net/bus";
+import { submitScore } from "../net/leaderboard";
 
 const REROLL_COST = 2;
 const SHOP_SIZE = 5;
@@ -223,6 +224,8 @@ interface GameState {
   dragPos: { x: number; z: number } | null;
 
   pvp: PvpState | null;
+  /** ghost battle vs a leaderboard player's saved board (no run consequences) */
+  ghost: { name: string } | null;
 
   reroll: () => void;
   buy: (shopIndex: number) => void;
@@ -250,6 +253,9 @@ interface GameState {
   pvpSurrender: () => void;
   pvpSurrendered: (side: "A" | "B") => void;
   pvpQuit: () => void;
+
+  ghostFight: (board: PvpBoardUnit[], name: string) => void;
+  ghostReturn: () => void;
 }
 
 function initialState() {
@@ -279,6 +285,7 @@ function initialState() {
     dragId: null as string | null,
     dragPos: null as { x: number; z: number } | null,
     pvp: null as PvpState | null,
+    ghost: null as { name: string } | null,
   };
 }
 
@@ -291,6 +298,16 @@ function firstEmptyBench(units: Unit[]): number | null {
 }
 
 const boardCount = (units: Unit[]) => units.filter((u) => u.placement.kind === "board").length;
+
+/** Serialize on-board units for leaderboard ghost boards. */
+function wireBoard(units: Unit[]): PvpBoardUnit[] {
+  return units
+    .filter((u) => u.placement.kind === "board")
+    .map((u) => {
+      const p = u.placement as { col: number; row: number };
+      return { uid: u.uid, formId: u.formId, col: p.col, row: p.row, items: u.items ?? [] };
+    });
+}
 
 export const useGame = create<GameState>((set, get) => ({
   ...initialState(),
@@ -467,6 +484,20 @@ export const useGame = create<GameState>((set, get) => ({
 
     if (!playersLeft || !enemiesLeft) {
       const win = playersLeft;
+      if (state.ghost) {
+        // ghost scrim: show the result, change nothing about the run
+        if (win) sfx.win();
+        else sfx.lose();
+        set({
+          phase: "result",
+          result: win ? "win" : "lose",
+          fighters: alive,
+          fx: [],
+          battleTime: bt,
+          tick: state.tick + 1,
+        });
+        return;
+      }
       if (state.pvp) {
         // VS match: the HOST simulation is authoritative — it reports the result,
         // and BOTH clients apply health when the relayed message arrives.
@@ -515,6 +546,10 @@ export const useGame = create<GameState>((set, get) => ({
           if (state.round > best) localStorage.setItem("dac-best-round", String(state.round));
           localStorage.removeItem("dac-save");
         } catch { /* ignore */ }
+        submitScore({ best: state.round, board: wireBoard(state.boardSnapshot ?? state.units) });
+      } else if (win && state.round >= 15) {
+        // run complete (and endless milestones) — post the winning board
+        submitScore({ best: state.round, board: wireBoard(state.boardSnapshot ?? state.units) });
       }
       set({
         phase: "result",
@@ -687,6 +722,7 @@ export const useGame = create<GameState>((set, get) => ({
         : state.inventory;
     const matchOver: PvpState["matchOver"] =
       health <= 0 && oppHealth <= 0 ? "draw" : health <= 0 ? "lose" : oppHealth <= 0 ? "win" : null;
+    if (matchOver === "win") submitScore({ winsDelta: 1 });
     set({
       health,
       streak,
@@ -713,12 +749,63 @@ export const useGame = create<GameState>((set, get) => ({
   pvpSurrendered: (side) => {
     const { pvp } = get();
     if (!pvp || pvp.matchOver) return;
-    sfx.lose();
-    set({ pvp: { ...pvp, matchOver: side === pvp.side ? "lose" : "win" } });
+    const mine = side === pvp.side;
+    if (mine) sfx.lose();
+    else {
+      sfx.win();
+      submitScore({ winsDelta: 1 });
+    }
+    set({ pvp: { ...pvp, matchOver: mine ? "lose" : "win" } });
   },
 
   pvpQuit: () => {
     set({ ...initialState() });
+  },
+
+  // ---------- ghost battles (leaderboard scrims) ----------
+  ghostFight: (board, name) => {
+    const state = get();
+    if (state.phase !== "prep" || state.pvp || state.pendingEvolution) return;
+    const mine = wireBoard(state.units);
+    if (mine.length === 0 || board.length === 0) return;
+
+    const myFighters = mine.map((u) => makeFighter(u.formId, `m_${u.uid}`, "player", u.col, u.row, 1, u.items));
+    applySynergies(
+      myFighters,
+      mine.map((u) => ({ uid: `m_${u.uid}`, formId: u.formId, placement: { kind: "board" as const, col: u.col, row: u.row }, items: u.items })),
+    );
+    const ghostFighters = board.map((u, i) =>
+      makeFighter(u.formId, `g_${u.uid ?? i}`, "enemy", COLS - 1 - u.col, 5 - u.row, 1, u.items ?? []),
+    );
+    applySynergies(
+      ghostFighters,
+      board.map((u, i) => ({ uid: `g_${u.uid ?? i}`, formId: u.formId, placement: { kind: "board" as const, col: u.col, row: u.row }, items: u.items ?? [] })),
+    );
+
+    sfx.battleStart();
+    set({
+      phase: "battle",
+      ghost: { name },
+      result: null,
+      boardSnapshot: state.units,
+      fighters: [...myFighters, ...ghostFighters],
+      fx: [],
+      battleTime: 0,
+      tick: 0,
+      inspected: null,
+    });
+  },
+
+  ghostReturn: () => {
+    const state = get();
+    set({
+      phase: "prep",
+      result: null,
+      fighters: [],
+      ghost: null,
+      units: state.boardSnapshot ?? state.units,
+      boardSnapshot: null,
+    });
   },
 }));
 

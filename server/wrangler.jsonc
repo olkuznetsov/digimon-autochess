@@ -4,8 +4,14 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-06-01",
   "durable_objects": {
-    "bindings": [{ "name": "ROOM", "class_name": "MatchRoom" }]
+    "bindings": [
+      { "name": "ROOM", "class_name": "MatchRoom" },
+      { "name": "LB", "class_name": "Leaderboard" }
+    ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MatchRoom"] }],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["MatchRoom"] },
+    { "tag": "v2", "new_sqlite_classes": ["Leaderboard"] }
+  ],
   "observability": { "enabled": true }
 }
