@@ -1,0 +1,7 @@
+# Cloudflare Pages response headers.
+# Vite fingerprints /assets/*; models are cache-busted by content hash (?v=…),
+# so both can be cached for a year. index.html keeps the default revalidation.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+/models/*
+  Cache-Control: public, max-age=31536000, immutable

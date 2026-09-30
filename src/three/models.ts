@@ -1,5 +1,5 @@
 import { useGLTF } from "@react-three/drei";
-import { ALL_FORM_IDS, ROOKIE_IDS } from "../game/creatures";
+import { ALL_FORM_IDS, FORMS, ROOKIE_IDS } from "../game/creatures";
 import { MODEL_HASH } from "./model-manifest";
 
 /**
@@ -34,6 +34,24 @@ export function tweakFor(formId: string): ModelTweak | undefined {
   return MODEL_TWEAKS[formId];
 }
 
-// Preload only the Rookies (what the shop shows first); higher stages stream in
-// on evolve with the procedural creature as the loading fallback.
+// Rookies load up front (the loading screen waits for them); Champions and Megas
+// are fetched in the background right after, so a digivolution or an enemy wave
+// almost never has to show the procedural placeholder.
 for (const id of ROOKIE_IDS) useGLTF.preload(MODEL_PATHS[id]!);
+
+let restQueued = false;
+/** Queue Champions, then Megas, a few at a time while the browser is idle. */
+export function preloadRemainingModels() {
+  if (restQueued) return;
+  restQueued = true;
+  const queue = [2, 3].flatMap((stage) => ALL_FORM_IDS.filter((id) => FORMS[id].stage === stage));
+  const idle =
+    (window as unknown as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback ??
+    ((cb: () => void) => setTimeout(cb, 200));
+  const next = () => {
+    const batch = queue.splice(0, 3);
+    for (const id of batch) useGLTF.preload(MODEL_PATHS[id]!);
+    if (queue.length) setTimeout(() => idle(next), 350);
+  };
+  idle(next);
+}

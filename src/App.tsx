@@ -6,6 +6,7 @@ import { EvolutionChoice } from "./ui/EvolutionChoice";
 import { ItemTray } from "./ui/ItemTray";
 import { UnitPanel } from "./ui/UnitPanel";
 import { EvoBanner } from "./ui/EvoBanner";
+import { LoadingScreen } from "./ui/LoadingScreen";
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
       <UnitPanel />
       <EvoBanner />
       <EvolutionChoice />
+      <LoadingScreen />
     </div>
   );
 }

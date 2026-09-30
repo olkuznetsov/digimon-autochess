@@ -1232,3 +1232,62 @@ html, body {
   animation: pulse 1.1s ease-in-out infinite;
   pointer-events: none;
 }
+
+/* ---------- loading screen ---------- */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  background: radial-gradient(ellipse at 50% 40%, #1a1030 0%, #05060f 70%);
+  transition: opacity 0.6s ease;
+}
+.loading-screen.fading {
+  opacity: 0;
+  pointer-events: none;
+}
+.loading-title {
+  font-weight: 900;
+  font-size: clamp(22px, 6vw, 44px);
+  letter-spacing: 5px;
+  color: #eaf2ff;
+  text-shadow: 0 0 24px rgba(58, 160, 255, 0.7);
+  text-align: center;
+}
+.loading-title span {
+  color: var(--virus);
+  text-shadow: 0 0 24px rgba(183, 107, 255, 0.8);
+}
+.loading-bar {
+  width: min(420px, 80vw);
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(90, 120, 255, 0.35);
+  overflow: hidden;
+}
+.loading-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #3aa0ff, #b76bff, #27e0a3);
+  box-shadow: 0 0 16px rgba(120, 160, 255, 0.8);
+  transition: width 0.25s ease;
+}
+.loading-status {
+  color: #9fb0d8;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.loading-tip {
+  max-width: min(460px, 86vw);
+  color: #7c89b3;
+  font-size: 13px;
+  text-align: center;
+  line-height: 1.5;
+}
