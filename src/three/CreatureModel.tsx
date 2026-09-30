@@ -25,7 +25,7 @@ interface Props {
  */
 // NOTE: attack-animation glitches (stretching/flying/giant models) were caused by
 // DUPLICATE partial "attack01" takes inside the Cyber Sleuth rips — fixed offline
-// by scripts/dedup_clips.py (run over public/models/*.glb). Don't mutate tracks here.
+// by scripts/dedup_clips.py (run over models-src/*.glb). Don't mutate tracks here.
 
 export function CreatureModel({ url, tweak, facing = 1, cooldown, moving = false, castKey }: Props) {
   const bob = useRef<THREE.Group>(null);

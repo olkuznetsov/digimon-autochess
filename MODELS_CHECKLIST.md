@@ -1,6 +1,6 @@
 # Roster — 46 forms, 100% real animated models
 
-Every form has an animated model at `public/models/<formId>.glb` (idle/move/attack01… clips
+Every form has an animated model: source `models-src/<formId>.glb`, shipped (optimized by `npm run optimize-models`) as `public/models/<formId>.glb` (idle/move/attack01… clips
 drive the combat state machine). The roster is deliberately shaped around sourceable models.
 To add a form: convert with `python3 scripts/convert_model.py <src.fbx> <formid>` and add it
 to `src/game/creatures.ts` — the model registry picks it up by convention.

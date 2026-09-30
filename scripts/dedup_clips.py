@@ -8,7 +8,7 @@ in the runtime animation map and the partial take wins — producing stretched /
 flying / mis-scaled models the moment a unit attacks. Keeping only the full
 take fixes attack animations at the source.
 
-Usage: python3 scripts/dedup_clips.py public/models/*.glb
+Usage: python3 scripts/dedup_clips.py models-src/*.glb
 """
 import json, struct, sys
 

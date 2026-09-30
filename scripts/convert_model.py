@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert a ripped model (.fbx/.dae) to public/models/<formid>.glb.
+"""Convert a ripped model (.fbx/.dae) to models-src/<formid>.glb (then run `npm run optimize-models`).
 
 - runs assimp export
 - strips COLOR_0 vertex colors (some rips bake black -> model renders as silhouette)
@@ -10,7 +10,7 @@ Usage: python3 scripts/convert_model.py <source-file> <form-id>
 """
 import json, struct, shutil, os, subprocess, sys
 
-OUT_DIR = "public/models"
+OUT_DIR = "models-src"
 
 
 def load_glb(path):

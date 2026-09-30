@@ -7,7 +7,7 @@ br01 = run, ba01/02 = attacks, bs01/02 = specials, ...) and some fan models use
 ad-hoc names (attack1, skill2, move2). Models with unmatched names stand frozen
 in bind pose (T-pose) in game — this script fixes them at the source.
 
-Usage: python3 scripts/rename_clips.py public/models/*.glb
+Usage: python3 scripts/rename_clips.py models-src/*.glb
 """
 import json, re, struct, sys
 
