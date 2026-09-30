@@ -1,4 +1,6 @@
-import { Suspense } from "react";
+import { Suspense, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import type * as THREE from "three";
 import { Html } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { ProceduralCreature } from "./ProceduralCreature";
@@ -24,6 +26,8 @@ interface CreatureProps {
   castKey?: number;
   /** oversized boss styling (boss rounds) */
   boss?: boolean;
+  /** glide toward `position` instead of snapping (battle units: the sim ticks at 20 Hz) */
+  smooth?: boolean;
   /** mana for the ability bar (battle only) */
   mana?: number;
   maxMana?: number;
@@ -51,6 +55,7 @@ export function Creature({
   moving = false,
   castKey,
   boss = false,
+  smooth = false,
   mana,
   maxMana,
   itemEmojis,
@@ -61,6 +66,25 @@ export function Creature({
   const hpPct = Math.max(0, Math.min(1, hp / maxHp));
   const facing = team === "enemy" ? -1 : 1;
   const url = modelFor(formId);
+
+  const root = useRef<THREE.Group>(null);
+  const placed = useRef(false);
+  useFrame((_, dt) => {
+    const g = root.current;
+    if (!g) return;
+    const [tx, ty, tz] = position;
+    if (!smooth || !placed.current) {
+      g.position.set(tx, ty, tz);
+      placed.current = true;
+      return;
+    }
+    // frame-rate independent exponential glide; snaps if the unit teleported
+    const k = 1 - Math.exp(-dt * 16);
+    const dx = tx - g.position.x;
+    const dz = tz - g.position.z;
+    if (dx * dx + dz * dz > 4) g.position.set(tx, ty, tz);
+    else g.position.set(g.position.x + dx * k, ty, g.position.z + dz * k);
+  });
 
   const body = (
     <ProceduralCreature
@@ -74,7 +98,7 @@ export function Creature({
   );
 
   return (
-    <group position={position} scale={dragging ? scale * 1.08 : scale}>
+    <group ref={root} position={position} scale={dragging ? scale * 1.08 : scale}>
       {/* glowing base ring */}
       <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.34, 0.48, 32]} />

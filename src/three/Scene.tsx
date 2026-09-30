@@ -1,12 +1,13 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import type * as THREE from "three";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Board } from "./Board";
 import { Creature } from "./Creature";
 import { BattleFx } from "./BattleFx";
 import { DigitalEnvironment } from "./Environment";
 import { useGame } from "../game/store";
+import { SIM_DT } from "../game/battle";
 import { ITEMS } from "../game/items";
 import { FORMS, ATTR_COLOR } from "../game/creatures";
 import {
@@ -117,6 +118,7 @@ function BattleUnits() {
             moving={f.moving}
             castKey={f.castKey}
             boss={f.boss}
+            smooth
             mana={f.mana}
             maxMana={f.maxMana}
             itemEmojis={(f.items ?? []).map((id) => ITEMS[id]?.emoji ?? "")}
@@ -131,9 +133,24 @@ function BattleUnits() {
   );
 }
 
+/** Advances combat in fixed SIM_DT steps (frame-rate independent, identical
+ *  on every device). Remounts per battle, so the accumulator starts at 0. */
 function BattleRunner() {
-  const stepBattle = useGame((s) => s.stepBattle);
-  useFrame((_, dt) => stepBattle(Math.min(dt, 0.05)));
+  const acc = useRef(0);
+  useFrame((_, dt) => {
+    const game = useGame.getState();
+    acc.current += Math.min(dt, 0.25) * game.simSpeed;
+    let steps = 0;
+    while (acc.current >= SIM_DT && steps < 12) {
+      acc.current -= SIM_DT;
+      steps++;
+      game.stepBattle(SIM_DT);
+      if (useGame.getState().phase !== "battle") {
+        acc.current = 0;
+        break;
+      }
+    }
+  });
   return null;
 }
 

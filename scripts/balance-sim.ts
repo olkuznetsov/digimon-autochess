@@ -12,10 +12,10 @@
 import type { Attribute, Fighter, Form, Role, Unit } from "../src/game/types";
 import { FORMS, ALL_FORM_IDS, statsFor } from "../src/game/creatures";
 import { applySynergies } from "../src/game/synergies";
-import { makeFighter, stepCombat } from "../src/game/battle";
+import { makeFighter, stepCombat, SIM_DT } from "../src/game/battle";
 
-const DT = 0.05;
-const MAX_TICKS = 2400; // 120s cap → draw
+const DT = SIM_DT;
+const MAX_TICKS = Math.round(120 / DT); // 120s cap → draw
 
 // ---------- seeded rng (reproducible runs) ----------
 let seed = 20260628;

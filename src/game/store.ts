@@ -218,6 +218,8 @@ interface GameState {
   fx: Fx[];
   battleTime: number;
   tick: number;
+  /** battle playback speed multiplier (1 = normal) */
+  simSpeed: number;
   boardSnapshot: Unit[] | null;
 
   dragId: string | null;
@@ -281,6 +283,7 @@ function initialState() {
     fx: [] as Fx[],
     battleTime: 0,
     tick: 0,
+    simSpeed: 1,
     boardSnapshot: null as Unit[] | null,
     dragId: null as string | null,
     dragPos: null as { x: number; z: number } | null,

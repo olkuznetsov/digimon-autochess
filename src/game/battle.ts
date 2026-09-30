@@ -5,6 +5,11 @@ import { ultimateFor, type UltCtx, type UltFx } from "./ultimates";
 
 export const MOVE_SPEED = 2.2; // cells per second during battle
 
+/** Fixed simulation step (seconds). The browser, the balance sim and both PvP
+ *  clients all advance combat in exactly these increments, so a given battle
+ *  always plays out identically. */
+export const SIM_DT = 0.05;
+
 const MAX_MANA = 100;
 const MANA_PER_ATTACK = 15;
 const MANA_PER_HIT_TAKEN = 5;
@@ -67,7 +72,11 @@ export function makeFighter(
   return f;
 }
 
-const dist = (a: Fighter, b: Fighter) => Math.hypot(a.col - b.col, a.row - b.row);
+const dist = (a: Fighter, b: Fighter) => {
+  const dx = a.col - b.col;
+  const dy = a.row - b.row;
+  return Math.sqrt(dx * dx + dy * dy); // not Math.hypot: its rounding differs between JS engines
+};
 
 /** Apply damage through shields, feed lifesteal + on-hit mana, emit FX events. */
 function dealDamage(src: Fighter, tgt: Fighter, amount: number, events?: CombatEvent[], mult = 1) {
