@@ -35,6 +35,18 @@ export interface CombatEvent {
   ranged?: boolean;
   /** cast only: which ultimate visual to draw */
   ult?: UltFx;
+  /** cast only: ability name and caster stage (Megas get a cinematic beat) */
+  name?: string;
+  stage?: number;
+  /** cast only: who cast it and where their target stood (AoE visuals land there) */
+  form?: string;
+  team?: "player" | "enemy";
+  toCol?: number;
+  toRow?: number;
+  /** hit only: a big chunk of the target's max HP (≥14%) */
+  heavy?: boolean;
+  /** hit only: dealt by an ultimate */
+  ability?: boolean;
 }
 
 /** Build a combat-ready Fighter from a form. Used by the store and the balance sim. */
@@ -85,13 +97,14 @@ const dist = (a: Fighter, b: Fighter) => {
 };
 
 /** Apply damage through shields, feed lifesteal + on-hit mana, emit FX events. */
-function dealDamage(src: Fighter, tgt: Fighter, amount: number, events?: CombatEvent[], mult = 1) {
+function dealDamage(src: Fighter, tgt: Fighter, amount: number, events?: CombatEvent[], mult = 1, ability = false) {
   let dmg = amount;
   if (tgt.shield > 0) {
     const absorbed = Math.min(tgt.shield, dmg);
     tgt.shield -= absorbed;
     dmg -= absorbed;
   }
+  const wasAlive = tgt.hp > 0;
   tgt.hp -= dmg;
   if (src.lifesteal > 0) src.hp = Math.min(src.maxHp, src.hp + amount * src.lifesteal);
   tgt.mana = Math.min(tgt.maxMana, tgt.mana + MANA_PER_HIT_TAKEN * tgt.manaMult);
@@ -105,15 +118,30 @@ function dealDamage(src: Fighter, tgt: Fighter, amount: number, events?: CombatE
     amount,
     mult,
     ranged: src.range > 1.5,
+    heavy: amount >= tgt.maxHp * 0.14,
+    ability,
   });
-  if (tgt.hp <= 0) events?.push({ kind: "death", col: tgt.col, row: tgt.row, attr: tgt.attribute });
+  // only on the killing blow: later hits in the same step land on a corpse
+  if (wasAlive && tgt.hp <= 0) events?.push({ kind: "death", col: tgt.col, row: tgt.row, attr: tgt.attribute });
 }
 
 /** Cast a fighter's signature ultimate (per-form, role fallback). Auto-fires at full mana.
  *  Bumps castKey so the renderer plays the unit's special01 animation. */
 function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], events?: CombatEvent[]) {
   const ult = ultimateFor(fr.formId, fr.role);
-  events?.push({ kind: "cast", col: fr.col, row: fr.row, attr: fr.attribute, ult: ult.fx });
+  events?.push({
+    kind: "cast",
+    col: fr.col,
+    row: fr.row,
+    attr: fr.attribute,
+    ult: ult.fx,
+    name: ult.name,
+    stage: FORMS[fr.formId]?.stage,
+    form: fr.formId,
+    team: fr.team,
+    toCol: target.col,
+    toRow: target.row,
+  });
   fr.castKey++;
   const ctx: UltCtx = {
     caster: fr,
@@ -122,7 +150,7 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], events?:
     enemies: fighters.filter((t) => t.team !== fr.team && t.hp > 0),
     deal: (tgt, factor) => {
       const m = attributeMultiplier(fr.attribute, tgt.attribute);
-      dealDamage(fr, tgt, fr.attack * factor * m, events, m * factor);
+      dealDamage(fr, tgt, fr.attack * factor * m, events, m * factor, true);
     },
     stun: (tgt, seconds) => {
       tgt.stunned = Math.max(tgt.stunned, seconds);

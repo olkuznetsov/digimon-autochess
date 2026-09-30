@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { TARGET_HEIGHT, type ModelTweak } from "./models";
 import type { UnitDrive } from "./unitDrive";
 import { withUnitFx, type UnitFxUniforms } from "./unitFx";
+import { juice } from "./juice";
 
 interface Props {
   url: string;
@@ -174,8 +175,8 @@ export function CreatureModel({ url, tweak, drive, color, spawnOnMount, onDissol
     }
     if (!hasClips) return;
 
-    // frozen units hold their pose
-    mixer.timeScale = d.stunned && !d.dead ? 0 : 1;
+    // frozen units hold their pose; hit-stop / slow-mo scale every animation
+    mixer.timeScale = (d.stunned && !d.dead ? 0 : 1) * juice.timeScale;
 
     // ---- one-shot events ----
     if (d.spawnKey !== seen.current.spawnKey) {

@@ -240,7 +240,7 @@ function DataBurst({ color, spread = 0.5, rise = 1 }: { color: string; spread?: 
         spin: Math.random() * 6,
         s: 0.6 + Math.random() * 0.9,
       })),
-    [],
+    [spread, rise],
   );
   const material = useMemo(
     () =>

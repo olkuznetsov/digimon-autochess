@@ -1,13 +1,14 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import type * as THREE from "three";
+import * as THREE from "three";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Board } from "./Board";
 import { Creature } from "./Creature";
 import { BattleFx } from "./BattleFx";
 import { DigitalEnvironment } from "./Environment";
 import { useGame } from "../game/store";
 import { newDrive, type UnitDrive } from "./unitDrive";
+import { juice, resetJuice, tickJuice } from "./juice";
 import { SIM_DT } from "../game/battle";
 import { ITEMS } from "../game/items";
 import { FORMS, ATTR_COLOR } from "../game/creatures";
@@ -24,29 +25,61 @@ import {
 // pointer-down position of the current drag, to tell a click from a drag
 let dragStart: { x: number; z: number } | null = null;
 
+/** Camera: portrait/landscape framing, a gentle push toward the fight during
+ *  battles, and trauma-based shake. Also ticks the shared juice clock first thing
+ *  every frame. */
 function CameraRig() {
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
   const scene = useThree((s) => s.scene);
   const gl = useThree((s) => s.gl);
+  const push = useRef(0);
+  const look = useMemo(() => new THREE.Vector3(), []);
+  const pos = useMemo(() => new THREE.Vector3(), []);
+  const baseLook = useMemo(() => new THREE.Vector3(), []);
+
   useEffect(() => {
-    // Framed so the bench stays on screen while the horizon (data sun) is visible.
-    // Portrait phones need a wider fov and a higher, farther camera or the board
-    // gets cropped at the sides.
+    if (import.meta.env.DEV) Object.assign(window, { __scene: scene, __gl: gl });
+  }, [scene, gl]);
+
+  useFrame((state, dt) => {
+    tickJuice(dt);
     const cam = camera as THREE.PerspectiveCamera;
     const portrait = size.width / size.height < 0.9;
-    if (portrait) {
-      cam.fov = 70;
-      cam.position.set(0, 8.2, -10.6);
-      cam.lookAt(0, 0.4, 3.4);
-    } else {
-      cam.fov = 55;
-      cam.position.set(0, 6.6, -9.2);
-      cam.lookAt(0, 0.3, 3.2);
+    const fov = portrait ? 70 : 55;
+    if (cam.fov !== fov) {
+      cam.fov = fov;
+      cam.updateProjectionMatrix();
     }
-    cam.updateProjectionMatrix();
-    if (import.meta.env.DEV) Object.assign(window, { __scene: scene, __gl: gl });
-  }, [camera, scene, size, gl]);
+    if (portrait) {
+      pos.set(0, 8.2, -10.6);
+      baseLook.set(0, 0.4, 3.4);
+    } else {
+      pos.set(0, 6.6, -9.2);
+      baseLook.set(0, 0.3, 3.2);
+    }
+    // ease in a little closer while a battle is on
+    const phase = useGame.getState().phase;
+    const target = phase === "battle" ? 1 : 0;
+    push.current += (target - push.current) * (1 - Math.exp(-dt * 1.8));
+    // portrait already fills the width with the board — pushing in would crop the flanks
+    const p = push.current * (portrait ? 0.05 : 0.14);
+    look.copy(baseLook);
+    pos.lerp(look, p);
+    look.y += push.current * 0.15;
+
+    // trauma^2 shake: small positional jitter + a touch of roll
+    const t = juice.trauma * juice.trauma;
+    if (t > 0.0001) {
+      const time = state.clock.elapsedTime * 28;
+      pos.x += Math.sin(time * 1.13) * 0.16 * t;
+      pos.y += Math.sin(time * 1.71 + 1.3) * 0.12 * t;
+      pos.z += Math.sin(time * 0.93 + 2.1) * 0.08 * t;
+    }
+    cam.position.copy(pos);
+    cam.lookAt(look);
+    if (t > 0.0001) cam.rotation.z += Math.sin(state.clock.elapsedTime * 21) * 0.012 * t;
+  });
   return null;
 }
 
@@ -203,13 +236,14 @@ function BattleRunner() {
   const acc = useRef(0);
   // units materialize before the first blow; the HUD shows "FIGHT!" while battleTime is 0
   const intro = useRef(0.9);
+  useEffect(() => resetJuice(), []);
   useFrame((_, dt) => {
     const game = useGame.getState();
     if (intro.current > 0) {
       intro.current -= Math.min(dt, 0.25);
       return;
     }
-    acc.current += Math.min(dt, 0.25) * game.simSpeed;
+    acc.current += Math.min(dt, 0.25) * game.simSpeed * juice.timeScale;
     let steps = 0;
     while (acc.current >= SIM_DT && steps < 12) {
       acc.current -= SIM_DT;
@@ -227,6 +261,7 @@ function BattleRunner() {
 function SceneContents() {
   const phase = useGame((s) => s.phase);
   const dragId = useGame((s) => s.dragId);
+  const battleSeq = useGame((s) => s.battleSeq);
   const setDrag = useGame((s) => s.setDrag);
   const moveUnit = useGame((s) => s.moveUnit);
   const [hovered, setHovered] = useState<{ col: number; row: number } | null>(null);
@@ -287,9 +322,9 @@ function SceneContents() {
       <Board highlight={!!dragId} hovered={hovered} />
 
       {inPrep && <PrepUnits />}
-      {!inPrep && <BattleUnits />}
-      {phase === "battle" && <BattleRunner />}
-      {phase === "battle" && <BattleFx />}
+      {!inPrep && <BattleUnits key={battleSeq} />}
+      {phase === "battle" && <BattleRunner key={battleSeq} />}
+      {phase !== "prep" && <BattleFx key={battleSeq} />}
 
       {/* invisible pointer catcher for dragging */}
       <mesh

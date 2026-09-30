@@ -67,6 +67,8 @@ export interface Fx extends CombatEvent {
   born: number; // battleTime seconds
   jx: number; // small positional jitter so stacked numbers don't overlap
   jz: number;
+  /** cast only: cast by the viewer's own side (after the PvP view flip) */
+  mine?: boolean;
 }
 let fxCounter = 0;
 const FX_TTL = 1.0; // seconds an effect stays in the list
@@ -231,6 +233,8 @@ interface GameState {
   fighters: Fighter[];
   /** fighters that died this battle — kept so the renderer can play their death */
   corpses: Fighter[];
+  /** bumped whenever a fight starts, so every battle mounts fresh units and effects */
+  battleSeq: number;
   fx: Fx[];
   battleTime: number;
   tick: number;
@@ -308,6 +312,7 @@ function initialState() {
     lastDamage: 0,
     fighters: [] as Fighter[],
     corpses: [] as Fighter[],
+    battleSeq: 0,
     fx: [] as Fx[],
     battleTime: 0,
     tick: 0,
@@ -524,6 +529,7 @@ export const useGame = create<GameState>((set, get) => ({
 
     set({
       phase: "battle",
+      battleSeq: get().battleSeq + 1,
       result: null,
       viewFlip: false,
       boardSnapshot: units,
@@ -545,6 +551,34 @@ export const useGame = create<GameState>((set, get) => ({
     for (const e of events) battleSfx(e.kind === "hit" ? (e.ranged ? "shot" : "hit") : e.kind);
     const bt = state.battleTime + dt;
 
+    // effects list: prune old, append this step's events (incl. the final blow —
+    // it used to be dropped because the end-of-battle branches reset fx to [])
+    let fx = state.fx;
+    const pruned = fx.filter((f) => bt - f.born < FX_TTL);
+    if (events.length > 0 || pruned.length !== fx.length) {
+      fx = [
+        ...pruned,
+        ...events.map((e) => ({
+          ...e,
+          ...(state.viewFlip
+            ? {
+                col: mirrorCol(e.col),
+                row: mirrorRow(e.row),
+                fromCol: e.fromCol == null ? undefined : mirrorCol(e.fromCol),
+                fromRow: e.fromRow == null ? undefined : mirrorRow(e.fromRow),
+                toCol: e.toCol == null ? undefined : mirrorCol(e.toCol),
+                toRow: e.toRow == null ? undefined : mirrorRow(e.toRow),
+              }
+            : {}),
+          mine: e.team ? (e.team === "player") !== state.viewFlip : undefined,
+          id: `fx${fxCounter++}`,
+          born: bt,
+          jx: (Math.random() - 0.5) * 0.35,
+          jz: (Math.random() - 0.5) * 0.2,
+        })),
+      ];
+    }
+
     const alive = fighters.filter((fr) => fr.hp > 0);
     const corpses =
       alive.length === fighters.length ? state.corpses : [...state.corpses, ...fighters.filter((fr) => fr.hp <= 0)];
@@ -562,7 +596,7 @@ export const useGame = create<GameState>((set, get) => ({
           result: win ? "win" : "lose",
           fighters: alive,
           corpses,
-          fx: [],
+          fx,
           battleTime: bt,
           tick: state.tick + 1,
         });
@@ -593,7 +627,7 @@ export const useGame = create<GameState>((set, get) => ({
           result: iWon ? "win" : "lose",
           fighters: alive,
           corpses,
-          fx: [],
+          fx,
           battleTime: bt,
           tick: state.tick + 1,
           pvp,
@@ -634,7 +668,7 @@ export const useGame = create<GameState>((set, get) => ({
         result: win ? "win" : "lose",
         fighters: alive,
         corpses,
-        fx: [],
+        fx,
         battleTime: bt,
         streak,
         inventory,
@@ -645,28 +679,6 @@ export const useGame = create<GameState>((set, get) => ({
         tick: state.tick + 1,
       });
     } else {
-      let fx = state.fx;
-      const pruned = fx.filter((f) => bt - f.born < FX_TTL);
-      if (events.length > 0 || pruned.length !== fx.length) {
-        fx = [
-          ...pruned,
-          ...events.map((e) => ({
-            ...e,
-            ...(state.viewFlip
-              ? {
-                  col: mirrorCol(e.col),
-                  row: mirrorRow(e.row),
-                  fromCol: e.fromCol == null ? undefined : mirrorCol(e.fromCol),
-                  fromRow: e.fromRow == null ? undefined : mirrorRow(e.fromRow),
-                }
-              : {}),
-            id: `fx${fxCounter++}`,
-            born: bt,
-            jx: (Math.random() - 0.5) * 0.35,
-            jz: (Math.random() - 0.5) * 0.2,
-          })),
-        ];
-      }
       set({ fighters: alive, corpses, fx, battleTime: bt, tick: state.tick + 1 });
     }
   },
@@ -681,6 +693,7 @@ export const useGame = create<GameState>((set, get) => ({
       result: null,
       fighters: [],
       corpses: [],
+      fx: [],
       boardSnapshot: null,
       units: state.boardSnapshot ?? state.units,
       gold: state.gold + income,
@@ -810,6 +823,7 @@ export const useGame = create<GameState>((set, get) => ({
     sfx.battleStart();
     set({
       phase: "battle",
+      battleSeq: get().battleSeq + 1,
       result: null,
       boardSnapshot: state.units,
       // alternate who acts first each round so perfect mirror fights don't
@@ -924,6 +938,7 @@ export const useGame = create<GameState>((set, get) => ({
     sfx.battleStart();
     set({
       phase: "battle",
+      battleSeq: get().battleSeq + 1,
       ghost: { name },
       viewFlip: false,
       result: null,
@@ -944,6 +959,7 @@ export const useGame = create<GameState>((set, get) => ({
       result: null,
       fighters: [],
       corpses: [],
+      fx: [],
       ghost: null,
       units: state.boardSnapshot ?? state.units,
       boardSnapshot: null,
