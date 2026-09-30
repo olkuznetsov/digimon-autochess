@@ -2,6 +2,7 @@ import type { Attribute, Fighter } from "./types";
 import { FORMS, attributeMultiplier, statsFor } from "./creatures";
 import { applyItems } from "./items";
 import { ultimateFor, type UltCtx, type UltFx } from "./ultimates";
+import { COLS, ROWS } from "./board";
 
 export const MOVE_SPEED = 2.2; // cells per second during battle
 
@@ -9,6 +10,11 @@ export const MOVE_SPEED = 2.2; // cells per second during battle
  *  clients all advance combat in exactly these increments, so a given battle
  *  always plays out identically. */
 export const SIM_DT = 0.05;
+
+/** Moving units steer away from neighbours within this radius (cells), so several
+ *  attackers spread around a target instead of stacking on one approach point. */
+const SEPARATION_RADIUS = 0.8;
+const SEPARATION_WEIGHT = 1.3;
 
 const MAX_MANA = 100;
 const MANA_PER_ATTACK = 15;
@@ -174,11 +180,31 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
       }
     } else {
       fr.moving = true;
-      const step = MOVE_SPEED * dt;
-      const ux = (target.col - fr.col) / d;
-      const uy = (target.row - fr.row) / d;
-      fr.col += ux * Math.min(step, d);
-      fr.row += uy * Math.min(step, d);
+      let dx = (target.col - fr.col) / d;
+      let dy = (target.row - fr.row) / d;
+      // separation: deterministic (fixed iteration order, sqrt only)
+      let sx = 0;
+      let sy = 0;
+      for (const o of fighters) {
+        if (o === fr || o.hp <= 0) continue;
+        const ox = fr.col - o.col;
+        const oy = fr.row - o.row;
+        const dd = Math.sqrt(ox * ox + oy * oy);
+        if (dd >= SEPARATION_RADIUS) continue;
+        if (dd < 1e-6) {
+          sx += fr.uid < o.uid ? 0.5 : -0.5; // exact overlap: split by id
+          continue;
+        }
+        const w = (SEPARATION_RADIUS - dd) / (SEPARATION_RADIUS * dd);
+        sx += ox * w;
+        sy += oy * w;
+      }
+      dx += sx * SEPARATION_WEIGHT;
+      dy += sy * SEPARATION_WEIGHT;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      const step = Math.min(MOVE_SPEED * dt, d);
+      fr.col = Math.max(0, Math.min(COLS - 1, fr.col + (dx / len) * step));
+      fr.row = Math.max(0, Math.min(ROWS - 1, fr.row + (dy / len) * step));
     }
   }
 }
