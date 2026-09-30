@@ -1,4 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
+import { FORMS } from "../../src/game/creatures";
+import { ITEMS } from "../../src/game/items";
 
 /**
  * Multiplayer relay for Digimon Auto Chess: one MatchRoom Durable Object per
@@ -13,6 +15,35 @@ import { DurableObject } from "cloudflare:workers";
 export interface Env {
   ROOM: DurableObjectNamespace<MatchRoom>;
   LB: DurableObjectNamespace<Leaderboard>;
+  /** worker secret guarding /lb/admin/* (wrangler secret put ADMIN_KEY) */
+  ADMIN_KEY?: string;
+}
+
+/** Display names: printable, trimmed, collapsed whitespace, max 16. */
+function cleanName(raw: unknown): string {
+  const n = String(raw ?? "")
+    .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u206f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 16);
+  return n || "Tamer";
+}
+
+/** A ghost board must be real forms on real player cells with real items. */
+function cleanBoard(raw: unknown): string | null {
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > 9) return null;
+  const units = [];
+  for (const u of raw as Record<string, unknown>[]) {
+    const formId = String(u?.formId ?? "");
+    const col = Number(u?.col);
+    const row = Number(u?.row);
+    const items = Array.isArray(u?.items) ? (u.items as unknown[]).map(String) : [];
+    if (!FORMS[formId]) return null;
+    if (!Number.isInteger(col) || col < 0 || col > 5 || !Number.isInteger(row) || row < 0 || row > 2) return null;
+    if (items.length > 2 || items.some((i) => !ITEMS[i])) return null;
+    units.push({ uid: String(u?.uid ?? "").slice(0, 24), formId, col, row, items });
+  }
+  return JSON.stringify(units);
 }
 
 type Side = "A" | "B";
@@ -176,14 +207,10 @@ export class Leaderboard extends DurableObject<Env> {
 
   async submit(e: { id: string; name: string; best?: number; winsDelta?: number; board?: unknown }) {
     const id = String(e.id).slice(0, 40);
-    const name = (String(e.name || "Tamer")).slice(0, 16);
+    const name = cleanName(e.name);
     const best = Math.max(0, Math.min(999, Math.floor(Number(e.best) || 0)));
     const winsDelta = e.winsDelta === 1 ? 1 : 0;
-    let board: string | null = null;
-    if (Array.isArray(e.board) && e.board.length <= 9) {
-      const compact = JSON.stringify(e.board);
-      if (compact.length <= 4096) board = compact;
-    }
+    const board = e.board === undefined ? null : cleanBoard(e.board);
     const row = this.ctx.storage.sql
       .exec<{ best: number; wins: number }>("SELECT best, wins FROM lb WHERE id = ?", id)
       .toArray()[0];
@@ -210,6 +237,14 @@ export class Leaderboard extends DurableObject<Env> {
       );
     }
     return { best: newBest, wins: newWins };
+  }
+
+  async remove(ids: string[]): Promise<number> {
+    let n = 0;
+    for (const id of ids.slice(0, 50)) {
+      n += this.ctx.storage.sql.exec("DELETE FROM lb WHERE id = ?", String(id).slice(0, 40)).rowsWritten;
+    }
+    return n;
   }
 
   async top(): Promise<unknown[]> {
@@ -260,6 +295,20 @@ export default {
       }
       if (!body?.id) return json({ error: "id required" }, 400);
       return json(await lb.submit(body as Parameters<Leaderboard["submit"]>[0]));
+    }
+    if (url.pathname === "/lb/admin/delete" && request.method === "POST") {
+      const key = request.headers.get("x-admin-key") ?? "";
+      if (!env.ADMIN_KEY || key.length !== env.ADMIN_KEY.length || key !== env.ADMIN_KEY) {
+        return json({ error: "forbidden" }, 403);
+      }
+      let body: { ids?: unknown };
+      try {
+        body = await request.json();
+      } catch {
+        return json({ error: "bad json" }, 400);
+      }
+      const ids = Array.isArray(body?.ids) ? body.ids.map(String) : [];
+      return json({ deleted: await lb.remove(ids) });
     }
     const bm = url.pathname.match(/^\/lb\/board\/([\w-]{1,40})$/);
     if (bm && request.method === "GET") {

@@ -35,6 +35,9 @@ export function playerName(): string {
 
 /** Fire-and-forget score/board submission (never blocks gameplay). */
 export function submitScore(data: { best?: number; winsDelta?: 1; board?: PvpBoardUnit[] }) {
+  // the dev server shares the production leaderboard — keep test runs off it
+  // (set localStorage "dac-dev-submit" to test submissions deliberately)
+  if (import.meta.env.DEV && !localStorage.getItem("dac-dev-submit")) return;
   try {
     void fetch(`${BASE}/lb/submit`, {
       method: "POST",
