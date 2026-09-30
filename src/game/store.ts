@@ -228,6 +228,8 @@ interface GameState {
   lastDamage: number;
 
   fighters: Fighter[];
+  /** fighters that died this battle — kept so the renderer can play their death */
+  corpses: Fighter[];
   fx: Fx[];
   battleTime: number;
   tick: number;
@@ -304,6 +306,7 @@ function initialState() {
     result: null as "win" | "lose" | null,
     lastDamage: 0,
     fighters: [] as Fighter[],
+    corpses: [] as Fighter[],
     fx: [] as Fx[],
     battleTime: 0,
     tick: 0,
@@ -523,6 +526,7 @@ export const useGame = create<GameState>((set, get) => ({
       viewFlip: false,
       boardSnapshot: units,
       fighters: [...playerFighters, ...makeEnemyWave(round)],
+      corpses: [],
       fx: [],
       battleTime: 0,
       tick: 0,
@@ -540,6 +544,8 @@ export const useGame = create<GameState>((set, get) => ({
     const bt = state.battleTime + dt;
 
     const alive = fighters.filter((fr) => fr.hp > 0);
+    const corpses =
+      alive.length === fighters.length ? state.corpses : [...state.corpses, ...fighters.filter((fr) => fr.hp <= 0)];
     const playersLeft = alive.some((fr) => fr.team === "player");
     const enemiesLeft = alive.some((fr) => fr.team === "enemy");
 
@@ -553,6 +559,7 @@ export const useGame = create<GameState>((set, get) => ({
           phase: "result",
           result: win ? "win" : "lose",
           fighters: alive,
+          corpses,
           fx: [],
           battleTime: bt,
           tick: state.tick + 1,
@@ -583,6 +590,7 @@ export const useGame = create<GameState>((set, get) => ({
           phase: "result",
           result: iWon ? "win" : "lose",
           fighters: alive,
+          corpses,
           fx: [],
           battleTime: bt,
           tick: state.tick + 1,
@@ -623,6 +631,7 @@ export const useGame = create<GameState>((set, get) => ({
         phase: "result",
         result: win ? "win" : "lose",
         fighters: alive,
+        corpses,
         fx: [],
         battleTime: bt,
         streak,
@@ -656,7 +665,7 @@ export const useGame = create<GameState>((set, get) => ({
           })),
         ];
       }
-      set({ fighters: alive, fx, battleTime: bt, tick: state.tick + 1 });
+      set({ fighters: alive, corpses, fx, battleTime: bt, tick: state.tick + 1 });
     }
   },
 
@@ -669,6 +678,7 @@ export const useGame = create<GameState>((set, get) => ({
       phase: "prep",
       result: null,
       fighters: [],
+      corpses: [],
       boardSnapshot: null,
       units: state.boardSnapshot ?? state.units,
       gold: state.gold + income,
@@ -805,6 +815,7 @@ export const useGame = create<GameState>((set, get) => ({
       fighters: state.round % 2 === 1 ? [...aFighters, ...bFighters] : [...bFighters, ...aFighters],
       viewFlip: pvp.side === "B",
       pvp: { ...pvp, hostHash: null, localHash: null },
+      corpses: [],
       fx: [],
       battleTime: 0,
       tick: 0,
@@ -916,6 +927,7 @@ export const useGame = create<GameState>((set, get) => ({
       result: null,
       boardSnapshot: state.units,
       fighters: [...myFighters, ...ghostFighters],
+      corpses: [],
       fx: [],
       battleTime: 0,
       tick: 0,
@@ -929,6 +941,7 @@ export const useGame = create<GameState>((set, get) => ({
       phase: "prep",
       result: null,
       fighters: [],
+      corpses: [],
       ghost: null,
       units: state.boardSnapshot ?? state.units,
       boardSnapshot: null,

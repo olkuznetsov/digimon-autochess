@@ -1,104 +1,127 @@
-import { Suspense, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
-import type * as THREE from "three";
+import { Suspense, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
+import * as THREE from "three";
 import { Html } from "@react-three/drei";
-import type { ThreeEvent } from "@react-three/fiber";
 import { ProceduralCreature } from "./ProceduralCreature";
 import { CreatureModel } from "./CreatureModel";
 import { modelFor, tweakFor } from "./models";
+import { angleDelta, newDrive, type UnitDrive } from "./unitDrive";
 
 interface CreatureProps {
   formId: string;
-  position: [number, number, number];
   color: string;
   name: string;
   star: 1 | 2 | 3;
-  hp: number;
-  maxHp: number;
   team?: "player" | "enemy";
+  /** prep: where the unit stands (it faces the camera). Battle units pass `drive` instead. */
+  position?: [number, number, number];
+  /** battle: live state owned by BattleUnit (position, yaw, animation events, bars) */
+  drive?: MutableRefObject<UnitDrive>;
   showHealth?: boolean;
   dragging?: boolean;
-  /** combat-only: drives the attack lunge / animation state */
-  cooldown?: number;
-  attackSpeed?: number;
-  moving?: boolean;
-  /** bumped when the unit casts its ultimate → plays the special01 animation */
-  castKey?: number;
   /** oversized boss styling (boss rounds) */
   boss?: boolean;
-  /** glide toward `position` instead of snapping (battle units: the sim ticks at 20 Hz) */
-  smooth?: boolean;
-  /** mana for the ability bar (battle only) */
-  mana?: number;
-  maxMana?: number;
-  /** equipped item emojis shown under the name */
+  /** materialize in on mount */
+  spawn?: boolean;
+  /** equipped item emojis shown next to the name */
   itemEmojis?: string[];
   onPointerDown?: (e: ThreeEvent<PointerEvent>) => void;
 }
 
-// Wrapper: base ring + star pips + name/HP label, with the creature body itself
-// being either an AI-generated glTF model (if registered) or the animated
-// procedural fallback. The emissive glow is what the bloom pass turns neon.
+/** where prep units look: roughly the camera, so their faces show */
+const CAMERA_XZ: [number, number] = [0, -9.5];
+
+/**
+ * A unit on the board: base ring, star pips, name/HP label and the creature body —
+ * the animated glTF model, or the procedural stand-in while it streams in.
+ * Position and yaw are applied here every frame (smoothed), so neither prep drags
+ * nor 20 Hz battle ticks re-render the unit.
+ */
 export function Creature({
   formId,
-  position,
   color,
   name,
   star,
-  hp,
-  maxHp,
   team = "player",
+  position,
+  drive: external,
   showHealth = true,
   dragging = false,
-  cooldown,
-  attackSpeed,
-  moving = false,
-  castKey,
   boss = false,
-  smooth = false,
-  mana,
-  maxMana,
+  spawn = false,
   itemEmojis,
   onPointerDown,
 }: CreatureProps) {
   // visible digivolution growth: Rookie 0.75 -> Champion 1.02 -> Mega 1.29
   const scale = (0.75 + (star - 1) * 0.27) * (boss ? 1.5 : 1);
-  const hpPct = Math.max(0, Math.min(1, hp / maxHp));
-  const facing = team === "enemy" ? -1 : 1;
   const url = modelFor(formId);
+
+  // prep units own a drive fed from props
+  const own = useRef<UnitDrive>(newDrive());
+  const drive = external ?? own;
+  if (!external && position) {
+    own.current.x = position[0];
+    own.current.z = position[2];
+    own.current.yaw = Math.atan2(CAMERA_XZ[0] - position[0], CAMERA_XZ[1] - position[2]);
+  }
 
   const root = useRef<THREE.Group>(null);
   const placed = useRef(false);
+  const lift = position?.[1] ?? 0;
+  const hpFill = useRef<HTMLSpanElement>(null);
+  const shieldFill = useRef<HTMLSpanElement>(null);
+  const manaFill = useRef<HTMLSpanElement>(null);
+  const label = useRef<HTMLDivElement>(null);
+  const shown = useRef({ hp: -1, mana: -1, shield: -1, dead: false });
+
   useFrame((_, dt) => {
     const g = root.current;
     if (!g) return;
-    const [tx, ty, tz] = position;
-    if (!smooth || !placed.current) {
-      g.position.set(tx, ty, tz);
+    const d = drive.current;
+    if (!placed.current || !external) {
+      // prep: go exactly where the pointer / cell says
+      g.position.set(d.x, lift, d.z);
+      if (!placed.current) g.rotation.y = d.yaw;
       placed.current = true;
-      return;
+    } else {
+      // battle: frame-rate independent glide between 20 Hz sim steps
+      const k = 1 - Math.exp(-dt * 16);
+      const dx = d.x - g.position.x;
+      const dz = d.z - g.position.z;
+      if (dx * dx + dz * dz > 4) g.position.set(d.x, 0, d.z);
+      else g.position.set(g.position.x + dx * k, 0, g.position.z + dz * k);
     }
-    // frame-rate independent exponential glide; snaps if the unit teleported
-    const k = 1 - Math.exp(-dt * 16);
-    const dx = tx - g.position.x;
-    const dz = tz - g.position.z;
-    if (dx * dx + dz * dz > 4) g.position.set(tx, ty, tz);
-    else g.position.set(g.position.x + dx * k, ty, g.position.z + dz * k);
+    g.rotation.y += angleDelta(g.rotation.y, d.yaw) * (1 - Math.exp(-dt * 10));
+
+    // bars: touch the DOM only when a value visibly changed
+    const s = shown.current;
+    const hp = Math.round(d.hpFrac * 200);
+    const mana = Math.round(d.manaFrac * 100);
+    const shield = Math.round(d.shieldFrac * 100);
+    if (hpFill.current && hp !== s.hp) hpFill.current.style.width = `${hp / 2}%`;
+    if (manaFill.current && mana !== s.mana) manaFill.current.style.width = `${mana}%`;
+    if (shieldFill.current && shield !== s.shield) shieldFill.current.style.width = `${shield}%`;
+    if (label.current && d.dead !== s.dead) label.current.style.visibility = d.dead ? "hidden" : "visible";
+    Object.assign(s, { hp, mana, shield, dead: d.dead });
   });
+
+  const [burst, setBurst] = useState(0);
 
   const body = (
     <ProceduralCreature
       formId={formId}
       color={color}
-      cooldown={cooldown}
-      attackSpeed={attackSpeed}
-      moving={moving}
-      facing={facing}
+      cooldown={drive.current.cooldown}
+      attackSpeed={1 / drive.current.attackInterval}
+      moving={drive.current.moving}
+      facing={1}
     />
   );
 
   return (
-    <group ref={root} position={position} scale={dragging ? scale * 1.08 : scale}>
+    // position/rotation are driven in useFrame (it runs before the first render),
+    // so re-renders never snap a gliding battle unit back to its sim cell
+    <group ref={root} scale={dragging ? scale * 1.08 : scale}>
       {/* glowing base ring */}
       <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.34, 0.48, 32]} />
@@ -111,27 +134,26 @@ export function Creature({
         />
       </mesh>
 
-      {/* the creature */}
       <Suspense fallback={body}>
         {url ? (
           <CreatureModel
-            /* key forces a FULL remount when the form changes (digivolution keeps
-               the unit uid!) — otherwise the previous model's fit scale and
-               animation refs leak onto the new model (giant/tiny/frozen units) */
+            /* key: digivolution keeps the unit uid but changes the model — remount
+               cleanly or the previous model's fit/animation state leaks over */
             key={url}
             url={url}
             tweak={tweakFor(formId)}
-            facing={facing}
-            cooldown={cooldown}
-            moving={moving}
-            castKey={castKey}
+            drive={drive}
+            color={color}
+            spawnOnMount={spawn}
+            onDissolveStart={() => setBurst((b) => b + 1)}
           />
         ) : (
           body
         )}
       </Suspense>
+      {burst > 0 && <DataBurst key={burst} color={color} />}
 
-      {/* transparent hit target for dragging (covers procedural + model) */}
+      {/* transparent hit target for dragging / inspecting (covers procedural + model) */}
       <mesh
         position={[0, 0.55, 0]}
         onPointerDown={onPointerDown}
@@ -158,7 +180,7 @@ export function Creature({
       ))}
 
       <Html center position={[0, 1.55, 0]} distanceFactor={9} zIndexRange={[10, 0]}>
-        <div className={`unit-label ${team}`}>
+        <div ref={label} className={`unit-label ${team}`}>
           <span className="unit-name">
             {boss ? "👑 " : ""}
             {name}
@@ -166,16 +188,81 @@ export function Creature({
           </span>
           {showHealth && (
             <span className="hp-track">
-              <span className="hp-fill" style={{ width: `${hpPct * 100}%` }} />
+              <span ref={hpFill} className="hp-fill" style={{ width: "100%" }} />
+              <span ref={shieldFill} className="shield-fill" style={{ width: "0%" }} />
             </span>
           )}
-          {showHealth && maxMana != null && (
+          {showHealth && (
             <span className="mana-track">
-              <span className="mana-fill" style={{ width: `${Math.min(100, ((mana ?? 0) / maxMana) * 100)}%` }} />
+              <span ref={manaFill} className="mana-fill" style={{ width: "0%" }} />
             </span>
           )}
         </div>
       </Html>
     </group>
   );
+}
+
+// ---------- "data deletion" burst: glowing fragments drifting up as a unit dissolves ----------
+
+const FRAGMENTS = 26;
+const fragGeo = new THREE.BoxGeometry(0.07, 0.07, 0.07);
+
+function DataBurst({ color }: { color: string }) {
+  const mesh = useRef<THREE.InstancedMesh>(null);
+  const t = useRef(0);
+  const seeds = useMemo(
+    () =>
+      Array.from({ length: FRAGMENTS }, () => ({
+        x: (Math.random() - 0.5) * 0.7,
+        y: 0.2 + Math.random() * 1.0,
+        z: (Math.random() - 0.5) * 0.7,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: 0.7 + Math.random() * 1.1,
+        vz: (Math.random() - 0.5) * 0.5,
+        spin: Math.random() * 6,
+        s: 0.6 + Math.random() * 0.9,
+      })),
+    [],
+  );
+  const material = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color(color).multiplyScalar(2.2),
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        toneMapped: false,
+      }),
+    [color],
+  );
+  const m4 = useMemo(() => new THREE.Matrix4(), []);
+  const q = useMemo(() => new THREE.Quaternion(), []);
+  const e = useMemo(() => new THREE.Euler(), []);
+  const v = useMemo(() => new THREE.Vector3(), []);
+  const sc = useMemo(() => new THREE.Vector3(), []);
+
+  useFrame((_, dt) => {
+    const im = mesh.current;
+    if (!im) return;
+    t.current += dt;
+    const life = t.current / 1.15;
+    if (life >= 1) {
+      im.visible = false;
+      return;
+    }
+    material.opacity = 1 - life * life;
+    for (let i = 0; i < FRAGMENTS; i++) {
+      const p = seeds[i];
+      const tt = t.current;
+      v.set(p.x + p.vx * tt, p.y + p.vy * tt, p.z + p.vz * tt);
+      e.set(p.spin * tt, p.spin * tt * 0.7, 0);
+      q.setFromEuler(e);
+      sc.setScalar(p.s * (1 - life * 0.6));
+      im.setMatrixAt(i, m4.compose(v, q, sc));
+    }
+    im.instanceMatrix.needsUpdate = true;
+  });
+
+  return <instancedMesh ref={mesh} args={[fragGeo, material, FRAGMENTS]} frustumCulled={false} />;
 }

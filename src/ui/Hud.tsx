@@ -18,6 +18,8 @@ function bestRound(): number {
 
 export function Hud() {
   const phase = useGame((s) => s.phase);
+  // only the "battle started?" bit, so the HUD doesn't re-render every sim tick
+  const battleTime = useGame((s) => (s.battleTime > 0 ? 1 : 0));
   const gold = useGame((s) => s.gold);
   const level = useGame((s) => s.level);
   const xp = useGame((s) => s.xp);
@@ -139,7 +141,8 @@ export function Hud() {
                 : "⚔ Ready"}
           </button>
         )}
-        {phase === "battle" && <div className="phase-tag battling">Battle in progress…</div>}
+        {phase === "battle" && battleTime === 0 && <div className="fight-banner">FIGHT!</div>}
+        {phase === "battle" && battleTime > 0 && <div className="phase-tag battling">Battle in progress…</div>}
         {phase === "result" && ghost && (
           <div className={`result ${result}`}>
             <span className="result-text">

@@ -7,6 +7,7 @@ import { Creature } from "./Creature";
 import { BattleFx } from "./BattleFx";
 import { DigitalEnvironment } from "./Environment";
 import { useGame } from "../game/store";
+import { newDrive, type UnitDrive } from "./unitDrive";
 import { SIM_DT } from "../game/battle";
 import { ITEMS } from "../game/items";
 import { FORMS, ATTR_COLOR } from "../game/creatures";
@@ -27,6 +28,7 @@ function CameraRig() {
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
   const scene = useThree((s) => s.scene);
+  const gl = useThree((s) => s.gl);
   useEffect(() => {
     // Framed so the bench stays on screen while the horizon (data sun) is visible.
     // Portrait phones need a wider fov and a higher, farther camera or the board
@@ -43,8 +45,8 @@ function CameraRig() {
       cam.lookAt(0, 0.3, 3.2);
     }
     cam.updateProjectionMatrix();
-    if (import.meta.env.DEV) (window as unknown as { __scene: unknown }).__scene = scene;
-  }, [camera, scene, size]);
+    if (import.meta.env.DEV) Object.assign(window, { __scene: scene, __gl: gl });
+  }, [camera, scene, size, gl]);
   return null;
 }
 
@@ -76,8 +78,6 @@ function PrepUnits() {
             color={ATTR_COLOR[form.attribute]}
             name={form.name}
             star={form.stage}
-            hp={1}
-            maxHp={1}
             showHealth={false}
             dragging={u.uid === dragId}
             itemEmojis={(u.items ?? []).map((id) => ITEMS[id]?.emoji ?? "")}
@@ -97,43 +97,100 @@ function PrepUnits() {
   );
 }
 
+/** Board cell → world XZ for display (PvP guests see the canonical fight mirrored). */
+function viewXZ(col: number, row: number, flip: boolean): [number, number] {
+  return flip ? cellToWorld(COLS - 1 - col, ROWS - 1 - row) : cellToWorld(col, row);
+}
+
+function findFighter(uid: string) {
+  const s = useGame.getState();
+  const alive = s.fighters.find((f) => f.uid === uid);
+  if (alive) return { f: alive, dead: false };
+  const corpse = s.corpses.find((f) => f.uid === uid);
+  return corpse ? { f: corpse, dead: true } : null;
+}
+
+/**
+ * One combat unit. Reads its fighter from the store every frame and turns sim state
+ * into animation state on its drive: position, facing its target, attacks landed
+ * (cooldown jumps), hits taken (hp drops; heavy ≥ 14% max HP), casts, freeze, death,
+ * victory. No React re-render per sim tick.
+ */
+function BattleUnit({ uid }: { uid: string }) {
+  const found = findFighter(uid)!;
+  const f0 = found.f;
+  const flip = useGame.getState().viewFlip;
+  const form = FORMS[f0.formId];
+  const team = flip ? (f0.team === "player" ? "enemy" : "player") : f0.team;
+  const [x0, z0] = viewXZ(f0.col, f0.row, flip);
+  const drive = useRef<UnitDrive>(newDrive(x0, z0, team === "player" ? 0 : Math.PI));
+  const prev = useRef({ cooldown: f0.cooldown, hp: f0.hp });
+
+  useFrame(() => {
+    const hit = findFighter(uid);
+    if (!hit) return;
+    const { f, dead } = hit;
+    const s = useGame.getState();
+    const d = drive.current;
+    const [x, z] = viewXZ(f.col, f.row, s.viewFlip);
+    d.x = x;
+    d.z = z;
+    const target = !dead && f.targetUid ? s.fighters.find((o) => o.uid === f.targetUid) : undefined;
+    if (target) {
+      const [tx, tz] = viewXZ(target.col, target.row, s.viewFlip);
+      if ((tx - x) ** 2 + (tz - z) ** 2 > 1e-4) d.yaw = Math.atan2(tx - x, tz - z);
+    }
+    d.moving = f.moving && !dead;
+    d.cooldown = f.cooldown;
+    d.attackInterval = 1 / f.attackSpeed;
+    d.engaged = !!target && !f.moving;
+    if (f.cooldown > prev.current.cooldown + 0.01) d.attackKey++;
+    d.castKey = f.castKey;
+    const lost = prev.current.hp - f.hp;
+    if (lost > 0.5) {
+      d.hitKey++;
+      if (lost >= f.maxHp * 0.14) d.heavyHitKey++;
+    }
+    d.stunned = f.stunned > 0;
+    d.dead = dead;
+    d.win = s.phase === "result" && !dead;
+    d.hpFrac = Math.max(0, f.hp) / f.maxHp;
+    d.manaFrac = Math.min(1, f.mana / f.maxMana);
+    d.shieldFrac = Math.min(1, f.shield / f.maxHp);
+    prev.current.cooldown = f.cooldown;
+    prev.current.hp = f.hp;
+  });
+
+  return (
+    <Creature
+      formId={f0.formId}
+      drive={drive}
+      color={ATTR_COLOR[f0.attribute]}
+      name={form.name}
+      star={form.stage}
+      team={team}
+      boss={f0.boss}
+      spawn
+      itemEmojis={(f0.items ?? []).map((id) => ITEMS[id]?.emoji ?? "")}
+      onPointerDown={(e: ThreeEvent<PointerEvent>) => {
+        e.stopPropagation();
+        useGame.getState().setInspected(uid);
+      }}
+    />
+  );
+}
+
 function BattleUnits() {
-  const fighters = useGame((s) => s.fighters);
-  const flip = useGame((s) => s.viewFlip);
+  // re-render only when the roster changes (a death moves a uid to the corpses list)
+  const roster = useGame((s) => [...s.fighters, ...s.corpses].map((f) => f.uid).join("|"));
   return (
     <>
-      {fighters.map((f) => {
-        const form = FORMS[f.formId];
-        // PvP guest sees the canonical fight mirrored so their team is at the bottom
-        const [x, z] = flip ? cellToWorld(COLS - 1 - f.col, ROWS - 1 - f.row) : cellToWorld(f.col, f.row);
-        const team = flip ? (f.team === "player" ? "enemy" : "player") : f.team;
-        return (
-          <Creature
-            key={f.uid}
-            formId={f.formId}
-            position={[x, 0, z]}
-            color={ATTR_COLOR[f.attribute]}
-            name={form.name}
-            star={form.stage}
-            hp={f.hp}
-            maxHp={f.maxHp}
-            team={team}
-            cooldown={f.cooldown}
-            attackSpeed={f.attackSpeed}
-            moving={f.moving}
-            castKey={f.castKey}
-            boss={f.boss}
-            smooth
-            mana={f.mana}
-            maxMana={f.maxMana}
-            itemEmojis={(f.items ?? []).map((id) => ITEMS[id]?.emoji ?? "")}
-            onPointerDown={(e: ThreeEvent<PointerEvent>) => {
-              e.stopPropagation();
-              useGame.getState().setInspected(f.uid);
-            }}
-          />
-        );
-      })}
+      {roster
+        .split("|")
+        .filter(Boolean)
+        .map((uid) => (
+          <BattleUnit key={uid} uid={uid} />
+        ))}
     </>
   );
 }
@@ -142,8 +199,14 @@ function BattleUnits() {
  *  on every device). Remounts per battle, so the accumulator starts at 0. */
 function BattleRunner() {
   const acc = useRef(0);
+  // units materialize before the first blow; the HUD shows "FIGHT!" while battleTime is 0
+  const intro = useRef(0.9);
   useFrame((_, dt) => {
     const game = useGame.getState();
+    if (intro.current > 0) {
+      intro.current -= Math.min(dt, 0.25);
+      return;
+    }
     acc.current += Math.min(dt, 0.25) * game.simSpeed;
     let steps = 0;
     while (acc.current >= SIM_DT && steps < 12) {
