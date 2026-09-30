@@ -12,6 +12,9 @@ export function UnitPanel() {
   const inspected = useGame((s) => s.inspected);
   const unit = useGame((s) => s.units.find((u) => u.uid === s.inspected));
   const fighter = useGame((s) => s.fighters.find((f) => f.uid === s.inspected));
+  // stepCombat mutates fighters in place, so the fighter reference above never
+  // changes mid-battle — re-render on every sim tick while the panel is open
+  useGame((s) => (s.inspected && s.phase === "battle" ? s.tick : 0));
   const setInspected = useGame((s) => s.setInspected);
   const phase = useGame((s) => s.phase);
   const sellUnit = useGame((s) => s.sellUnit);
