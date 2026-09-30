@@ -52,6 +52,7 @@ function CameraRig() {
 
 function PrepUnits() {
   const units = useGame((s) => s.units);
+  const evo = useGame((s) => s.evoFlash);
   const dragId = useGame((s) => s.dragId);
   const dragPos = useGame((s) => s.dragPos);
   const setDrag = useGame((s) => s.setDrag);
@@ -79,6 +80,7 @@ function PrepUnits() {
             name={form.name}
             star={form.stage}
             showHealth={false}
+            evolveKey={evo && evo.uid === u.uid ? evo.key : undefined}
             dragging={u.uid === dragId}
             itemEmojis={(u.items ?? []).map((id) => ITEMS[id]?.emoji ?? "")}
             onPointerDown={(e: ThreeEvent<PointerEvent>) => {

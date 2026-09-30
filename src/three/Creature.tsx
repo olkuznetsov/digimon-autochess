@@ -23,6 +23,8 @@ interface CreatureProps {
   boss?: boolean;
   /** materialize in on mount */
   spawn?: boolean;
+  /** changes when this unit just digivolved (evoFlash.key) → play the 3D sequence */
+  evolveKey?: number;
   /** equipped item emojis shown next to the name */
   itemEmojis?: string[];
   onPointerDown?: (e: ThreeEvent<PointerEvent>) => void;
@@ -49,6 +51,7 @@ export function Creature({
   dragging = false,
   boss = false,
   spawn = false,
+  evolveKey,
   itemEmojis,
   onPointerDown,
 }: CreatureProps) {
@@ -67,6 +70,14 @@ export function Creature({
 
   const root = useRef<THREE.Group>(null);
   const placed = useRef(false);
+  // digivolution "pop": the new form bursts out slightly oversized, then settles
+  const evolving = evolveKey !== undefined && Date.now() - evolveKey < 2500;
+  const popT = useRef(evolving ? 0 : 9);
+  const lastEvolve = useRef(evolveKey);
+  if (evolveKey !== lastEvolve.current) {
+    lastEvolve.current = evolveKey;
+    if (evolving) popT.current = 0;
+  }
   const lift = position?.[1] ?? 0;
   const hpFill = useRef<HTMLSpanElement>(null);
   const shieldFill = useRef<HTMLSpanElement>(null);
@@ -92,6 +103,11 @@ export function Creature({
       else g.position.set(g.position.x + dx * k, 0, g.position.z + dz * k);
     }
     g.rotation.y += angleDelta(g.rotation.y, d.yaw) * (1 - Math.exp(-dt * 10));
+    popT.current += dt;
+    const p = popT.current;
+    const pop =
+      p < 0.35 ? 0.55 + (p / 0.35) * 0.68 : p < 0.6 ? 1.23 - ((p - 0.35) / 0.25) * 0.28 : p < 0.9 ? 0.95 + ((p - 0.6) / 0.3) * 0.05 : 1;
+    g.scale.setScalar((dragging ? scale * 1.08 : scale) * pop);
 
     // bars: touch the DOM only when a value visibly changed
     const s = shown.current;
@@ -121,7 +137,7 @@ export function Creature({
   return (
     // position/rotation are driven in useFrame (it runs before the first render),
     // so re-renders never snap a gliding battle unit back to its sim cell
-    <group ref={root} scale={dragging ? scale * 1.08 : scale}>
+    <group ref={root}>
       {/* glowing base ring */}
       <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.34, 0.48, 32]} />
@@ -144,7 +160,7 @@ export function Creature({
             tweak={tweakFor(formId)}
             drive={drive}
             color={color}
-            spawnOnMount={spawn}
+            spawnOnMount={spawn || evolving}
             onDissolveStart={() => setBurst((b) => b + 1)}
           />
         ) : (
@@ -152,6 +168,7 @@ export function Creature({
         )}
       </Suspense>
       {burst > 0 && <DataBurst key={burst} color={color} />}
+      {evolving && <EvoSequence key={evolveKey} color={color} />}
 
       {/* transparent hit target for dragging / inspecting (covers procedural + model) */}
       <mesh
@@ -208,7 +225,7 @@ export function Creature({
 const FRAGMENTS = 26;
 const fragGeo = new THREE.BoxGeometry(0.07, 0.07, 0.07);
 
-function DataBurst({ color }: { color: string }) {
+function DataBurst({ color, spread = 0.5, rise = 1 }: { color: string; spread?: number; rise?: number }) {
   const mesh = useRef<THREE.InstancedMesh>(null);
   const t = useRef(0);
   const seeds = useMemo(
@@ -217,9 +234,9 @@ function DataBurst({ color }: { color: string }) {
         x: (Math.random() - 0.5) * 0.7,
         y: 0.2 + Math.random() * 1.0,
         z: (Math.random() - 0.5) * 0.7,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: 0.7 + Math.random() * 1.1,
-        vz: (Math.random() - 0.5) * 0.5,
+        vx: (Math.random() - 0.5) * spread,
+        vy: (0.7 + Math.random() * 1.1) * rise,
+        vz: (Math.random() - 0.5) * spread,
         spin: Math.random() * 6,
         s: 0.6 + Math.random() * 0.9,
       })),
@@ -265,4 +282,56 @@ function DataBurst({ color }: { color: string }) {
   });
 
   return <instancedMesh ref={mesh} args={[fragGeo, material, FRAGMENTS]} frustumCulled={false} />;
+}
+
+// ---------- digivolution: a pillar of light, a ground shockwave and a data burst ----------
+
+// origin at the base, so the pillar grows up out of the ground
+const pillarGeo = new THREE.CylinderGeometry(0.5, 0.72, 5, 28, 1, true).translate(0, 2.5, 0);
+const ringGeo = new THREE.RingGeometry(0.45, 0.6, 48);
+
+function EvoSequence({ color }: { color: string }) {
+  const t = useRef(0);
+  const pillar = useRef<THREE.Mesh>(null);
+  const ring = useRef<THREE.Mesh>(null);
+  const group = useRef<THREE.Group>(null);
+  const mats = useMemo(() => {
+    const c = new THREE.Color(color).lerp(new THREE.Color("#ffffff"), 0.35);
+    const make = (k: number) =>
+      new THREE.MeshBasicMaterial({
+        color: c.clone().multiplyScalar(k),
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        toneMapped: false,
+      });
+    return { pillar: make(2.6), ring: make(3.2) };
+  }, [color]);
+
+  useFrame((_, dt) => {
+    t.current += dt;
+    const tt = t.current;
+    if (group.current) group.current.visible = tt < 1.8;
+    if (pillar.current) {
+      const rise = Math.min(1, tt / 0.22);
+      const thin = tt < 0.9 ? 1 : Math.max(0.05, 1 - (tt - 0.9) / 0.7);
+      pillar.current.scale.set(thin, rise, thin);
+      pillar.current.rotation.y += dt * 2.5;
+      mats.pillar.opacity = tt < 0.9 ? 0.75 : Math.max(0, 0.75 * (1 - (tt - 0.9) / 0.7));
+    }
+    if (ring.current) {
+      const r = Math.max(0, (tt - 0.15) / 0.75);
+      ring.current.scale.setScalar(0.6 + r * 3.2);
+      mats.ring.opacity = r <= 0 ? 0 : Math.max(0, 1 - r);
+    }
+  });
+
+  return (
+    <group ref={group}>
+      <mesh ref={pillar} geometry={pillarGeo} material={mats.pillar} />
+      <mesh ref={ring} geometry={ringGeo} material={mats.ring} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.07, 0]} />
+      <DataBurst color={color} spread={2.2} rise={1.4} />
+    </group>
+  );
 }

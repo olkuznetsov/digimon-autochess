@@ -158,9 +158,9 @@ function makeEnemyWave(round: number): Fighter[] {
  */
 function resolveEvolutions(
   units: Unit[],
-): { units: Unit[]; pending: PendingEvolution | null; evolved: { from: string; to: string }[] } {
+): { units: Unit[]; pending: PendingEvolution | null; evolved: { from: string; to: string; uid: string }[] } {
   let current = units;
-  const evolved: { from: string; to: string }[] = [];
+  const evolved: { from: string; to: string; uid: string }[] = [];
   // guard against pathological loops
   for (let guard = 0; guard < 64; guard++) {
     const groups = new Map<string, Unit[]>();
@@ -185,7 +185,7 @@ function resolveEvolutions(
         current = current
           .filter((u) => !consumed.has(u.uid))
           .map((u) => (u.uid === keep.uid ? { ...u, formId: form.evolvesTo![0] } : u));
-        evolved.push({ from: formId, to: form.evolvesTo![0] });
+        evolved.push({ from: formId, to: form.evolvesTo![0], uid: keep.uid });
         acted = true;
         break; // re-scan from the top
       }
@@ -221,7 +221,8 @@ interface GameState {
   inventory: string[];
   selectedItem: string | null;
   inspected: string | null;
-  evoFlash: { from: string; to: string; key: number } | null;
+  /** the latest digivolution — banner text and the 3D sequence on that unit */
+  evoFlash: { from: string; to: string; uid: string; key: number } | null;
   pendingEvolution: PendingEvolution | null;
   phase: Phase;
   result: "win" | "lose" | null;
@@ -300,7 +301,7 @@ function initialState() {
     inventory: [] as string[],
     selectedItem: null as string | null,
     inspected: null as string | null,
-    evoFlash: null as { from: string; to: string; key: number } | null,
+    evoFlash: null as { from: string; to: string; uid: string; key: number } | null,
     pendingEvolution: null as PendingEvolution | null,
     phase: "prep" as Phase,
     result: null as "win" | "lose" | null,
@@ -425,11 +426,12 @@ export const useGame = create<GameState>((set, get) => ({
     const consumed = new Set(pendingEvolution.consume);
     const pooled = units.filter((u) => consumed.has(u.uid)).flatMap((u) => u.items ?? []);
     const remaining = units.filter((u) => !consumed.has(u.uid));
-    remaining.push({ uid: nextUid(), formId, placement: pendingEvolution.placement, items: pooled.slice(0, 2) });
+    const evolvedUid = nextUid();
+    remaining.push({ uid: evolvedUid, formId, placement: pendingEvolution.placement, items: pooled.slice(0, 2) });
     const resolved = resolveEvolutions(remaining);
     sfx.evolve();
     const last = resolved.evolved[resolved.evolved.length - 1];
-    const flash = last ?? { from: pendingEvolution.fromFormId, to: formId };
+    const flash = last ?? { from: pendingEvolution.fromFormId, to: formId, uid: evolvedUid };
     set({
       units: resolved.units,
       pendingEvolution: resolved.pending,
