@@ -34,12 +34,21 @@ export class MatchRoom extends DurableObject<Env> {
     }
     const url = new URL(request.url);
     const name = (url.searchParams.get("name") || "Tamer").slice(0, 16);
+    const want = url.searchParams.get("side");
 
-    // Sides are assigned by who's CONNECTED, so a dropped player can rejoin.
+    // Sides are assigned by who's CONNECTED, so a dropped player can rejoin —
+    // and a rejoining player asks for their old side so host/guest never swap.
     const taken = new Set(
       this.ctx.getWebSockets().map((w) => (w.deserializeAttachment() as Attach | null)?.side),
     );
-    const side: Side | null = !taken.has("A") ? "A" : !taken.has("B") ? "B" : null;
+    const side: Side | null =
+      (want === "A" || want === "B") && !taken.has(want)
+        ? want
+        : !taken.has("A")
+          ? "A"
+          : !taken.has("B")
+            ? "B"
+            : null;
     if (!side) return new Response("room full", { status: 409 });
 
     const pair = new WebSocketPair();
@@ -50,7 +59,10 @@ export class MatchRoom extends DurableObject<Env> {
     await this.ctx.storage.setAlarm(Date.now() + ROOM_TTL_MS);
 
     const players = await this.roster();
-    server.send(JSON.stringify({ t: "joined", side, players }));
+    // a rejoining client catches up on the fight/result it may have missed
+    const lastFight = await this.ctx.storage.get("lastFight");
+    const lastResult = await this.ctx.storage.get("lastResult");
+    server.send(JSON.stringify({ t: "joined", side, players, lastFight, lastResult }));
     this.broadcast({ t: "peer", players }, side);
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -84,7 +96,7 @@ export class MatchRoom extends DurableObject<Env> {
     if (typeof message !== "string") return;
     const a = ws.deserializeAttachment() as Attach | null;
     if (!a) return;
-    let m: { t?: string; round?: number; board?: unknown; winner?: string; damage?: number };
+    let m: { t?: string; round?: number; board?: unknown; winner?: string; damage?: number; hash?: string };
     try {
       m = JSON.parse(message);
     } catch {
@@ -99,11 +111,20 @@ export class MatchRoom extends DurableObject<Env> {
       const B = await this.ctx.storage.get<ReadyPayload>("ready:B");
       if (A && B && A.round === B.round) {
         await this.ctx.storage.delete(["ready:A", "ready:B"]);
-        this.broadcast({ t: "fight", round: A.round, boards: { A: A.board, B: B.board } });
+        const fight = { round: A.round, boards: { A: A.board, B: B.board } };
+        await this.ctx.storage.put("lastFight", fight);
+        this.broadcast({ t: "fight", ...fight });
       }
     } else if (m.t === "result") {
       if (a.side !== "A") return; // host simulation is authoritative
-      this.broadcast({ t: "result", round: m.round, winner: m.winner, damage: m.damage });
+      const result = {
+        round: m.round,
+        winner: m.winner,
+        damage: m.damage,
+        hash: typeof m.hash === "string" ? m.hash.slice(0, 16) : undefined,
+      };
+      await this.ctx.storage.put("lastResult", result);
+      this.broadcast({ t: "result", ...result });
     } else if (m.t === "surrender") {
       this.broadcast({ t: "surrender", side: a.side });
     }

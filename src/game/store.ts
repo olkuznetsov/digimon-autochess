@@ -6,7 +6,7 @@ import { applySynergies } from "./synergies";
 import { ITEM_IDS } from "./items";
 import { XP_TO_NEXT, MAX_LEVEL } from "./xpView";
 import { sfx, battleSfx } from "../audio/sfx";
-import { BENCH_SLOTS, COLS } from "./board";
+import { BENCH_SLOTS, COLS, ROWS } from "./board";
 import { net } from "../net/bus";
 import { submitScore } from "../net/leaderboard";
 
@@ -46,6 +46,19 @@ export interface PvpState {
   oppHealth: number;
   matchOver: "win" | "lose" | "draw" | null;
   oppLeft: boolean;
+  /** end-of-fight state hashes (host's relayed vs ours) — must match */
+  hostHash: string | null;
+  localHash: string | null;
+  /** round whose result was already applied (results can arrive twice after a rejoin) */
+  resultRound: number;
+  /** board we last readied with — resent after a reconnect */
+  lastReady: PvpBoardUnit[] | null;
+  /** our socket dropped; reconnecting */
+  selfOffline: boolean;
+  /** gave up reconnecting */
+  connLost: boolean;
+  /** opponent's socket dropped; waiting out the grace period */
+  oppDisconnected: boolean;
 }
 
 /** A live combat effect (damage number, projectile, death burst) with its spawn time. */
@@ -226,6 +239,8 @@ interface GameState {
   dragPos: { x: number; z: number } | null;
 
   pvp: PvpState | null;
+  /** render the battle mirrored (PvP guest: the canonical sim has host at the bottom) */
+  viewFlip: boolean;
   /** ghost battle vs a leaderboard player's saved board (no run consequences) */
   ghost: { name: string } | null;
 
@@ -245,12 +260,21 @@ interface GameState {
   toPrep: () => void;
   reset: () => void;
 
-  pvpJoined: (code: string, side: "A" | "B", players: { A: string | null; B: string | null; online: string[] }) => void;
+  pvpJoined: (
+    code: string,
+    side: "A" | "B",
+    players: { A: string | null; B: string | null; online: string[] },
+    rejoin?: boolean,
+  ) => void;
   pvpPeer: (players: { A: string | null; B: string | null; online: string[] }) => void;
   pvpReadyUp: () => void;
   pvpOppReady: () => void;
   pvpFight: (boards: Record<"A" | "B", PvpBoardUnit[]>) => void;
-  pvpResult: (winner: "A" | "B" | "draw", damage: number) => void;
+  pvpResult: (winner: "A" | "B" | "draw", damage: number, hash?: string, round?: number) => void;
+  pvpResendReady: () => void;
+  pvpOpponentForfeit: () => void;
+  pvpSelfOffline: (offline: boolean) => void;
+  pvpConnectionLost: () => void;
   pvpLeft: () => void;
   pvpSurrender: () => void;
   pvpSurrendered: (side: "A" | "B") => void;
@@ -288,6 +312,7 @@ function initialState() {
     dragId: null as string | null,
     dragPos: null as { x: number; z: number } | null,
     pvp: null as PvpState | null,
+    viewFlip: false,
     ghost: null as { name: string } | null,
   };
 }
@@ -301,6 +326,38 @@ function firstEmptyBench(units: Unit[]): number | null {
 }
 
 const boardCount = (units: Unit[]) => units.filter((u) => u.placement.kind === "board").length;
+
+/** A wire board unit as a Unit (for applySynergies, which only counts forms). */
+const wireToUnit = (uid: string, u: PvpBoardUnit): Unit => ({
+  uid,
+  formId: u.formId,
+  placement: { kind: "board", col: u.col, row: u.row },
+  items: u.items ?? [],
+});
+
+/** Mirror a board cell to the other half (row 0 <-> row 5, col 0 <-> col 5). */
+const mirrorCol = (c: number) => COLS - 1 - c;
+const mirrorRow = (r: number) => ROWS - 1 - r;
+
+/** FNV-1a over the end-of-fight state: both PvP clients must produce the same value. */
+function fightHash(fighters: Fighter[], tick: number): string {
+  let h = (2166136261 ^ tick) >>> 0;
+  const text = fighters
+    .map((f) => `${f.uid}:${Math.round(f.hp * 1000)}`)
+    .sort()
+    .join("|");
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(16);
+}
+
+function checkPvpSync(pvp: PvpState) {
+  if (!pvp.hostHash || !pvp.localHash) return;
+  if (pvp.hostHash === pvp.localHash) console.info("[pvp] fight in sync", pvp.localHash);
+  else console.warn("[pvp] DESYNC: host", pvp.hostHash, "local", pvp.localHash);
+}
 
 /** Serialize on-board units for leaderboard ghost boards. */
 function wireBoard(units: Unit[]): PvpBoardUnit[] {
@@ -463,6 +520,7 @@ export const useGame = create<GameState>((set, get) => ({
     set({
       phase: "battle",
       result: null,
+      viewFlip: false,
       boardSnapshot: units,
       fighters: [...playerFighters, ...makeEnemyWave(round)],
       fx: [],
@@ -502,26 +560,33 @@ export const useGame = create<GameState>((set, get) => ({
         return;
       }
       if (state.pvp) {
-        // VS match: the HOST simulation is authoritative — it reports the result,
-        // and BOTH clients apply health when the relayed message arrives.
+        // VS match: both clients run the SAME canonical fight (host = "player",
+        // guest = "enemy"); the host reports the result and BOTH apply health
+        // when the relayed message arrives. Hashes prove the sims agreed.
+        const myTeam = state.viewFlip ? "enemy" : "player";
+        const iWon = alive.some((f) => f.team === myTeam) && !alive.some((f) => f.team !== myTeam);
+        const hash = fightHash(alive, state.tick + 1);
         if (state.pvp.side === "A") {
-          const winners = alive.length;
           net.send?.({
             t: "result",
             round: state.round,
-            winner: win && !enemiesLeft ? "A" : enemiesLeft && !playersLeft ? "B" : "draw",
-            damage: 4 + winners * 2,
+            winner: playersLeft && !enemiesLeft ? "A" : enemiesLeft && !playersLeft ? "B" : "draw",
+            damage: 4 + alive.length * 2,
+            hash,
           });
         }
-        if (win) sfx.win();
+        if (iWon) sfx.win();
         else sfx.lose();
+        const pvp = { ...state.pvp, localHash: hash };
+        checkPvpSync(pvp);
         set({
           phase: "result",
-          result: win ? "win" : "lose",
+          result: iWon ? "win" : "lose",
           fighters: alive,
           fx: [],
           battleTime: bt,
           tick: state.tick + 1,
+          pvp,
         });
         return;
       }
@@ -576,6 +641,14 @@ export const useGame = create<GameState>((set, get) => ({
           ...pruned,
           ...events.map((e) => ({
             ...e,
+            ...(state.viewFlip
+              ? {
+                  col: mirrorCol(e.col),
+                  row: mirrorRow(e.row),
+                  fromCol: e.fromCol == null ? undefined : mirrorCol(e.fromCol),
+                  fromRow: e.fromRow == null ? undefined : mirrorRow(e.fromRow),
+                }
+              : {}),
             id: `fx${fxCounter++}`,
             born: bt,
             jx: (Math.random() - 0.5) * 0.35,
@@ -603,6 +676,7 @@ export const useGame = create<GameState>((set, get) => ({
       level: leveled.level,
       xp: leveled.xp,
       shop: rollShop(),
+      viewFlip: false,
       ...(state.pvp ? { pvp: { ...state.pvp, myReady: false, oppReady: false } } : {}),
     });
   },
@@ -613,8 +687,23 @@ export const useGame = create<GameState>((set, get) => ({
   },
 
   // ---------- VS friend (multiplayer) ----------
-  pvpJoined: (code, side, players) => {
+  pvpJoined: (code, side, players, rejoin = false) => {
     const other = side === "A" ? "B" : "A";
+    const state = get();
+    if (rejoin && state.pvp) {
+      // back after a dropped connection: keep the run, just refresh presence
+      set({
+        pvp: {
+          ...state.pvp,
+          side,
+          oppName: players[other],
+          oppOnline: players.online.includes(other),
+          oppDisconnected: state.pvp.oppDisconnected && !players.online.includes(other),
+          selfOffline: false,
+        },
+      });
+      return;
+    }
     set({
       pvp: {
         code,
@@ -626,6 +715,13 @@ export const useGame = create<GameState>((set, get) => ({
         oppHealth: START_HEALTH,
         matchOver: null,
         oppLeft: false,
+        hostHash: null,
+        localHash: null,
+        resultRound: 0,
+        lastReady: null,
+        selfOffline: false,
+        connLost: false,
+        oppDisconnected: false,
       },
       // a fresh match starts a fresh run for fairness
       gold: START_GOLD,
@@ -652,7 +748,14 @@ export const useGame = create<GameState>((set, get) => ({
     const other = pvp.side === "A" ? "B" : "A";
     const nowOnline = players.online.includes(other);
     if (nowOnline && !pvp.oppOnline) sfx.buy(); // little "friend joined" pop
-    set({ pvp: { ...pvp, oppName: players[other], oppOnline: nowOnline } });
+    set({
+      pvp: {
+        ...pvp,
+        oppName: players[other],
+        oppOnline: nowOnline,
+        oppDisconnected: nowOnline ? false : pvp.oppDisconnected,
+      },
+    });
   },
 
   pvpReadyUp: () => {
@@ -667,7 +770,7 @@ export const useGame = create<GameState>((set, get) => ({
     if (board.length === 0) return;
     net.send?.({ t: "ready", round, board });
     sfx.click();
-    set({ pvp: { ...pvp, myReady: true } });
+    set({ pvp: { ...pvp, myReady: true, lastReady: board } });
   },
 
   pvpOppReady: () => {
@@ -679,41 +782,42 @@ export const useGame = create<GameState>((set, get) => ({
     const state = get();
     const pvp = state.pvp;
     if (!pvp) return;
-    const mine = boards[pvp.side] ?? [];
-    const theirs = boards[pvp.side === "A" ? "B" : "A"] ?? [];
-
-    const myFighters = mine.map((u) =>
-      makeFighter(u.formId, `m_${u.uid}`, "player", u.col, u.row, 1, u.items),
+    // Canonical fight, identical on both clients: host board A on rows 0-2 as
+    // "player", guest board B mirrored onto rows 3-5 as "enemy", order [A..., B...].
+    // The guest only renders it mirrored (viewFlip), so their own units still
+    // appear at the bottom.
+    const A = boards.A ?? [];
+    const B = boards.B ?? [];
+    const aFighters = A.map((u) => makeFighter(u.formId, `A_${u.uid}`, "player", u.col, u.row, 1, u.items));
+    applySynergies(aFighters, A.map((u) => wireToUnit(`A_${u.uid}`, u)));
+    const bFighters = B.map((u) =>
+      makeFighter(u.formId, `B_${u.uid}`, "enemy", mirrorCol(u.col), mirrorRow(u.row), 1, u.items),
     );
-    applySynergies(
-      myFighters,
-      mine.map((u) => ({ uid: `m_${u.uid}`, formId: u.formId, placement: { kind: "board" as const, col: u.col, row: u.row }, items: u.items })),
-    );
-    // opponent board mirrored onto the red half
-    const oppFighters = theirs.map((u) =>
-      makeFighter(u.formId, `o_${u.uid}`, "enemy", COLS - 1 - u.col, 5 - u.row, 1, u.items),
-    );
-    applySynergies(
-      oppFighters,
-      theirs.map((u) => ({ uid: `o_${u.uid}`, formId: u.formId, placement: { kind: "board" as const, col: u.col, row: u.row }, items: u.items })),
-    );
+    applySynergies(bFighters, B.map((u) => wireToUnit(`B_${u.uid}`, u)));
 
     sfx.battleStart();
     set({
       phase: "battle",
       result: null,
       boardSnapshot: state.units,
-      fighters: [...myFighters, ...oppFighters],
+      // alternate who acts first each round so perfect mirror fights don't
+      // always favor the same side (both clients agree: same round number)
+      fighters: state.round % 2 === 1 ? [...aFighters, ...bFighters] : [...bFighters, ...aFighters],
+      viewFlip: pvp.side === "B",
+      pvp: { ...pvp, hostHash: null, localHash: null },
       fx: [],
       battleTime: 0,
       tick: 0,
     });
   },
 
-  pvpResult: (winner, damage) => {
+  pvpResult: (winner, damage, hash, round) => {
     const state = get();
-    const pvp = state.pvp;
-    if (!pvp || pvp.matchOver) return;
+    const pvp0 = state.pvp;
+    const resultRound = round ?? state.round;
+    if (!pvp0 || pvp0.matchOver || pvp0.resultRound === resultRound) return;
+    const pvp = { ...pvp0, hostHash: hash ?? null, resultRound };
+    checkPvpSync(pvp);
     const iWon = winner === pvp.side;
     const draw = winner === "draw";
     const health = Math.max(0, state.health - (draw ? 4 : iWon ? 0 : damage));
@@ -737,9 +841,34 @@ export const useGame = create<GameState>((set, get) => ({
 
   pvpLeft: () => {
     const { pvp } = get();
-    if (!pvp) return;
-    // a fled opponent forfeits (unless the match already ended)
-    set({ pvp: { ...pvp, oppOnline: false, oppLeft: true, matchOver: pvp.matchOver ?? "win" } });
+    if (!pvp || pvp.matchOver) return;
+    // opponent's connection dropped — they may be back (phones kill sockets when
+    // switching apps); the net layer awards a forfeit after the grace period
+    set({ pvp: { ...pvp, oppOnline: false, oppDisconnected: true } });
+  },
+
+  pvpOpponentForfeit: () => {
+    const { pvp } = get();
+    if (!pvp || pvp.matchOver || pvp.oppOnline) return;
+    sfx.win();
+    submitScore({ winsDelta: 1 });
+    set({ pvp: { ...pvp, oppLeft: true, oppDisconnected: false, matchOver: "win" } });
+  },
+
+  pvpSelfOffline: (offline) => {
+    const { pvp } = get();
+    if (pvp) set({ pvp: { ...pvp, selfOffline: offline } });
+  },
+
+  pvpConnectionLost: () => {
+    const { pvp } = get();
+    if (pvp) set({ pvp: { ...pvp, selfOffline: false, connLost: true } });
+  },
+
+  pvpResendReady: () => {
+    const { pvp, round } = get();
+    if (!pvp || !pvp.lastReady) return;
+    net.send?.({ t: "ready", round, board: pvp.lastReady });
   },
 
   pvpSurrender: () => {
@@ -773,22 +902,17 @@ export const useGame = create<GameState>((set, get) => ({
     if (mine.length === 0 || board.length === 0) return;
 
     const myFighters = mine.map((u) => makeFighter(u.formId, `m_${u.uid}`, "player", u.col, u.row, 1, u.items));
-    applySynergies(
-      myFighters,
-      mine.map((u) => ({ uid: `m_${u.uid}`, formId: u.formId, placement: { kind: "board" as const, col: u.col, row: u.row }, items: u.items })),
-    );
+    applySynergies(myFighters, mine.map((u) => wireToUnit(`m_${u.uid}`, u)));
     const ghostFighters = board.map((u, i) =>
-      makeFighter(u.formId, `g_${u.uid ?? i}`, "enemy", COLS - 1 - u.col, 5 - u.row, 1, u.items ?? []),
+      makeFighter(u.formId, `g_${u.uid ?? i}`, "enemy", mirrorCol(u.col), mirrorRow(u.row), 1, u.items ?? []),
     );
-    applySynergies(
-      ghostFighters,
-      board.map((u, i) => ({ uid: `g_${u.uid ?? i}`, formId: u.formId, placement: { kind: "board" as const, col: u.col, row: u.row }, items: u.items ?? [] })),
-    );
+    applySynergies(ghostFighters, board.map((u, i) => wireToUnit(`g_${u.uid ?? i}`, u)));
 
     sfx.battleStart();
     set({
       phase: "battle",
       ghost: { name },
+      viewFlip: false,
       result: null,
       boardSnapshot: state.units,
       fighters: [...myFighters, ...ghostFighters],

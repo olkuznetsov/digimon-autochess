@@ -88,9 +88,10 @@ export function Hud() {
           </div>
           <div className="stat health">♥ {health}</div>
           {pvp && (
-            <div className="stat opp">
+            <div className={`stat opp${pvp.oppDisconnected ? " away" : ""}`}>
               🗡 {pvp.oppName ?? pvp.code} ♥ {pvp.oppHealth}
-              {pvp.oppReady && phase === "prep" && <span className="opp-ready">✓</span>}
+              {pvp.oppDisconnected && <span className="opp-away">reconnecting…</span>}
+              {!pvp.oppDisconnected && pvp.oppReady && phase === "prep" && <span className="opp-ready">✓</span>}
             </div>
           )}
           {pvp && !pvp.matchOver && (
@@ -129,9 +130,11 @@ export function Hud() {
         )}
         {phase === "prep" && pvp && !pvp.matchOver && (
           <button className="action" disabled={boardUnits === 0 || pvp.myReady || !pvp.oppOnline} onClick={pvpReadyUp}>
-            {!pvp.oppOnline
-              ? `Waiting for a friend… (${pvp.code})`
-              : pvp.myReady
+            {pvp.oppDisconnected
+              ? `${pvp.oppName ?? "Opponent"} is reconnecting…`
+              : !pvp.oppOnline
+                ? `Waiting for a friend… (${pvp.code})`
+                : pvp.myReady
                 ? `Waiting for ${pvp.oppName ?? "opponent"}…`
                 : "⚔ Ready"}
           </button>
@@ -171,6 +174,26 @@ export function Hud() {
           </div>
         )}
       </div>
+
+      {pvp?.selfOffline && !pvp.matchOver && (
+        <div className="net-banner">📡 Connection dropped — reconnecting…</div>
+      )}
+
+      {pvp?.connLost && !pvp.matchOver && (
+        <div className="gameover">
+          <div className="go-title draw">📡 CONNECTION LOST</div>
+          <div className="go-sub">Couldn't get back into room {pvp.code}</div>
+          <button
+            className="action"
+            onClick={() => {
+              pvpClose();
+              pvpQuit();
+            }}
+          >
+            ↻ Back to Solo
+          </button>
+        </div>
+      )}
 
       {pvp?.matchOver && (
         <div className="gameover">

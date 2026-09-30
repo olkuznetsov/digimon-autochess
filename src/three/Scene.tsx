@@ -16,6 +16,8 @@ import {
   worldToPlayerCell,
   worldToBenchSlot,
   BENCH_BOUNDARY,
+  COLS,
+  ROWS,
 } from "../game/board";
 
 // pointer-down position of the current drag, to tell a click from a drag
@@ -97,11 +99,14 @@ function PrepUnits() {
 
 function BattleUnits() {
   const fighters = useGame((s) => s.fighters);
+  const flip = useGame((s) => s.viewFlip);
   return (
     <>
       {fighters.map((f) => {
         const form = FORMS[f.formId];
-        const [x, z] = cellToWorld(f.col, f.row);
+        // PvP guest sees the canonical fight mirrored so their team is at the bottom
+        const [x, z] = flip ? cellToWorld(COLS - 1 - f.col, ROWS - 1 - f.row) : cellToWorld(f.col, f.row);
+        const team = flip ? (f.team === "player" ? "enemy" : "player") : f.team;
         return (
           <Creature
             key={f.uid}
@@ -112,7 +117,7 @@ function BattleUnits() {
             star={form.stage}
             hp={f.hp}
             maxHp={f.maxHp}
-            team={f.team}
+            team={team}
             cooldown={f.cooldown}
             attackSpeed={f.attackSpeed}
             moving={f.moving}
