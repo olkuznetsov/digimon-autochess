@@ -1,4 +1,7 @@
 import { createRoot } from 'react-dom/client'
+import '@fontsource/chakra-petch/600.css'
+import '@fontsource/chakra-petch/700.css'
+import '@fontsource-variable/exo-2'
 import './index.css'
 import App from './App.tsx'
 

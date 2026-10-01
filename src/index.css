@@ -3,8 +3,71 @@
   --data: #3aa0ff;
   --virus: #b76bff;
   --gold: #ffd34d;
-  font-family: "Segoe UI", system-ui, Roboto, sans-serif;
+  --cyan: #39d8ff;
+  --magenta: #ff4fd8;
+  --text: #eef3ff;
+  --text-dim: #8893b5;
+  /* glass panels over the 3D scene */
+  --panel: rgba(9, 11, 28, 0.66);
+  --panel-solid: rgba(9, 11, 28, 0.92);
+  --panel-edge: rgba(122, 140, 255, 0.22);
+  --panel-glow: 0 8px 28px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --font-display: "Chakra Petch", "Exo 2 Variable", system-ui, sans-serif;
+  --font-body: "Exo 2 Variable", system-ui, Roboto, sans-serif;
+  font-family: var(--font-body);
   color-scheme: dark;
+}
+
+/* display face: titles, buttons, names, numbers */
+.brand,
+.stat,
+.action,
+.phase-tag,
+.econ-btn,
+.reroll,
+.card-name,
+.card-cost,
+.syn-title,
+.syn-name,
+.syn-count,
+.tray-title,
+.item-name,
+.up-name,
+.up-stage,
+.up-ab-name,
+.up-sell,
+.result-text,
+.fight-banner,
+.go-title,
+.help-title,
+.evo-title,
+.evo-name,
+.evo-stage,
+.evo-banner-label,
+.evo-banner-text,
+.ult-banner-who,
+.ult-banner-name,
+.ult-callout,
+.dmgn,
+.unit-name,
+.lb-name,
+.lb-best,
+.loading-title {
+  font-family: var(--font-display);
+}
+
+/* glass: blur the scene behind panels on desktop (too costly over WebGL on phones) */
+@media (min-width: 641px) {
+  .syn-row,
+  .item-chip,
+  .unit-panel,
+  .stat,
+  .shop-card,
+  .econ-btn,
+  .result {
+    backdrop-filter: blur(10px) saturate(1.25);
+    -webkit-backdrop-filter: blur(10px) saturate(1.25);
+  }
 }
 
 * {
@@ -203,9 +266,10 @@ body,
   cursor: pointer;
   width: 142px;
   height: 64px;
-  background: rgba(14, 17, 34, 0.95);
+  background: rgba(12, 14, 32, 0.8);
   border: 1.5px solid #2c3358;
   border-radius: 12px;
+  box-shadow: var(--panel-glow);
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -314,10 +378,11 @@ body,
   font-weight: 700;
   font-size: 15px;
   color: #dbe6ff;
-  background: rgba(10, 12, 26, 0.65);
-  border: 1px solid #28304f;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
   border-radius: 999px;
   padding: 6px 14px;
+  box-shadow: var(--panel-glow);
 }
 .stat.health {
   color: #ff8aa0;
@@ -400,20 +465,35 @@ body,
 }
 .syn-title {
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
   color: #7e8bb0;
   margin-bottom: 2px;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  pointer-events: none;
+}
+.syn-toggle {
+  display: none;
+  letter-spacing: 0.5px;
+  color: #b9c4e8;
 }
 .syn-row {
   display: flex;
   align-items: center;
   gap: 9px;
-  background: rgba(10, 12, 26, 0.72);
-  border: 1px solid #222a44;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
   border-radius: 10px;
   padding: 7px 10px;
+  box-shadow: var(--panel-glow);
+}
+.syn-row.on {
+  border-color: color-mix(in srgb, var(--syn) 45%, transparent);
+  box-shadow: var(--panel-glow), inset 3px 0 0 var(--syn);
 }
 .syn-row.off {
   opacity: 0.5;
@@ -1140,7 +1220,10 @@ html, body {
     max-height: 38vh;
     overflow-y: auto;
   }
-  .syn-title { font-size: 10px; letter-spacing: 1.5px; }
+  .syn-title { font-size: 10px; letter-spacing: 1.5px; pointer-events: auto; cursor: pointer; }
+  .syn-toggle { display: inline; }
+  .synergies:not(.open) .syn-row.off,
+  .synergies:not(.open) .syn-desc { display: none; }
   .syn-row { padding: 5px 7px; gap: 6px; border-radius: 8px; }
   .syn-name { font-size: 10.5px; }
   .syn-count { font-size: 9px; padding: 0 4px; }
