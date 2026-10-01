@@ -17,9 +17,10 @@ export function cellToWorld(col: number, row: number): [number, number] {
 /** Z line where the bench row sits (negative = toward the camera / player side). */
 export const BENCH_Z = -((ROWS - 1) / 2) * CELL - CELL * 0.95;
 
-/** Bench sits in front of the player half (toward the camera). */
+/** Bench sits in front of the player half (toward the camera). The camera looks along
+ *  +z, so world +x is screen-left — slot 0 (where purchases land) sits at +x, leftmost. */
 export function benchToWorld(slot: number): [number, number] {
-  const x = (slot - (BENCH_SLOTS - 1) / 2) * CELL;
+  const x = ((BENCH_SLOTS - 1) / 2 - slot) * CELL;
   return [x, BENCH_Z];
 }
 
@@ -37,6 +38,6 @@ export function worldToPlayerCell(x: number, z: number): { col: number; row: num
 }
 
 export function worldToBenchSlot(x: number): number {
-  const slot = Math.round(x / CELL + (BENCH_SLOTS - 1) / 2);
+  const slot = Math.round((BENCH_SLOTS - 1) / 2 - x / CELL);
   return Math.max(0, Math.min(BENCH_SLOTS - 1, slot));
 }

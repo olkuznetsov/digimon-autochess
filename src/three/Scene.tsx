@@ -37,7 +37,7 @@ function CameraRig() {
   const push = useRef(0);
   const look = useMemo(() => new THREE.Vector3(), []);
   const pos = useMemo(() => new THREE.Vector3(), []);
-  const baseLook = useMemo(() => new THREE.Vector3(), []);
+  const battleLook = useMemo(() => new THREE.Vector3(), []);
 
   useEffect(() => {
     if (import.meta.env.DEV) Object.assign(window, { __scene: scene, __gl: gl });
@@ -52,22 +52,22 @@ function CameraRig() {
       cam.fov = fov;
       cam.updateProjectionMatrix();
     }
+    // prep frames board + bench above the shop panel; battle tilts up onto the board
+    // and eases in a little (portrait already fills the width — pushing in would crop)
     if (portrait) {
       pos.set(0, 8.2, -10.6);
-      baseLook.set(0, 0.4, 3.4);
+      look.set(0, 0.4, 3.4);
+      battleLook.set(0, 0.55, 3.4);
     } else {
       pos.set(0, 6.6, -9.2);
-      baseLook.set(0, 0.3, 3.2);
+      look.set(0, 0.3, 0.9);
+      battleLook.set(0, 0.45, 2.9);
     }
-    // ease in a little closer while a battle is on
     const phase = useGame.getState().phase;
-    const target = phase === "battle" ? 1 : 0;
+    const target = phase === "prep" ? 0 : 1;
     push.current += (target - push.current) * (1 - Math.exp(-dt * 1.8));
-    // portrait already fills the width with the board — pushing in would crop the flanks
-    const p = push.current * (portrait ? 0.05 : 0.14);
-    look.copy(baseLook);
-    pos.lerp(look, p);
-    look.y += push.current * 0.15;
+    look.lerp(battleLook, push.current);
+    pos.lerp(look, push.current * (portrait ? 0.05 : 0.14));
 
     // trauma^2 shake: small positional jitter + a touch of roll
     const t = juice.trauma * juice.trauma;
