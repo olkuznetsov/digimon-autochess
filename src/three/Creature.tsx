@@ -30,6 +30,23 @@ interface CreatureProps {
   onPointerDown?: (e: ThreeEvent<PointerEvent>) => void;
 }
 
+let shadowTex: THREE.Texture | null = null;
+/** Radial falloff (opaque centre → clear edge) used as the alpha map of contact shadows. */
+function shadowTexture(): THREE.Texture {
+  if (shadowTex) return shadowTex;
+  const c = document.createElement("canvas");
+  c.width = c.height = 64;
+  const g = c.getContext("2d")!;
+  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, "rgba(255,255,255,1)");
+  grad.addColorStop(0.55, "rgba(255,255,255,0.55)");
+  grad.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 64, 64);
+  shadowTex = new THREE.CanvasTexture(c);
+  return shadowTex;
+}
+
 /** where prep units look: roughly the camera, so their faces show */
 const CAMERA_XZ: [number, number] = [0, -9.5];
 
@@ -138,15 +155,20 @@ export function Creature({
     // position/rotation are driven in useFrame (it runs before the first render),
     // so re-renders never snap a gliding battle unit back to its sim cell
     <group ref={root}>
-      {/* glowing base ring */}
-      <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.34, 0.48, 32]} />
+      {/* soft contact shadow, then a thin glowing base ring */}
+      <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
+        <circleGeometry args={[0.55, 24]} />
+        <meshBasicMaterial map={shadowTexture()} color="#000000" transparent opacity={0.75} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, 0.035, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={2}>
+        <ringGeometry args={[0.4, 0.465, 40]} />
         <meshStandardMaterial
           color={boss ? "#ff3355" : color}
           emissive={boss ? "#ff3355" : color}
-          emissiveIntensity={dragging ? 3 : boss ? 2.2 : 1.4}
+          emissiveIntensity={dragging ? 2.6 : boss ? 2 : 1.15}
           transparent
           opacity={0.9}
+          depthWrite={false}
         />
       </mesh>
 

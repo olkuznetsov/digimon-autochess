@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Board } from "./Board";
 import { Creature } from "./Creature";
 import { BattleFx } from "./BattleFx";
-import { DigitalEnvironment } from "./Environment";
+import { DigitalEnvironment, HORIZON } from "./Environment";
 import { useGame } from "../game/store";
 import { newDrive, type UnitDrive } from "./unitDrive";
 import { juice, resetJuice, tickJuice } from "./juice";
@@ -307,8 +307,8 @@ function SceneContents() {
 
   return (
     <>
-      <color attach="background" args={["#05060f"]} />
-      <fog attach="fog" args={["#05060f", 14, 38]} />
+      <color attach="background" args={[HORIZON]} />
+      <fog attach="fog" args={[HORIZON, 16, 52]} />
 
       <DigitalEnvironment />
 
