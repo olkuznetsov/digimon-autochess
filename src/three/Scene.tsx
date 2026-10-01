@@ -322,9 +322,10 @@ function SceneContents() {
       <Board highlight={!!dragId} hovered={hovered} />
 
       {inPrep && <PrepUnits />}
-      {!inPrep && <BattleUnits key={battleSeq} />}
-      {phase === "battle" && <BattleRunner key={battleSeq} />}
-      {phase !== "prep" && <BattleFx key={battleSeq} />}
+      {/* fresh components per fight; sibling keys must stay distinct */}
+      {!inPrep && <BattleUnits key={`units-${battleSeq}`} />}
+      {phase === "battle" && <BattleRunner key={`runner-${battleSeq}`} />}
+      {phase !== "prep" && <BattleFx key={`fx-${battleSeq}`} />}
 
       {/* invisible pointer catcher for dragging */}
       <mesh
