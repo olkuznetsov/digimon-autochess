@@ -57,6 +57,9 @@ export interface PvpState {
   connLost: boolean;
   /** opponent's socket dropped; waiting out the grace period */
   oppDisconnected: boolean;
+  /** after the match: who has asked for a rematch */
+  rematchMe: boolean;
+  rematchOpp: boolean;
 }
 
 /** A live combat effect (damage number, projectile, death burst) with its spawn time. */
@@ -238,9 +241,36 @@ interface GameState {
   pvpSurrender: () => void;
   pvpSurrendered: (side: "A" | "B") => void;
   pvpQuit: () => void;
+  pvpRequestRematch: () => void;
+  pvpRematchOffered: () => void;
+  pvpRematchStart: () => void;
 
   ghostFight: (board: PvpBoardUnit[], name: string) => void;
   ghostReturn: () => void;
+}
+
+/** Run state for a fresh VS match — both players start equal. */
+function freshMatchRun() {
+  return {
+    gold: START_GOLD,
+    level: START_LEVEL,
+    xp: 0,
+    health: START_HEALTH,
+    round: 1,
+    streak: 0,
+    gameOver: false,
+    units: [] as Unit[],
+    inventory: [] as string[],
+    shop: rollShop(),
+    shopLocked: false,
+    phase: "prep" as Phase,
+    result: null,
+    fighters: [] as Fighter[],
+    corpses: [] as Fighter[],
+    fx: [] as Fx[],
+    pendingEvolution: null,
+    inspected: null,
+  };
 }
 
 function readSpeed(): number {
@@ -747,23 +777,48 @@ export const useGame = create<GameState>((set, get) => ({
         selfOffline: false,
         connLost: false,
         oppDisconnected: false,
+        rematchMe: false,
+        rematchOpp: false,
       },
-      // a fresh match starts a fresh run for fairness
-      gold: START_GOLD,
-      level: START_LEVEL,
-      xp: 0,
-      health: START_HEALTH,
-      round: 1,
-      streak: 0,
-      gameOver: false,
-      units: [],
-      inventory: [],
-      shop: rollShop(),
-      phase: "prep",
-      result: null,
-      fighters: [],
-      pendingEvolution: null,
-      inspected: null,
+      ...freshMatchRun(),
+    });
+  },
+
+  pvpRequestRematch: () => {
+    const { pvp } = get();
+    if (!pvp?.matchOver || pvp.rematchMe || pvp.oppLeft) return;
+    net.send?.({ t: "rematch" });
+    sfx.click();
+    set({ pvp: { ...pvp, rematchMe: true } });
+  },
+
+  pvpRematchOffered: () => {
+    const { pvp } = get();
+    if (!pvp) return;
+    sfx.buy();
+    set({ pvp: { ...pvp, rematchOpp: true } });
+  },
+
+  pvpRematchStart: () => {
+    const { pvp } = get();
+    if (!pvp) return;
+    sfx.battleStart();
+    set({
+      pvp: {
+        ...pvp,
+        myReady: false,
+        oppReady: false,
+        oppHealth: START_HEALTH,
+        matchOver: null,
+        oppLeft: false,
+        hostHash: null,
+        localHash: null,
+        resultRound: 0,
+        lastReady: null,
+        rematchMe: false,
+        rematchOpp: false,
+      },
+      ...freshMatchRun(),
     });
   },
 

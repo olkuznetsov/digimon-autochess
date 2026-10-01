@@ -49,6 +49,7 @@ export function Hud() {
   const pvpReadyUp = useGame((s) => s.pvpReadyUp);
   const pvpQuit = useGame((s) => s.pvpQuit);
   const pvpSurrender = useGame((s) => s.pvpSurrender);
+  const pvpRequestRematch = useGame((s) => s.pvpRequestRematch);
   const [confirmFlag, setConfirmFlag] = useState(false);
 
   const xpNeed = XP_VIEW[level];
@@ -246,8 +247,17 @@ export function Hud() {
                   ? `${pvp.oppName ?? "Opponent"} takes the crown`
                   : "Both tamers fall together"}
           </div>
+          {!pvp.oppLeft && pvp.oppOnline && (
+            <button className="action" disabled={pvp.rematchMe} onClick={pvpRequestRematch}>
+              {pvp.rematchMe
+                ? `Waiting for ${pvp.oppName ?? "opponent"}…`
+                : pvp.rematchOpp
+                  ? `⚔ ${pvp.oppName ?? "Opponent"} wants a rematch!`
+                  : "⚔ Rematch"}
+            </button>
+          )}
           <button
-            className="action"
+            className="action ghost"
             onClick={() => {
               pvpClose();
               pvpQuit();

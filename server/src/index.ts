@@ -158,6 +158,17 @@ export class MatchRoom extends DurableObject<Env> {
       this.broadcast({ t: "result", ...result });
     } else if (m.t === "surrender") {
       this.broadcast({ t: "surrender", side: a.side });
+    } else if (m.t === "rematch") {
+      // both players asked: wipe the match state and start over in the same room
+      await this.ctx.storage.put(`rematch:${a.side}`, true);
+      const other: Side = a.side === "A" ? "B" : "A";
+      if (await this.ctx.storage.get(`rematch:${other}`)) {
+        await this.ctx.storage.delete(["rematch:A", "rematch:B", "ready:A", "ready:B", "lastFight", "lastResult"]);
+        await this.ctx.storage.setAlarm(Date.now() + ROOM_TTL_MS);
+        this.broadcast({ t: "rematch-go" });
+      } else {
+        this.broadcast({ t: "rematch-req", side: a.side }, a.side);
+      }
     }
   }
 

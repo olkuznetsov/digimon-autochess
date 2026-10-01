@@ -93,6 +93,12 @@ function open() {
       case "surrender":
         g.pvpSurrendered(m.side as "A" | "B");
         break;
+      case "rematch-req":
+        g.pvpRematchOffered();
+        break;
+      case "rematch-go":
+        g.pvpRematchStart();
+        break;
       case "left":
         g.pvpLeft();
         if (oppGraceTimer) clearTimeout(oppGraceTimer);
