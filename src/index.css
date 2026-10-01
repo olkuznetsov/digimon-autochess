@@ -2297,3 +2297,53 @@ html, body {
 @media (max-width: 640px) {
   .lb-row.rating { grid-template-columns: 22px 1fr 48px 38px; }
 }
+
+/* ---------- shop: what you're already collecting ---------- */
+.card-badge {
+  position: absolute;
+  z-index: 2;
+  top: -8px;
+  right: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(40, 32, 8, 0.95);
+  border: 1px solid rgba(255, 211, 77, 0.7);
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.card-badge.up {
+  background: linear-gradient(90deg, #ffb02e, #ffe27a);
+  color: #1a1203;
+  border-color: #fff1b0;
+}
+.card-badge.line {
+  border-color: rgba(122, 140, 255, 0.6);
+  background: rgba(14, 18, 40, 0.95);
+  color: #b9c6ff;
+}
+.shop-card.owned {
+  box-shadow: var(--panel-glow), 0 0 0 1.5px rgba(255, 211, 77, 0.55), 0 0 14px rgba(255, 211, 77, 0.25);
+}
+.shop-card.upgrade {
+  box-shadow: var(--panel-glow), 0 0 0 2px #ffd34d, 0 0 20px rgba(255, 211, 77, 0.55);
+  animation: card-upgrade 1.2s ease-in-out infinite;
+}
+.shop-card.line {
+  box-shadow: var(--panel-glow), 0 0 0 1.5px rgba(122, 140, 255, 0.45);
+}
+@keyframes card-upgrade {
+  50% {
+    box-shadow: var(--panel-glow), 0 0 0 2px #fff1b0, 0 0 30px rgba(255, 211, 77, 0.8);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shop-card.upgrade { animation: none; }
+}
+@media (max-width: 640px) {
+  .card-badge { top: -7px; right: 3px; padding: 0 5px; font-size: 8px; letter-spacing: 0; }
+}

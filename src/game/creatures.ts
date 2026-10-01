@@ -100,12 +100,15 @@ export const ROOKIE_IDS = ALL_FORM_IDS.filter((id) => FORMS[id].stage === 1);
 
 /** Rookie cost of the line each form belongs to (for sell value). */
 export const LINE_COST: Record<string, number> = {};
+/** The rookie each form's line starts from (the shop sells only rookies). */
+export const LINE_ROOT: Record<string, string> = {};
 for (const id of ROOKIE_IDS) {
   const cost = FORMS[id].cost ?? 1;
   const stack = [id];
   while (stack.length) {
     const cur = stack.pop()!;
     LINE_COST[cur] = cost;
+    LINE_ROOT[cur] = id;
     for (const nxt of FORMS[cur].evolvesTo ?? []) stack.push(nxt);
   }
 }

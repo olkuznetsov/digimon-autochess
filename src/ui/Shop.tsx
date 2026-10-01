@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useGame, pvpMe } from "../game/store";
-import { FORMS, ATTR_COLOR, sellValue } from "../game/creatures";
+import { FORMS, ATTR_COLOR, LINE_ROOT, sellValue } from "../game/creatures";
 import { Portrait } from "./Portrait";
 import { FormTooltip } from "./FormTooltip";
 
@@ -15,6 +15,7 @@ export function Shop() {
   const locked = useGame((s) => s.shopLocked);
   const toggleLock = useGame((s) => s.toggleShopLock);
   const dragged = useGame((s) => s.units.find((u) => u.uid === s.dragId));
+  const units = useGame((s) => s.units);
   const [hover, setHover] = useState<number | null>(null);
   const spectating = useGame((s) => s.pvp?.snap.stage === "match" && !pvpMe(s.pvp)?.alive);
 
@@ -37,10 +38,14 @@ export function Shop() {
           const form = FORMS[formId];
           const cost = form.cost ?? 0;
           const color = ATTR_COLOR[form.attribute];
+          // what you're already collecting: copies owned, and whether this one digivolves them
+          const copies = units.filter((u) => u.formId === formId).length;
+          const line = copies === 0 && units.some((u) => LINE_ROOT[u.formId] === formId);
+          const mark = copies >= 2 ? " upgrade" : copies === 1 ? " owned" : line ? " line" : "";
           return (
             <button
               key={i}
-              className="shop-card"
+              className={`shop-card${mark}`}
               style={{ borderColor: color }}
               disabled={gold < cost}
               onClick={() => buy(i)}
@@ -48,6 +53,13 @@ export function Shop() {
               onPointerLeave={() => setHover((h) => (h === i ? null : h))}
             >
               {hover === i && !dragged && <FormTooltip formId={formId} />}
+              {copies >= 2 && <span className="card-badge up">⬆ Digivolve</span>}
+              {copies === 1 && <span className="card-badge">×1 owned</span>}
+              {line && (
+                <span className="card-badge line" title="You have this line's Champion / Mega">
+                  ★ line
+                </span>
+              )}
               <Portrait formId={formId} className="card-portrait" />
               <span className="card-info">
                 <span className={`card-name${form.name.length > 9 ? " long" : ""}`}>{form.name}</span>
