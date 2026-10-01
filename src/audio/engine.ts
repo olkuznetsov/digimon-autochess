@@ -42,6 +42,11 @@ export interface Graph {
 }
 
 const MASTER = 0.9;
+/** player volume settings (0..1) times each bus's mix level */
+const SFX_MIX = 0.85;
+const MUSIC_MIX = 0.8;
+let sfxVolume = 1;
+let musicVolume = 1;
 let graph: Graph | null = null;
 let master: GainNode | null = null;
 let duckGain: GainNode | null = null;
@@ -91,12 +96,12 @@ function build(): Graph | null {
   master.connect(comp);
 
   const sfx = ctx.createGain();
-  sfx.gain.value = 0.85;
+  sfx.gain.value = SFX_MIX * sfxVolume;
   sfx.connect(master);
   const sfxVerb = reverb(ctx, master, 0.28);
 
   const music = ctx.createGain();
-  music.gain.value = 0.8;
+  music.gain.value = MUSIC_MIX * musicVolume;
   musicTone = ctx.createBiquadFilter();
   musicTone.type = "lowpass";
   musicTone.frequency.value = 2600;
@@ -166,6 +171,16 @@ export function duck(depth = 0.35, hold = 0.3, release = 0.6) {
   g.setValueAtTime(g.value, t);
   g.setTargetAtTime(depth, t, 0.012);
   g.setTargetAtTime(1, t + hold, release / 3);
+}
+
+/** Player volume settings, 0..1 each. */
+export function setBusVolumes(music: number, sfx: number) {
+  musicVolume = music;
+  sfxVolume = sfx;
+  if (!graph) return;
+  const t = graph.ctx.currentTime;
+  graph.music.gain.setTargetAtTime(MUSIC_MIX * music, t, 0.05);
+  graph.sfx.gain.setTargetAtTime(SFX_MIX * sfx, t, 0.05);
 }
 
 /** Open or close the music's lowpass (calm prep vs bright battle). */

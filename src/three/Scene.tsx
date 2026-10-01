@@ -8,6 +8,7 @@ import { Creature } from "./Creature";
 import { BattleFx } from "./BattleFx";
 import { DigitalEnvironment, HORIZON } from "./Environment";
 import { useGame } from "../game/store";
+import { useSettings } from "../settings";
 import { newDrive, type UnitDrive } from "./unitDrive";
 import { juice, resetJuice, tickJuice } from "./juice";
 import { SIM_DT } from "../game/battle";
@@ -271,6 +272,7 @@ function BattleRunner() {
 const TONE_MAPPING = 8;
 
 function SceneContents() {
+  const low = useSettings((s) => s.quality === "low");
   const phase = useGame((s) => s.phase);
   const dragId = useGame((s) => s.dragId);
   const battleSeq = useGame((s) => s.battleSeq);
@@ -338,12 +340,7 @@ function SceneContents() {
       </Environment>
       <ambientLight intensity={0.25} />
       <hemisphereLight args={["#6fa8ff", "#1a1030", 0.45]} />
-      <directionalLight
-        position={[4, 10, -2]}
-        intensity={1.4}
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-      />
+      <directionalLight position={[4, 10, -2]} intensity={1.4} />
       <pointLight position={[-5, 4, -6]} intensity={40} color="#ff4d6d" distance={20} />
       <pointLight position={[5, 4, 2]} intensity={40} color="#3aa0ff" distance={20} />
 
@@ -373,7 +370,7 @@ function SceneContents() {
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
-      <EffectComposer multisampling={4}>
+      <EffectComposer multisampling={low ? 0 : 4}>
         {/* bloom reads the HDR buffer: only emissive and effects (> 1.0) glow, not lit fur */}
         <Bloom intensity={0.85} luminanceThreshold={0.9} luminanceSmoothing={0.3} mipmapBlur />
         {/* the composer disables the renderer's tone mapping, so it happens here */}
@@ -385,8 +382,10 @@ function SceneContents() {
 }
 
 export function Scene() {
+  const low = useSettings((s) => s.quality === "low");
   return (
-    <Canvas shadows camera={{ position: [0, 6.6, -9.2], fov: 55 }} dpr={[1, 2]}>
+    // no shadow maps: models ground themselves with contact-shadow blobs (Creature.tsx)
+    <Canvas camera={{ position: [0, 6.6, -9.2], fov: 55 }} dpr={low ? 1 : [1, 2]}>
       <SceneContents />
     </Canvas>
   );

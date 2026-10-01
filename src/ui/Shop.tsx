@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useGame } from "../game/store";
 import { FORMS, ATTR_COLOR, sellValue } from "../game/creatures";
 import { Portrait } from "./Portrait";
+import { FormTooltip } from "./FormTooltip";
 
 export function Shop() {
   const phase = useGame((s) => s.phase);
@@ -13,6 +15,7 @@ export function Shop() {
   const locked = useGame((s) => s.shopLocked);
   const toggleLock = useGame((s) => s.toggleShopLock);
   const dragged = useGame((s) => s.units.find((u) => u.uid === s.dragId));
+  const [hover, setHover] = useState<number | null>(null);
 
   if (phase !== "prep") return null;
 
@@ -40,7 +43,10 @@ export function Shop() {
               style={{ borderColor: color }}
               disabled={gold < cost}
               onClick={() => buy(i)}
+              onPointerEnter={(e) => e.pointerType === "mouse" && setHover(i)}
+              onPointerLeave={() => setHover((h) => (h === i ? null : h))}
             >
+              {hover === i && !dragged && <FormTooltip formId={formId} />}
               <Portrait formId={formId} className="card-portrait" />
               <span className="card-info">
                 <span className={`card-name${form.name.length > 9 ? " long" : ""}`}>{form.name}</span>

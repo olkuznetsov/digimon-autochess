@@ -11,6 +11,7 @@ import { AudioDirector } from "./audio/AudioDirector";
 import { Hotkeys } from "./ui/Hotkeys";
 import { DamageMeter } from "./ui/DamageMeter";
 import { NextWave } from "./ui/NextWave";
+import { Onboarding } from "./ui/Onboarding";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
       <SynergyPanel />
       <DamageMeter />
       <NextWave />
+      <Onboarding />
       <Shop />
       <ItemTray />
       <UnitPanel />

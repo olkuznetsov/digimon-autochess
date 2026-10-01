@@ -20,8 +20,9 @@ export const juice = {
   /** real seconds since the last hit-stop / slow-mo — both are rationed in busy fights */
   sinceStop: 9,
   sinceSlow: 9,
-  /** settings: camera shake on/off (reduced motion) */
+  /** settings: camera shake / screen flashes on/off (reduced motion) */
   shakeEnabled: true,
+  flashEnabled: true,
   /** battle playback speed (2× button) — effects and animations keep pace with the sim */
   speed: 1,
 };
@@ -67,6 +68,7 @@ export function slowMo(seconds: number, scale: number, minGap = 0): boolean {
 }
 
 export function screenFlash(strength: number, color = "#ffffff") {
+  if (!juice.flashEnabled) return;
   juice.flash = Math.max(juice.flash, strength);
   juice.flashColor = color;
 }

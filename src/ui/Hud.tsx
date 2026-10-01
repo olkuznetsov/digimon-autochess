@@ -5,6 +5,7 @@ import { XP_TO_NEXT as XP_VIEW } from "../game/xpView";
 import { isMuted, setMuted, isMusicOn, setMusicOn, sfx } from "../audio/sfx";
 import { PvpModal } from "./PvpModal";
 import { LeaderboardModal } from "./LeaderboardModal";
+import { SettingsModal } from "./SettingsModal";
 import { pvpClose } from "../net/pvp";
 
 const VICTORY_ROUND = 15;
@@ -39,6 +40,7 @@ export function Hud() {
   const [muted, setMutedUi] = useState(isMuted());
   const [musicOn, setMusicOnUi] = useState(isMusicOn());
   const [showHelp, setShowHelp] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [showPvp, setShowPvp] = useState(false);
   const [showLb, setShowLb] = useState(false);
   const ghost = useGame((s) => s.ghost);
@@ -85,6 +87,9 @@ export function Hud() {
               ♪
             </button>
           )}
+          <button className="icon-btn" title="Settings" onClick={() => setShowSettings(true)}>
+            ⚙
+          </button>
           <button className="icon-btn" title="How to play" onClick={() => setShowHelp(true)}>
             ❓
           </button>
@@ -269,6 +274,7 @@ export function Hud() {
       {showPvp && <PvpModal onClose={() => setShowPvp(false)} />}
       {showLb && <LeaderboardModal onClose={() => setShowLb(false)} />}
 
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {showHelp && (
         <div className="help-overlay" onClick={() => setShowHelp(false)}>
           <div className="help-modal" onClick={(e) => e.stopPropagation()}>

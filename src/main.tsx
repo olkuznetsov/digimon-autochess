@@ -4,6 +4,7 @@ import '@fontsource/chakra-petch/700.css'
 import '@fontsource-variable/exo-2'
 import './index.css'
 import App from './App.tsx'
+import './settings'
 
 const root = createRoot(document.getElementById('root')!)
 
