@@ -271,6 +271,39 @@ function BattleRunner() {
 // that can't be imported directly): keeps the neon hues, only rolls off highlights
 const TONE_MAPPING = 8;
 
+/** The game's light rig: image-based light from Lightformers plus a few fills. */
+export function SceneLighting() {
+  return (
+    <>
+      {/* image-based light: soft key + synthwave rims, baked once into a cube map */}
+      <Environment resolution={128} frames={1} environmentIntensity={0.55}>
+        <Lightformer form="rect" intensity={2.2} color="#ffffff" position={[0, 6, -6]} scale={[10, 4, 1]} />
+        <Lightformer form="rect" intensity={3} color="#39d8ff" position={[-8, 2, 4]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} />
+        <Lightformer form="rect" intensity={3} color="#ff4d88" position={[8, 2, 4]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} />
+        <Lightformer form="ring" intensity={1.2} color="#7a5cff" position={[0, -4, 0]} rotation-x={Math.PI / 2} scale={6} />
+      </Environment>
+      <ambientLight intensity={0.25} />
+      <hemisphereLight args={["#6fa8ff", "#1a1030", 0.45]} />
+      <directionalLight position={[4, 10, -2]} intensity={1.4} />
+      <pointLight position={[-5, 4, -6]} intensity={40} color="#ff4d6d" distance={20} />
+      <pointLight position={[5, 4, 2]} intensity={40} color="#3aa0ff" distance={20} />
+    </>
+  );
+}
+
+/** Bloom (HDR only), tone mapping and vignette — the game's post chain. */
+export function ScenePost({ low = false }: { low?: boolean }) {
+  return (
+    <EffectComposer multisampling={low ? 0 : 4}>
+      {/* bloom reads the HDR buffer: only emissive and effects (> 1.0) glow, not lit fur */}
+      <Bloom intensity={0.85} luminanceThreshold={0.9} luminanceSmoothing={0.3} mipmapBlur />
+      {/* the composer disables the renderer's tone mapping, so it happens here */}
+      <ToneMapping mode={TONE_MAPPING} />
+      <Vignette eskil={false} offset={0.25} darkness={0.8} />
+    </EffectComposer>
+  );
+}
+
 function SceneContents() {
   const low = useSettings((s) => s.quality === "low");
   const phase = useGame((s) => s.phase);
@@ -331,18 +364,7 @@ function SceneContents() {
       <DigitalEnvironment />
 
       <CameraRig />
-      {/* image-based light: soft key + synthwave rims, baked once into a cube map */}
-      <Environment resolution={128} frames={1} environmentIntensity={0.55}>
-        <Lightformer form="rect" intensity={2.2} color="#ffffff" position={[0, 6, -6]} scale={[10, 4, 1]} />
-        <Lightformer form="rect" intensity={3} color="#39d8ff" position={[-8, 2, 4]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} />
-        <Lightformer form="rect" intensity={3} color="#ff4d88" position={[8, 2, 4]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} />
-        <Lightformer form="ring" intensity={1.2} color="#7a5cff" position={[0, -4, 0]} rotation-x={Math.PI / 2} scale={6} />
-      </Environment>
-      <ambientLight intensity={0.25} />
-      <hemisphereLight args={["#6fa8ff", "#1a1030", 0.45]} />
-      <directionalLight position={[4, 10, -2]} intensity={1.4} />
-      <pointLight position={[-5, 4, -6]} intensity={40} color="#ff4d6d" distance={20} />
-      <pointLight position={[5, 4, 2]} intensity={40} color="#3aa0ff" distance={20} />
+      <SceneLighting />
 
       <Board highlight={!!dragId} hovered={hovered} />
 
@@ -370,13 +392,7 @@ function SceneContents() {
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
-      <EffectComposer multisampling={low ? 0 : 4}>
-        {/* bloom reads the HDR buffer: only emissive and effects (> 1.0) glow, not lit fur */}
-        <Bloom intensity={0.85} luminanceThreshold={0.9} luminanceSmoothing={0.3} mipmapBlur />
-        {/* the composer disables the renderer's tone mapping, so it happens here */}
-        <ToneMapping mode={TONE_MAPPING} />
-        <Vignette eskil={false} offset={0.25} darkness={0.8} />
-      </EffectComposer>
+      <ScenePost low={low} />
     </>
   );
 }

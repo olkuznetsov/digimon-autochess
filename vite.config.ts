@@ -2,8 +2,9 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { mkdirSync } from 'node:fs'
 
-/** Dev-only sink for the portrait studio (?studio): POST /__portrait?id=<formId> with a
- *  PNG body → public/portraits/<formId>.webp. Never part of a build. */
+/** Dev-only sinks for the render studios (never part of a build):
+ *  POST /__portrait?id=<formId> (PNG) → public/portraits/<formId>.webp (?studio)
+ *  POST /__asset?name=<file>.<jpg|png> (PNG) → public/<file> (?studio=og) */
 function portraitSink(): Plugin {
   return {
     name: 'portrait-sink',
@@ -26,6 +27,28 @@ function portraitSink(): Plugin {
               .resize(256, 256)
               .webp({ quality: 88, alphaQuality: 90 })
               .toFile(`public/portraits/${id}.webp`)
+            res.end('ok')
+          } catch (e) {
+            res.statusCode = 500
+            res.end(String(e))
+          }
+        })
+      })
+      server.middlewares.use('/__asset', (req, res) => {
+        const name = new URL(req.url ?? '', 'http://dev').searchParams.get('name') ?? ''
+        const m = /^([a-z0-9-]+)\.(jpg|png)$/.exec(name)
+        if (req.method !== 'POST' || !m) {
+          res.statusCode = 400
+          res.end('bad request')
+          return
+        }
+        const chunks: Buffer[] = []
+        req.on('data', (c: Buffer) => chunks.push(c))
+        req.on('end', async () => {
+          try {
+            const sharp = (await import('sharp')).default
+            const img = sharp(Buffer.concat(chunks))
+            await (m[2] === 'jpg' ? img.jpeg({ quality: 88, mozjpeg: true }) : img.png()).toFile(`public/${name}`)
             res.end('ok')
           } catch (e) {
             res.statusCode = 500

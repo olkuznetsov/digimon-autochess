@@ -10,7 +10,11 @@ const root = createRoot(document.getElementById('root')!)
 
 // Note: no StrictMode — its dev double-mount restarts the Three.js animation
 // mixers and fights the imperative animation state machine in CreatureModel.
-if (import.meta.env.DEV && new URLSearchParams(location.search).has('studio')) {
+const studio = import.meta.env.DEV ? new URLSearchParams(location.search).get('studio') : null
+if (studio === 'og' || studio === 'icon') {
+  // dev tool: renders public/og.jpg and the app icons (see src/dev/OgStudio.tsx)
+  import('./dev/OgStudio').then(({ OgStudio }) => root.render(<OgStudio />))
+} else if (studio !== null) {
   // dev tool: renders public/portraits/*.webp (see src/dev/PortraitStudio.tsx)
   import('./dev/PortraitStudio').then(({ PortraitStudio }) => root.render(<PortraitStudio />))
 } else {
