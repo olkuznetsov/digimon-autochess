@@ -315,6 +315,8 @@ export interface LobbySeat {
   placement: number | null;
   /** locked in for the current round */
   ready: boolean;
+  /** augments picked this match (public, like in TFT) */
+  augments: string[];
 }
 
 /** The room as the server sends it on every change. */
@@ -344,4 +346,6 @@ export interface LobbyFight {
   round: number;
   plan: RoundPlan;
   boards: Record<number, WireUnit[]>;
+  /** every player's augments at the start of the fight (combat ones change it) */
+  augments?: Record<number, string[]>;
 }

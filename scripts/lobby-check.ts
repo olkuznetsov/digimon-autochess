@@ -26,6 +26,8 @@ import {
 import { isCarouselRound, vsRoundKind, vsStageDamage } from "../src/game/tuning";
 import { ITEMS } from "../src/game/items";
 import { FORMS } from "../src/game/creatures";
+import { AUGMENT_IDS, augmentOffer } from "../src/game/augments";
+import { roundOutcomes } from "../src/game/vsFights";
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.split("=")));
 const MATCHES = Number(args.matches ?? 2000);
@@ -139,6 +141,24 @@ const full = fullPool();
 const left = poolLeft({ 0: { agumon: 5 }, 1: { agumon: 4 }, 2: { agumon: 999 } });
 if (left.agumon !== 0 || left.gabumon !== full.gabumon) fail(`poolLeft ${left.agumon} / ${left.gabumon}`);
 console.log(`\npool: ${Object.keys(full).length} rookies, ${Object.values(full).reduce((a, b) => a + b, 0)} copies in all`);
+
+// augments: offers are 3 distinct ones you don't have; combat augments change fights,
+// identically on every client
+for (let i = 0; i < 200; i++) {
+  const owned = AUGMENT_IDS.filter(() => rand() < 0.1).slice(0, 2);
+  const offer = augmentOffer(owned, [], rand);
+  if (offer.length !== 3 || new Set(offer).size !== 3 || offer.some((id) => owned.includes(id))) fail(`augment offer ${offer}`);
+}
+const duelPlan: RoundPlan = { round: 3, pairs: [[0, 1]], ghost: null };
+const unit = (uid: string, formId: string, col: number) => ({ uid, formId, col, row: 0, items: [] as string[] });
+const duelBoards = { 0: [unit("a", "greymon", 2), unit("b", "garurumon", 3)], 1: [unit("c", "greymon", 2), unit("d", "garurumon", 3)] };
+const plain = roundOutcomes(3, duelPlan, duelBoards, [0, 1]);
+// round 3 is odd: the home side acts first and takes the plain mirror — boost the away side
+const boosted = { 1: ["overclock", "firewall", "dragonheart"] };
+const withAugs = roundOutcomes(3, duelPlan, duelBoards, [0, 1], boosted);
+if (JSON.stringify(withAugs) !== JSON.stringify(roundOutcomes(3, duelPlan, duelBoards, [0, 1], boosted))) fail("augmented fight not deterministic");
+if (!plain[0].won || !withAugs[1].won) fail(`3 combat augments should flip a mirror fight: plain ${JSON.stringify(plain)}, boosted ${JSON.stringify(withAugs)}`);
+console.log("augments: a mirror duel the home side wins flips to the away side with 3 combat augments");
 
 const sums = [2, 3, 4, 5, 6, 7, 8].map((n) => Array.from({ length: n }, (_, i) => ratingDelta(n, i + 1)));
 console.log(`\nrating by place: ${sums.map((r) => `${r.length}p [${r.join(" ")}]`).join("  ")}`);

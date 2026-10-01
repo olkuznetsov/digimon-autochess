@@ -16,6 +16,7 @@ export function Shop() {
   const toggleLock = useGame((s) => s.toggleShopLock);
   const dragged = useGame((s) => s.units.find((u) => u.uid === s.dragId));
   const units = useGame((s) => s.units);
+  const freeRerolls = useGame((s) => s.freeRerolls);
   // VS: the shared pool — copies of each rookie still out there
   const pool = useGame((s) => (s.pvp?.snap.stage === "match" ? s.pvp.snap.pool : null));
   const [hover, setHover] = useState<number | null>(null);
@@ -30,8 +31,14 @@ export function Shop() {
         <button className="econ-btn xp" onClick={buyXp} disabled={gold < 4 || level >= 8} title="Buy 4 XP (F)">
           ▲ <span className="econ-word">Buy XP </span><span className="cost">4</span>
         </button>
-        <button className="econ-btn reroll" onClick={reroll} disabled={gold < 2} title="Reroll the shop (D)">
-          ⟳ <span className="econ-word">Reroll </span><span className="cost">2</span>
+        <button
+          className="econ-btn reroll"
+          onClick={reroll}
+          disabled={gold < 2 && freeRerolls === 0}
+          title={freeRerolls > 0 ? "Free reroll (Lucky Roll) (D)" : "Reroll the shop (D)"}
+        >
+          ⟳ <span className="econ-word">Reroll </span>
+          <span className="cost">{freeRerolls > 0 ? "free" : 2}</span>
         </button>
       </div>
       <div className="shop-slots">

@@ -2470,3 +2470,47 @@ html, body {
   .ci-emoji { font-size: 18px; }
   .ci-name { font-size: 10px; }
 }
+
+/* ---------- VS augments ---------- */
+.evo-modal.augment {
+  max-width: min(640px, 94vw);
+}
+.augment-card {
+  gap: 5px;
+  min-width: 150px;
+  max-width: 190px;
+}
+.augment-card.combat {
+  border-color: rgba(255, 110, 140, 0.7);
+}
+.augment-card.economy {
+  border-color: rgba(255, 211, 77, 0.7);
+}
+.augment-card.instant {
+  border-color: rgba(57, 216, 255, 0.7);
+}
+.aug-emoji {
+  font-size: 38px;
+  line-height: 1.05;
+}
+.aug-desc {
+  font-size: 12px;
+  color: #b9c4e8;
+  line-height: 1.3;
+}
+.aug-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.st-augs {
+  font-size: 10px;
+  letter-spacing: -1px;
+}
+@media (max-width: 640px) {
+  .augment-card { min-width: 0; max-width: none; flex: 1; padding: 8px 6px; }
+  .aug-emoji { font-size: 28px; }
+  .aug-desc { font-size: 10.5px; }
+}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useGame, pvpMe, pvpName } from "../game/store";
 import { isCarouselRound, isBossRound, vsRoundKind } from "../game/tuning";
 import { carouselPick, opponentOf, ratingDelta } from "../game/lobby";
+import { isAugmentRound } from "../game/augments";
 import { ITEMS } from "../game/items";
 import { PlanTimer } from "./PlanTimer";
 import { XP_TO_NEXT as XP_VIEW } from "../game/xpView";
@@ -76,6 +77,7 @@ export function Hud() {
   // the carousel runs before anyone locks in
   const carousel = pvp?.snap.carousel?.round === round && !pvp.snap.carousel.done ? pvp.snap.carousel : null;
   const drafting = !!carousel && !!pvp && !carouselPick(carousel, pvp.seat);
+  const augmentOffer = useGame((s) => s.augmentOffer);
 
   // VS result screens move on by themselves
   const autoContinue = vs && phase === "result" && alive && stage === "match";
@@ -143,6 +145,7 @@ export function Hud() {
               <span className={`round-kind ${roundKind}`}>
                 {roundKind === "pvp" ? "⚔ PvP" : roundKind === "boss" ? "☠ Boss" : "🐾 Wild"}
                 {isCarouselRound(round) && " · 🎠"}
+                {isAugmentRound(round) && " · ✨"}
               </span>
             )}
           </div>
@@ -183,22 +186,28 @@ export function Hud() {
         )}
         {phase === "prep" && vs && stage === "match" && alive && pvp && (
           <div className="battle-bar">
-            <button className="action" disabled={boardUnits === 0 || pvp.myReady || drafting} onClick={() => pvpReadyUp()}>
+            <button
+              className="action"
+              disabled={boardUnits === 0 || pvp.myReady || drafting || !!augmentOffer}
+              onClick={() => pvpReadyUp()}
+            >
               {pvp.myReady
                 ? carousel
                   ? "Waiting for the carousel…"
                   : waitingOn > 0
                     ? `Waiting for ${waitingOn} tamer${waitingOn > 1 ? "s" : ""}…`
                     : "Starting…"
-                : drafting
-                  ? "🎠 Pick from the carousel"
-                  : roundKind === "boss"
-                    ? "☠ Ready for the boss"
-                    : roundKind === "pve"
-                      ? "🐾 Ready"
-                      : nextOpp?.ghost
-                        ? `👻 Ready · ${pvpName(pvp, nextOpp.seat)}'s ghost`
-                        : `⚔ Ready · vs ${pvpName(pvp, nextOpp?.seat)}`}
+                : augmentOffer
+                  ? "✨ Choose an augment"
+                  : drafting
+                    ? "🎠 Pick from the carousel"
+                    : roundKind === "boss"
+                      ? "☠ Ready for the boss"
+                      : roundKind === "pve"
+                        ? "🐾 Ready"
+                        : nextOpp?.ghost
+                          ? `👻 Ready · ${pvpName(pvp, nextOpp.seat)}'s ghost`
+                          : `⚔ Ready · vs ${pvpName(pvp, nextOpp?.seat)}`}
             </button>
             <PlanTimer />
           </div>

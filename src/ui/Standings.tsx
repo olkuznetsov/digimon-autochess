@@ -1,5 +1,6 @@
 import { useGame } from "../game/store";
 import { opponentOf, START_HP } from "../game/lobby";
+import { AUGMENTS } from "../game/augments";
 
 /** VS lobby players: HP, who's locked in, who we fight; click one to scout their board. */
 export function Standings() {
@@ -44,6 +45,11 @@ export function Standings() {
               {against && <span className="st-tag">{opp?.ghost ? "👻" : "⚔"}</span>}
               <span className="st-label">{s.name}</span>
               {!s.online && <span className="st-off" title="Offline — their last board plays">📡</span>}
+              {(s.augments ?? []).length > 0 && (
+                <span className="st-augs" title={(s.augments ?? []).map((id) => AUGMENTS[id]?.name ?? id).join(", ")}>
+                  {(s.augments ?? []).map((id) => AUGMENTS[id]?.emoji ?? "").join("")}
+                </span>
+              )}
               <span className="st-right">
                 {s.alive && s.ready && phase === "prep" && <span className="st-ready">✓</span>}
                 <span className="st-num">{s.alive ? s.hp : `#${s.placement}`}</span>

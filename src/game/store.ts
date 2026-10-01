@@ -16,6 +16,7 @@ import {
   type WireUnit,
 } from "./lobby";
 import { duelFighters, ghostFighters, outcomesHash, pveFighters, roundOutcomes, FIGHT_STEPS } from "./vsFights";
+import { augmentOffer, isAugmentRound, MAX_AUGMENTS } from "./augments";
 import { XP_TO_NEXT, MAX_LEVEL } from "./xpView";
 import { sfx, battleSfx } from "../audio/sfx";
 import { BENCH_SLOTS, COLS, ROWS } from "./board";
@@ -127,7 +128,7 @@ function gainXp(level: number, xp: number, amount: number): { level: number; xp:
   return { level: L, xp: X };
 }
 
-const interest = (gold: number) => Math.min(Math.floor(gold / 10), 5);
+const interest = (gold: number, cap = 5) => Math.min(Math.floor(gold / 10), cap);
 const streakBonus = (streak: number) => {
   const a = Math.abs(streak);
   return a >= 4 ? 3 : a >= 3 ? 2 : a >= 2 ? 1 : 0;
@@ -235,6 +236,14 @@ interface GameState {
   shopLocked: boolean;
   /** rewards of the round that just ended (result screen) */
   loot: { gold: number; items: string[] } | null;
+  /** VS augments picked this match (src/game/augments.ts) */
+  augments: string[];
+  /** an augment round's three options (null = no pick open) */
+  augmentOffer: string[] | null;
+  /** rerolls left for the open augment offer */
+  augmentRerolls: number;
+  /** free shop rerolls left this round (Lucky Roll) */
+  freeRerolls: number;
   boardSnapshot: Unit[] | null;
 
   dragId: string | null;
@@ -296,6 +305,8 @@ interface GameState {
   pvpQuit: () => void;
   /** carousel: take the item at this index (when it's our turn) */
   pvpPick: (index: number) => void;
+  pickAugment: (id: string) => void;
+  rerollAugments: () => void;
 
   ghostFight: (board: PvpBoardUnit[], name: string) => void;
   ghostReturn: () => void;
@@ -307,6 +318,7 @@ const planDeadline = () => Date.now() + (touchDevice() ? VS.planSecondsTouch : V
 
 const randomOf = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const FUSED_IDS = FUSED_ITEM_IDS;
+const CHAMPION_IDS = Object.keys(FORMS).filter((id) => FORMS[id].stage === 2);
 /** after the carousel, at least this long to equip the new item */
 const AFTER_CAROUSEL_MS = 20_000;
 
@@ -349,6 +361,10 @@ function freshMatchRun() {
     pendingEvolution: null,
     inspected: null,
     loot: null,
+    augments: [] as string[],
+    augmentOffer: null,
+    augmentRerolls: 0,
+    freeRerolls: 0,
   };
 }
 
@@ -389,6 +405,10 @@ function initialState() {
     simSpeed: readSpeed(),
     shopLocked: false,
     loot: null as { gold: number; items: string[] } | null,
+    augments: [] as string[],
+    augmentOffer: null as string[] | null,
+    augmentRerolls: 0,
+    freeRerolls: 0,
     boardSnapshot: null as Unit[] | null,
     dragId: null as string | null,
     dragPos: null as { x: number; z: number } | null,
@@ -434,10 +454,13 @@ export const useGame = create<GameState>((set, get) => ({
   ...initialState(),
 
   reroll: () => {
-    const { gold } = get();
-    if (gold < REROLL_COST) return;
+    const { gold, freeRerolls } = get();
+    if (freeRerolls <= 0 && gold < REROLL_COST) return;
     sfx.reroll();
-    set({ gold: gold - REROLL_COST, shop: rollShop(get().level, shopPool(get())) });
+    set({
+      ...(freeRerolls > 0 ? { freeRerolls: freeRerolls - 1 } : { gold: gold - REROLL_COST }),
+      shop: rollShop(get().level, shopPool(get())),
+    });
   },
 
   buy: (shopIndex) => {
@@ -766,8 +789,19 @@ export const useGame = create<GameState>((set, get) => ({
   toPrep: () => {
     const state = get();
     if (state.gameOver) return;
-    const income = ECONOMY.baseIncome + interest(state.gold) + streakBonus(state.streak);
-    const leveled = gainXp(state.level, state.xp, ECONOMY.passiveXp);
+    const has = (id: string) => state.augments.includes(id);
+    const income =
+      ECONOMY.baseIncome +
+      interest(state.gold, has("compound") ? 8 : 5) +
+      streakBonus(state.streak) +
+      (has("dividend") ? 2 : 0);
+    const leveled = gainXp(state.level, state.xp, ECONOMY.passiveXp + (has("fastlearner") ? 2 : 0));
+    // augment rounds open with a pick (VS, still standing)
+    const augmentRound =
+      state.pvp?.snap.stage === "match" &&
+      !!pvpMe(state.pvp)?.alive &&
+      isAugmentRound(state.round + 1) &&
+      state.augments.length < MAX_AUGMENTS;
     set({
       phase: "prep",
       result: null,
@@ -783,6 +817,8 @@ export const useGame = create<GameState>((set, get) => ({
       shop: state.shopLocked ? state.shop : rollShop(leveled.level, shopPool(state)),
       viewFlip: false,
       loot: null,
+      freeRerolls: has("freeroll") ? 1 : 0,
+      ...(augmentRound ? { augmentOffer: augmentOffer(state.augments), augmentRerolls: 1 } : {}),
       ...(state.pvp ? { pvp: { ...state.pvp, myReady: false, prepEndsAt: planDeadline(), fight: null, scout: null } } : {}),
     });
     // planning the next round: the room opens the carousel once everyone is here
@@ -915,7 +951,8 @@ export const useGame = create<GameState>((set, get) => ({
 
     // every fight of the round, simulated here exactly as on every other client
     const seats = Object.keys(fight.boards).map(Number);
-    const outcomes = roundOutcomes(fight.round, fight.plan, fight.boards, seats);
+    const augs = fight.augments ?? {};
+    const outcomes = roundOutcomes(fight.round, fight.plan, fight.boards, seats, augs);
     net.send?.({ t: "report", match: fight.match, round: fight.round, results: outcomes, hash: outcomesHash(outcomes) });
 
     const boards = { ...pvp.boards, ...fight.boards };
@@ -927,14 +964,16 @@ export const useGame = create<GameState>((set, get) => ({
       set({ pvp: { ...pvp, boards } }); // knocked out: just keeping score
       return;
     }
+    // an augment still unpicked when the fight starts (the room started it without us)
+    if (get().augmentOffer) get().pickAugment(get().augmentOffer![0]);
     const oppBoard = opp ? (fight.boards[opp.seat] ?? []) : [];
     const fighters = !opp
-      ? pveFighters(myBoard, fight.round, pvp.seat)
+      ? pveFighters(myBoard, fight.round, pvp.seat, augs[pvp.seat])
       : opp.ghost
-        ? ghostFighters(fight.round, pvp.seat, myBoard, opp.seat, oppBoard)
+        ? ghostFighters(fight.round, pvp.seat, myBoard, opp.seat, oppBoard, augs)
         : opp.home
-          ? duelFighters(fight.round, pvp.seat, myBoard, opp.seat, oppBoard)
-          : duelFighters(fight.round, opp.seat, oppBoard, pvp.seat, myBoard);
+          ? duelFighters(fight.round, pvp.seat, myBoard, opp.seat, oppBoard, augs)
+          : duelFighters(fight.round, opp.seat, oppBoard, pvp.seat, myBoard, augs);
     if (kind === "boss") sfx.bossIntro();
     else sfx.battleStart();
     set({
@@ -969,13 +1008,39 @@ export const useGame = create<GameState>((set, get) => ({
     sfx.click();
   },
 
+  pickAugment: (id) => {
+    const s = get();
+    if (!s.augmentOffer?.includes(id)) return;
+    sfx.evolve();
+    // instant augments pay out now; economy and combat ones work from the augment list
+    let { gold, inventory } = s;
+    if (id === "treasure") gold += 10;
+    if (id === "itemcache") inventory = [...inventory, randomOf(BASE_ITEM_IDS), randomOf(BASE_ITEM_IDS)];
+    if (id === "fusionlab") inventory = [...inventory, randomOf(FUSED_IDS)];
+    set({ gold, inventory, augments: [...s.augments, id], augmentOffer: null, augmentRerolls: 0 });
+    if (id === "championegg") grantUnits([randomOf(CHAMPION_IDS)]);
+    if (id === "rookierush") {
+      const pool = shopPool(get());
+      const cheap = ROOKIE_IDS.filter((r) => (FORMS[r].cost ?? 1) === 1 && (!pool || (pool[r] ?? 0) > 0));
+      grantUnits([0, 1, 2].map(() => randomOf(cheap.length ? cheap : ROOKIE_IDS)));
+    }
+    if (s.pvp) net.send?.({ t: "augment", id });
+  },
+
+  rerollAugments: () => {
+    const s = get();
+    if (!s.augmentOffer || s.augmentRerolls <= 0) return;
+    sfx.reroll();
+    set({ augmentOffer: augmentOffer(s.augments, s.augmentOffer), augmentRerolls: s.augmentRerolls - 1 });
+  },
+
   pvpReadyUp: (force = false) => {
     const { pvp, units, round, pendingEvolution } = get();
     if (!pvp || pvp.myReady || pvp.snap.stage !== "match" || !pvpMe(pvp)?.alive) return;
     // the carousel comes first: pick before locking in
     const c = pvp.snap.carousel;
     const drafting = !!c && c.round === round && !c.done && !carouselPick(c, pvp.seat);
-    if ((pendingEvolution || drafting) && !force) return;
+    if ((pendingEvolution || drafting || get().augmentOffer) && !force) return;
     const board = wireBoard(units);
     // an empty board can only go in when the planning timer forces it
     if (board.length === 0 && !force) return;
@@ -988,6 +1053,7 @@ export const useGame = create<GameState>((set, get) => ({
     const s = get();
     if (!s.pvp || s.pvp.myReady || s.phase !== "prep") return;
     for (let i = 0; i < 4 && get().pendingEvolution; i++) get().chooseEvolution(get().pendingEvolution!.options[0]);
+    if (get().augmentOffer) get().pickAugment(get().augmentOffer![0]);
     // an unpicked carousel item is handed out by the room when the draft closes
     get().pvpReadyUp(true);
   },
@@ -1120,6 +1186,27 @@ useGame.setState(savedRun());
 
 // ---------- VS helpers that drive the store from outside an action ----------
 
+/** Units an augment grants go to the bench (merging like a purchase); with the
+ *  bench full they're paid out in gold instead. */
+function grantUnits(formIds: string[]) {
+  for (const formId of formIds) {
+    const s = useGame.getState();
+    const slot = firstEmptyBench(s.units);
+    if (slot === null) {
+      useGame.setState({ gold: s.gold + sellValue(formId) });
+      continue;
+    }
+    const resolved = resolveEvolutions([...s.units, { uid: nextUid(), formId, placement: { kind: "bench", slot }, items: [] }]);
+    const last = resolved.evolved[resolved.evolved.length - 1];
+    useGame.setState({
+      units: resolved.units,
+      pendingEvolution: resolved.pending,
+      inventory: [...s.inventory, ...resolved.spill],
+      ...(last ? { evoFlash: { ...last, key: Date.now() } } : {}),
+    });
+  }
+}
+
 /** The carousel: our pick (or the one the room handed us) goes into the tray once;
  *  while the draft runs, the planning clock waits for it. */
 function collectCarousel(snap: LobbySnapshot) {
@@ -1169,7 +1256,9 @@ function catchUp(snap: LobbySnapshot, lastFight?: LobbyFight) {
     const seat = g().pvp!.seat;
     const seats = Object.keys(lastFight.boards).map(Number);
     const mine = seats.includes(seat)
-      ? roundOutcomes(lastFight.round, lastFight.plan, lastFight.boards, seats).find((o) => o.seat === seat)
+      ? roundOutcomes(lastFight.round, lastFight.plan, lastFight.boards, seats, lastFight.augments ?? {}).find(
+          (o) => o.seat === seat,
+        )
       : undefined;
     if (mine) {
       const s = g();

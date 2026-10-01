@@ -13,6 +13,7 @@ import { DamageMeter } from "./ui/DamageMeter";
 import { NextWave } from "./ui/NextWave";
 import { Onboarding } from "./ui/Onboarding";
 import { CarouselPanel } from "./ui/CarouselPanel";
+import { AugmentChoice } from "./ui/AugmentChoice";
 import { Standings } from "./ui/Standings";
 
 export default function App() {
@@ -34,6 +35,7 @@ export default function App() {
       <EvoBanner />
       <EvolutionChoice />
       <CarouselPanel />
+      <AugmentChoice />
       <LoadingScreen />
       <AudioDirector />
       <Hotkeys />

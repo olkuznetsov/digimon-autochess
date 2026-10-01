@@ -3,7 +3,11 @@ import { makeFighter, stepCombat, SIM_DT } from "./battle";
 import { applySynergies } from "./synergies";
 import { makeVsWave, vsRoundKind, vsStageDamage } from "./tuning";
 import { COLS, ROWS } from "./board";
+import { applyAugments } from "./augments";
 import type { Outcome, RoundPlan, WireUnit } from "./lobby";
+
+/** Each seat's augments (the room sends them with every fight). */
+type Augs = Record<number, string[]>;
 
 /**
  * The fights of a VS round, built identically on every client: each client
@@ -25,9 +29,9 @@ const asUnit = (uid: string, u: WireUnit): Unit => ({
   items: u.items ?? [],
 });
 
-/** One side of a fight: a board as fighters with its synergies; the away side is
- *  mirrored onto rows 3–5. */
-function side(board: WireUnit[], prefix: string, team: "player" | "enemy"): Fighter[] {
+/** One side of a fight: a board as fighters with its synergies and its player's
+ *  combat augments; the away side is mirrored onto rows 3–5. */
+function side(board: WireUnit[], prefix: string, team: "player" | "enemy", augments: string[] = []): Fighter[] {
   const away = team === "enemy";
   const fighters = board.map((u) =>
     makeFighter(
@@ -41,27 +45,43 @@ function side(board: WireUnit[], prefix: string, team: "player" | "enemy"): Figh
     ),
   );
   applySynergies(fighters, board.map((u) => asUnit(`${prefix}${u.uid}`, u)));
+  applyAugments(fighters, augments);
   return fighters;
 }
 
 /** Two players: `home` on rows 0–2 as "player", `away` mirrored as "enemy". Who acts
  *  first alternates by round, so mirror matches don't always favour the same side. */
-export function duelFighters(round: number, home: number, homeBoard: WireUnit[], away: number, awayBoard: WireUnit[]): Fighter[] {
-  const h = side(homeBoard, `${home}_`, "player");
-  const a = side(awayBoard, `${away}_`, "enemy");
+export function duelFighters(
+  round: number,
+  home: number,
+  homeBoard: WireUnit[],
+  away: number,
+  awayBoard: WireUnit[],
+  augs: Augs = {},
+): Fighter[] {
+  const h = side(homeBoard, `${home}_`, "player", augs[home]);
+  const a = side(awayBoard, `${away}_`, "enemy", augs[away]);
   return round % 2 === 1 ? [...h, ...a] : [...a, ...h];
 }
 
-/** A player against a ghost copy of another player's board (the odd one out). */
-export function ghostFighters(round: number, seat: number, board: WireUnit[], of: number, ghostBoard: WireUnit[]): Fighter[] {
-  const h = side(board, `${seat}_`, "player");
-  const g = side(ghostBoard, `g${of}_`, "enemy");
+/** A player against a ghost copy of another player's board (the odd one out) —
+ *  the copy fights with its owner's augments. */
+export function ghostFighters(
+  round: number,
+  seat: number,
+  board: WireUnit[],
+  of: number,
+  ghostBoard: WireUnit[],
+  augs: Augs = {},
+): Fighter[] {
+  const h = side(board, `${seat}_`, "player", augs[seat]);
+  const g = side(ghostBoard, `g${of}_`, "enemy", augs[of]);
   return round % 2 === 1 ? [...h, ...g] : [...g, ...h];
 }
 
 /** A player against the round's wild / boss wave. */
-export function pveFighters(board: WireUnit[], round: number, seat: number): Fighter[] {
-  return [...side(board, `${seat}_`, "player"), ...makeVsWave(round)];
+export function pveFighters(board: WireUnit[], round: number, seat: number, augments: string[] = []): Fighter[] {
+  return [...side(board, `${seat}_`, "player", augments), ...makeVsWave(round)];
 }
 
 /** Run a fight to the end without rendering. */
@@ -86,25 +106,31 @@ export function simulate(fighters: Fighter[]): { win: boolean; survivors: number
  * Every player's outcome in a round. A loss costs the stage's damage plus one
  * per unit left standing on the other side (a draw costs both players).
  */
-export function roundOutcomes(round: number, plan: RoundPlan, boards: Record<number, WireUnit[]>, alive: number[]): Outcome[] {
+export function roundOutcomes(
+  round: number,
+  plan: RoundPlan,
+  boards: Record<number, WireUnit[]>,
+  alive: number[],
+  augs: Augs = {},
+): Outcome[] {
   const stage = vsStageDamage(round);
   const out = new Map<number, Outcome>();
   const board = (seat: number) => boards[seat] ?? [];
   if (vsRoundKind(round) !== "pvp") {
     for (const seat of alive) {
-      const r = runFight(pveFighters(board(seat), round, seat));
+      const r = runFight(pveFighters(board(seat), round, seat, augs[seat]));
       const won = r.winner === "home";
       out.set(seat, { seat, won, damage: won ? 0 : stage + r.enemies });
     }
   } else {
     for (const [home, away] of plan.pairs) {
-      const r = runFight(duelFighters(round, home, board(home), away, board(away)));
+      const r = runFight(duelFighters(round, home, board(home), away, board(away), augs));
       out.set(home, { seat: home, won: r.winner === "home", damage: r.winner === "home" ? 0 : stage + r.alive });
       out.set(away, { seat: away, won: r.winner === "away", damage: r.winner === "away" ? 0 : stage + r.alive });
     }
     if (plan.ghost) {
       const { seat, of } = plan.ghost;
-      const r = runFight(ghostFighters(round, seat, board(seat), of, board(of)));
+      const r = runFight(ghostFighters(round, seat, board(seat), of, board(of), augs));
       out.set(seat, { seat, won: r.winner === "home", damage: r.winner === "home" ? 0 : stage + r.alive });
     }
   }

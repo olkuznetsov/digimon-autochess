@@ -24,6 +24,7 @@ import {
 } from "../../src/game/lobby";
 import { isCarouselRound } from "../../src/game/tuning";
 import { FORMS } from "../../src/game/creatures";
+import { AUGMENTS, MAX_AUGMENTS } from "../../src/game/augments";
 
 /**
  * A lobby for 2–8 players, one Durable Object per room code. Players gather in
@@ -77,6 +78,8 @@ interface Room {
   arrived: number[];
   /** when the current round began */
   roundAt: number;
+  /** each player's augments this match */
+  augments: Record<number, string[]>;
 }
 
 interface Attach {
@@ -104,6 +107,7 @@ const newRoom = (): Room => ({
   carousel: null,
   arrived: [],
   roundAt: 0,
+  augments: {},
 });
 
 const standingsOf = (room: Room): Standing[] =>
@@ -172,6 +176,7 @@ export class Lobby extends DurableObject<Env> {
         alive: s.alive,
         placement: s.placement,
         ready: s.ready,
+        augments: room.augments[s.seat] ?? [],
       })),
     };
   }
@@ -293,6 +298,7 @@ export class Lobby extends DurableObject<Env> {
     else if (m.t === "held") await this.hold(room, me, m);
     else if (m.t === "arrived") await this.arrive(room, me, m);
     else if (m.t === "pick") await this.pick(room, me, m);
+    else if (m.t === "augment") await this.augment(room, me, m);
   }
 
   private async start(room: Room, me: Seat) {
@@ -311,6 +317,7 @@ export class Lobby extends DurableObject<Env> {
     room.players = players.length;
     room.report = null;
     room.held = {};
+    room.augments = {};
     room.plan = planRound(players.map((s) => s.seat), 1, [], room.seed);
     this.beginRound(room);
     await this.ctx.storage.delete([...SEAT_KEYS, "lastFight"]);
@@ -360,6 +367,7 @@ export class Lobby extends DurableObject<Env> {
       round: room.round,
       plan: room.plan ?? { round: room.round, pairs: [], ghost: null },
       boards,
+      augments: Object.fromEntries(alive.map((s) => [s.seat, room.augments[s.seat] ?? []])),
     };
     room.fighting = true;
     for (const s of room.seats) s.ready = false;
@@ -470,6 +478,16 @@ export class Lobby extends DurableObject<Env> {
           done: false,
         }
       : null;
+  }
+
+  /** An augment pick: public, and the room's record is what every fight uses. */
+  private async augment(room: Room, me: Seat, m: Record<string, unknown>) {
+    const id = String(m.id ?? "");
+    const mine = room.augments[me.seat] ?? [];
+    if (room.stage !== "match" || !me.alive || !AUGMENTS[id] || mine.includes(id) || mine.length >= MAX_AUGMENTS) return;
+    room.augments[me.seat] = [...mine, id];
+    await this.save(room);
+    this.broadcast({ t: "roster", snap: this.snapshot(room) });
   }
 
   /** Shared pool: the rookie copies a player holds (bench and board). */
