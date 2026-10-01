@@ -109,6 +109,12 @@ export function Creature({
   const manaFill = useRef<HTMLSpanElement>(null);
   const label = useRef<HTMLDivElement>(null);
   const shown = useRef({ hp: -1, mana: -1, shield: -1, dead: false });
+  // ground marks and star pips: they go with the body when the unit is deleted
+  const ground = useRef<THREE.Group>(null);
+  const shadowMat = useRef<THREE.MeshBasicMaterial>(null);
+  const ringMat = useRef<THREE.MeshStandardMaterial>(null);
+  const pips = useRef<THREE.Group>(null);
+  const deadFor = useRef(-1);
 
   useFrame((_, dt) => {
     const g = root.current;
@@ -144,6 +150,26 @@ export function Creature({
     if (shieldFill.current && shield !== s.shield) shieldFill.current.style.width = `${shield}%`;
     if (label.current && d.dead !== s.dead) label.current.style.visibility = d.dead ? "hidden" : "visible";
     Object.assign(s, { hp, mana, shield, dead: d.dead });
+
+    // a deleted unit's ring, shadow and stars fade out with its dissolve (set every
+    // frame while dead: a re-render would restore the materials' opacity props)
+    deadFor.current = d.dead ? (deadFor.current < 0 ? 0 : deadFor.current + dt) : -1;
+    if (deadFor.current >= 0) {
+      const fade = THREE.MathUtils.clamp(1 - (deadFor.current - 0.3) / 1.1, 0, 1);
+      if (shadowMat.current) shadowMat.current.opacity = 0.75 * fade;
+      if (ringMat.current) ringMat.current.opacity = 0.9 * fade;
+      if (ground.current) ground.current.visible = fade > 0;
+      if (pips.current) {
+        pips.current.visible = fade > 0;
+        pips.current.scale.setScalar(Math.max(0.001, fade));
+      }
+    } else if (ground.current && !ground.current.visible) {
+      ground.current.visible = true;
+      if (pips.current) {
+        pips.current.visible = true;
+        pips.current.scale.setScalar(1);
+      }
+    }
   });
 
   const [burst, setBurst] = useState(0);
@@ -164,21 +190,31 @@ export function Creature({
     // so re-renders never snap a gliding battle unit back to its sim cell
     <group ref={root}>
       {/* soft contact shadow, then a thin glowing base ring */}
-      <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
-        <circleGeometry args={[0.55, 24]} />
-        <meshBasicMaterial map={shadowTexture()} color="#000000" transparent opacity={0.75} depthWrite={false} />
-      </mesh>
-      <mesh position={[0, 0.035, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={2}>
-        <ringGeometry args={[0.4, 0.465, 40]} />
-        <meshStandardMaterial
-          color={boss ? "#ff3355" : color}
-          emissive={boss ? "#ff3355" : color}
-          emissiveIntensity={dragging ? 2.6 : boss ? 2 : 1.15}
-          transparent
-          opacity={0.9}
-          depthWrite={false}
-        />
-      </mesh>
+      <group ref={ground}>
+        <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
+          <circleGeometry args={[0.55, 24]} />
+          <meshBasicMaterial
+            ref={shadowMat}
+            map={shadowTexture()}
+            color="#000000"
+            transparent
+            opacity={0.75}
+            depthWrite={false}
+          />
+        </mesh>
+        <mesh position={[0, 0.035, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={2}>
+          <ringGeometry args={[0.4, 0.465, 40]} />
+          <meshStandardMaterial
+            ref={ringMat}
+            color={boss ? "#ff3355" : color}
+            emissive={boss ? "#ff3355" : color}
+            emissiveIntensity={dragging ? 2.6 : boss ? 2 : 1.15}
+            transparent
+            opacity={0.9}
+            depthWrite={false}
+          />
+        </mesh>
+      </group>
 
       <Suspense fallback={body}>
         {url ? (
@@ -219,12 +255,14 @@ export function Creature({
       </mesh>
 
       {/* star pips */}
-      {Array.from({ length: star }).map((_, i) => (
-        <mesh key={i} position={[(i - (star - 1) / 2) * 0.18, 1.2, 0]}>
-          <octahedronGeometry args={[0.07]} />
-          <meshStandardMaterial color="#ffd34d" emissive="#ffd34d" emissiveIntensity={2} />
-        </mesh>
-      ))}
+      <group ref={pips}>
+        {Array.from({ length: star }).map((_, i) => (
+          <mesh key={i} position={[(i - (star - 1) / 2) * 0.18, 1.2, 0]}>
+            <octahedronGeometry args={[0.07]} />
+            <meshStandardMaterial color="#ffd34d" emissive="#ffd34d" emissiveIntensity={2} />
+          </mesh>
+        ))}
+      </group>
 
       <Html center position={[0, 1.55, 0]} distanceFactor={9} zIndexRange={[10, 0]}>
         {/* battle shows bars only (names are prep information) — bosses keep their title */}
