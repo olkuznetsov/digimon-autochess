@@ -11,6 +11,11 @@ export const MOVE_SPEED = 2.2; // cells per second during battle
  *  always plays out identically. */
 export const SIM_DT = 0.05;
 
+/** Every unit's HP is multiplied by this. It stretches fights (both sides equally,
+ *  so matchups and synergies keep their relative value) to ~12–18 s, long enough
+ *  for ultimates to come around and for the animations to read. */
+export const HP_SCALE = 1.5;
+
 /** Moving units steer away from neighbours within this radius (cells), so several
  *  attackers spread around a target instead of stacking on one approach point. */
 const SEPARATION_RADIUS = 0.8;
@@ -67,8 +72,8 @@ export function makeFighter(
     team,
     attribute: form.attribute,
     role: form.role,
-    hp: Math.round(s.hp * hpScale),
-    maxHp: Math.round(s.hp * hpScale),
+    hp: Math.round(s.hp * HP_SCALE * hpScale),
+    maxHp: Math.round(s.hp * HP_SCALE * hpScale),
     attack: s.attack,
     attackSpeed: s.attackSpeed,
     range: s.range,

@@ -71,7 +71,8 @@ const volley = (count: number, factor: number): Effect => ({
   },
 });
 
-/** Raise a shield for a fraction of max HP (optionally shielding the whole team). */
+/** Raise a shield for a fraction of max HP (optionally shielding the whole team).
+ *  Fractions are sized for HP_SCALE: longer fights mean more casts per fight. */
 const bulwark = (pct: number, team = false): Effect => ({
   fx: "guard",
   cast: (c) => {
@@ -130,7 +131,7 @@ const u = (name: string, icon: string, desc: string, e: Effect): Ultimate => ({ 
 
 // ---------- role fallbacks (rookies) — mirror the previous generic abilities ----------
 const ROLE_ULT: Record<Role, Ultimate> = {
-  tank: u("Iron Guard", "🛡️", "Shields for 30% of max HP.", bulwark(0.3)),
+  tank: u("Iron Guard", "🛡️", "Shields for 18% of max HP.", bulwark(0.18)),
   bruiser: u("Power Strike", "💥", "A crushing blow for 250% attack.", bolt(2.5)),
   assassin: u("Triple Slash", "🗡️", "Three quick hits (115% each).", barrage(3, 1.15)),
   ranged: u("Multishot", "🏹", "Hits the 3 nearest enemies (130%).", volley(3, 1.3)),
@@ -151,14 +152,14 @@ export const ULTIMATES: Record<string, Ultimate> = {
   skullsatamon: u("Nightmare Wave", "💀", "Three cursed strikes (120% each).", barrage(3, 1.2)),
   belzemon: u("Corona Blaster", "🔫", "A point-blank blast at the 2 nearest (200%).", volley(2, 2.0)),
   // Nightmare Soldiers — Hagurumon line
-  guardromon: u("Guardian Barrage", "🛡️", "Shields self for 32% max HP.", bulwark(0.32)),
+  guardromon: u("Guardian Barrage", "🛡️", "Shields self for 21% max HP.", bulwark(0.21)),
   machinedramon: u("Giga Cannon", "🎯", "One annihilating shot for 420% attack.", bolt(4.2)),
   // Wind Guardians — Patamon line
   angemon: u("Hand of Fate", "🌟", "A holy beam at the 3 nearest (135%).", volley(3, 1.35)),
-  magnaangemon: u("Gate of Destiny", "⚔️", "Banishes a weakened foe — 200%, 320% below 30% HP.", execute(2.0, 0.3, 1.6)),
+  magnaangemon: u("Gate of Destiny", "⚔️", "Banishes a weakened foe — 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
   // Nature Spirits — Dracomon line
   coredramon: u("Blue Flare Breath", "🔥", "A dragon-fire blast for 255%.", bolt(2.55)),
-  breakdramon: u("Giga Drill", "🩸", "Braces behind a 35% team shield.", bulwark(0.35, true)),
+  breakdramon: u("Giga Drill", "🩸", "Braces behind a 15% team shield.", bulwark(0.15, true)),
   // Deep Savers — Keramon line
   infermon: u("Cable Crusher", "🕸️", "Three savage strikes (120% each).", barrage(3, 1.2)),
   diaboromon: u("Web Wrecker", "🕷️", "A viral nova (150%) around the target.", nova(1.5, 1.7)),
@@ -170,7 +171,7 @@ export const ULTIMATES: Record<string, Ultimate> = {
   rosemon: u("Thorn Whip", "🌹", "Five lashes that heal her (95% each, 25% lifesteal).", siphon(5, 0.95, 0.25)),
   rosemonbm: u("Danger Thorn", "🥀", "A toxic bloom detonates — AoE 165%.", nova(1.65, 1.8)),
   // Deep Savers — Gomamon line
-  ikkakumon: u("Harpoon Torpedo", "🐚", "Braces behind a 32% shield.", bulwark(0.32)),
+  ikkakumon: u("Harpoon Torpedo", "🐚", "Braces behind a 21% shield.", bulwark(0.21)),
   vikemon: u("Arctic Blizzard", "🧊", "A polar storm: AoE 110% and freezes for 1s.", freeze(1.1, 1.8, 1.0)),
   // Wind Guardians — Veemon line
   exveemon: u("Vee-Laser", "⚡", "An X-shaped beam for 250%.", bolt(2.5)),

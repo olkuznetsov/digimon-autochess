@@ -11,7 +11,8 @@
     "balance": "esbuild scripts/balance-sim.ts --bundle --platform=node --outfile=node_modules/.cache/balance-sim.cjs --log-level=warning && node node_modules/.cache/balance-sim.cjs",
     "deploy": "npm run build && wrangler pages deploy dist --project-name=digimon-autochess --commit-dirty=true",
     "optimize-models": "node scripts/optimize-models.mjs",
-    "check-models": "node scripts/check-models.mjs"
+    "check-models": "node scripts/check-models.mjs",
+    "runsim": "node scripts/run-sim.mjs"
   },
   "dependencies": {
     "@fontsource-variable/exo-2": "^5.3.0",

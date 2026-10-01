@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { useGame, isBossRound } from "../game/store";
+import { useGame } from "../game/store";
+import { isBossRound } from "../game/tuning";
 import { unlockAudio } from "./engine";
 import { music, type MusicMode } from "./music";
 import { battleSfx, sfx } from "./sfx";

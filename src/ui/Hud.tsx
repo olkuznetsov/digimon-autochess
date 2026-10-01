@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useGame, isBossRound } from "../game/store";
+import { useGame } from "../game/store";
+import { isBossRound } from "../game/tuning";
 import { XP_TO_NEXT as XP_VIEW } from "../game/xpView";
 import { isMuted, setMuted, isMusicOn, setMusicOn, sfx } from "../audio/sfx";
 import { PvpModal } from "./PvpModal";
