@@ -15,8 +15,11 @@ for model sources.*
   32 named signature ultimates (Terra Force, Cocytus Breath, Positron Laser…).
 - **Synergies** (three attributes in a counter triangle, five families), **items** that fuse in pairs into
   12 stronger ones, boss rounds, a 15-round run plus endless mode.
-- **VS a friend** over a 4-letter room code: deterministic battles both players simulate identically,
-  reconnects that survive a phone switching apps, rematches in the same room.
+- **VS a friend** over a 4-letter room code, in Teamfight Tactics' round rhythm: stages of five rounds with
+  wild-Digimon rounds, an item pick every stage (the player behind gets a stronger offer), a boss every tenth
+  round, loss damage that grows by stage, a planning timer and live scouting of the opponent's board.
+  Deterministic battles both players simulate identically, reconnects that survive a phone switching apps,
+  rematches in the same room.
 - **Leaderboard and ghost battles** against other players' saved boards.
 - **Game feel**: hit-stop, camera shake, sparks, pooled damage numbers, a cinematic beat for Mega ultimates,
   "data deletion" deaths, a materialize-in at the start of every fight.
