@@ -525,7 +525,8 @@ export const useGame = create<GameState>((set, get) => ({
     });
 
     applySynergies(playerFighters, onBoard);
-    sfx.battleStart();
+    if (isBossRound(round)) sfx.bossIntro();
+    else sfx.battleStart();
 
     set({
       phase: "battle",
@@ -548,7 +549,7 @@ export const useGame = create<GameState>((set, get) => ({
 
     const events: CombatEvent[] = [];
     stepCombat(fighters, dt, events);
-    for (const e of events) battleSfx(e.kind === "hit" ? (e.ranged ? "shot" : "hit") : e.kind);
+    for (const e of events) battleSfx(e);
     const bt = state.battleTime + dt;
 
     // effects list: prune old, append this step's events (incl. the final blow —

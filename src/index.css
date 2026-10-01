@@ -982,6 +982,10 @@ body,
 .icon-btn:hover {
   filter: brightness(1.4);
 }
+.icon-btn.off {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
 
 /* ---------- help modal ---------- */
 .help-overlay {

@@ -7,6 +7,7 @@ import { ItemTray } from "./ui/ItemTray";
 import { UnitPanel } from "./ui/UnitPanel";
 import { EvoBanner } from "./ui/EvoBanner";
 import { LoadingScreen } from "./ui/LoadingScreen";
+import { AudioDirector } from "./audio/AudioDirector";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
       <EvoBanner />
       <EvolutionChoice />
       <LoadingScreen />
+      <AudioDirector />
     </div>
   );
 }

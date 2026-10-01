@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useGame, isBossRound } from "../game/store";
 import { XP_TO_NEXT as XP_VIEW } from "../game/xpView";
-import { isMuted, setMuted, sfx } from "../audio/sfx";
+import { isMuted, setMuted, isMusicOn, setMusicOn, sfx } from "../audio/sfx";
 import { PvpModal } from "./PvpModal";
 import { LeaderboardModal } from "./LeaderboardModal";
 import { pvpClose } from "../net/pvp";
@@ -34,6 +34,7 @@ export function Hud() {
   const reset = useGame((s) => s.reset);
   const boardUnits = useGame((s) => s.units.filter((u) => u.placement.kind === "board").length);
   const [muted, setMutedUi] = useState(isMuted());
+  const [musicOn, setMusicOnUi] = useState(isMusicOn());
   const [showHelp, setShowHelp] = useState(false);
   const [showPvp, setShowPvp] = useState(false);
   const [showLb, setShowLb] = useState(false);
@@ -69,6 +70,18 @@ export function Hud() {
           >
             {muted ? "🔇" : "🔊"}
           </button>
+          {!muted && (
+            <button
+              className={`icon-btn${musicOn ? "" : " off"}`}
+              title={musicOn ? "Music off" : "Music on"}
+              onClick={() => {
+                setMusicOn(!musicOn);
+                setMusicOnUi(!musicOn);
+              }}
+            >
+              ♪
+            </button>
+          )}
           <button className="icon-btn" title="How to play" onClick={() => setShowHelp(true)}>
             ❓
           </button>
