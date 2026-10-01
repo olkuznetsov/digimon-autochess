@@ -12,7 +12,8 @@
     "deploy": "npm run build && wrangler pages deploy dist --project-name=digimon-autochess --commit-dirty=true",
     "optimize-models": "node scripts/optimize-models.mjs",
     "check-models": "node scripts/check-models.mjs",
-    "runsim": "node scripts/run-sim.mjs"
+    "runsim": "node scripts/run-ts.mjs scripts/run-sim.ts",
+    "lobbycheck": "node scripts/run-ts.mjs scripts/lobby-check.ts"
   },
   "dependencies": {
     "@fontsource-variable/exo-2": "^5.3.0",

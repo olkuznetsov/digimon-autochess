@@ -10,7 +10,7 @@
  * Run: npm run runsim [-- runs=300 seed=1 maxRound=25]
  *      npm run runsim -- dumpBoards=boards.json   (bots never die; writes every run's board on
  *      VS wild/boss rounds for tuning the VS waves offline — the solo report is then meaningless)
- * (scripts/run-sim.mjs bundles this with the network + audio modules stubbed out,
+ * (scripts/run-ts.mjs bundles this with the network + audio modules stubbed out,
  * so bots never post to the live leaderboard.)
  */
 import { writeFileSync } from "node:fs";

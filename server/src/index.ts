@@ -1,49 +1,22 @@
 import { DurableObject } from "cloudflare:workers";
-import { FORMS } from "../../src/game/creatures";
-import { ITEMS } from "../../src/game/items";
+import { cleanBoard, cleanName } from "./util";
+import { Lobby } from "./lobby";
 
 /**
- * Multiplayer relay for Digimon Auto Chess: one MatchRoom Durable Object per
- * room code, two players (A = host, B = guest) over hibernatable WebSockets.
- *
- * The server is a thin, game-agnostic relay: it pairs players, syncs
- * ready-with-board per round, broadcasts "fight" when both are locked in, and
- * relays the HOST's battle result (host simulation is authoritative for
- * health). All game logic runs in the clients — fine for friendly matches.
+ * Multiplayer server for Digimon Auto Chess (Cloudflare Worker + Durable Objects):
+ * - Lobby (src/lobby.ts): rooms of 2–8 players, the current VS mode;
+ * - MatchRoom: the original 1v1 relay, kept for clients still running an older build;
+ * - Leaderboard: best runs, VS wins, lobby rating and saved boards for ghost battles.
  */
+
+export { Lobby };
 
 export interface Env {
   ROOM: DurableObjectNamespace<MatchRoom>;
+  LOBBY: DurableObjectNamespace<Lobby>;
   LB: DurableObjectNamespace<Leaderboard>;
   /** worker secret guarding /lb/admin/* (wrangler secret put ADMIN_KEY) */
   ADMIN_KEY?: string;
-}
-
-/** Display names: printable, trimmed, collapsed whitespace, max 16. */
-function cleanName(raw: unknown): string {
-  const n = String(raw ?? "")
-    .replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2060-\u206f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 16);
-  return n || "Tamer";
-}
-
-/** A ghost board must be real forms on real player cells with real items. */
-function cleanBoard(raw: unknown): string | null {
-  if (!Array.isArray(raw) || raw.length === 0 || raw.length > 9) return null;
-  const units = [];
-  for (const u of raw as Record<string, unknown>[]) {
-    const formId = String(u?.formId ?? "");
-    const col = Number(u?.col);
-    const row = Number(u?.row);
-    const items = Array.isArray(u?.items) ? (u.items as unknown[]).map(String) : [];
-    if (!FORMS[formId]) return null;
-    if (!Number.isInteger(col) || col < 0 || col > 5 || !Number.isInteger(row) || row < 0 || row > 2) return null;
-    if (items.length > 2 || items.some((i) => !ITEMS[i])) return null;
-    units.push({ uid: String(u?.uid ?? "").slice(0, 24), formId, col, row, items });
-  }
-  return JSON.stringify(units);
 }
 
 type Side = "A" | "B";
@@ -259,7 +232,33 @@ export class Leaderboard extends DurableObject<Env> {
           updated INTEGER NOT NULL
         )
       `);
+      // lobby rating (added with the 2–8 player lobby)
+      const cols = this.ctx.storage.sql.exec<{ name: string }>("PRAGMA table_info(lb)").toArray();
+      if (!cols.some((c) => c.name === "rating")) {
+        this.ctx.storage.sql.exec("ALTER TABLE lb ADD COLUMN rating INTEGER NOT NULL DEFAULT 0");
+      }
     });
+  }
+
+  /** A lobby placement (called by the Lobby room, never over HTTP): rating moves by
+   *  `delta` (never below 0), a win also counts as a VS win. */
+  async rate(e: { id: string; name: string; delta: number; win: boolean }) {
+    const id = String(e.id).slice(0, 40);
+    const name = cleanName(e.name);
+    const delta = Math.max(-40, Math.min(40, Math.round(Number(e.delta) || 0)));
+    const win = e.win ? 1 : 0;
+    const row = this.ctx.storage.sql.exec<{ rating: number }>("SELECT rating FROM lb WHERE id = ?", id).toArray()[0];
+    if (row) {
+      this.ctx.storage.sql.exec(
+        "UPDATE lb SET name=?, rating=MAX(0, rating + ?), wins=wins + ?, updated=? WHERE id=?",
+        name, delta, win, Date.now(), id,
+      );
+    } else {
+      this.ctx.storage.sql.exec(
+        "INSERT INTO lb (id, name, best, wins, board, rating, updated) VALUES (?,?,0,?,NULL,?,?)",
+        id, name, win, Math.max(0, delta), Date.now(),
+      );
+    }
   }
 
   async submit(e: { id: string; name: string; best?: number; winsDelta?: number; board?: unknown }) {
@@ -304,10 +303,11 @@ export class Leaderboard extends DurableObject<Env> {
     return n;
   }
 
-  async top(): Promise<unknown[]> {
+  async top(by: "best" | "rating" = "best"): Promise<unknown[]> {
+    const order = by === "rating" ? "rating DESC, wins DESC, updated ASC" : "best DESC, wins DESC, updated ASC";
     return this.ctx.storage.sql
-      .exec<{ id: string; name: string; best: number; wins: number; hasBoard: number }>(
-        "SELECT id, name, best, wins, (board IS NOT NULL) AS hasBoard FROM lb ORDER BY best DESC, wins DESC, updated ASC LIMIT 50",
+      .exec<{ id: string; name: string; best: number; wins: number; rating: number; hasBoard: number }>(
+        `SELECT id, name, best, wins, rating, (board IS NOT NULL) AS hasBoard FROM lb ${by === "rating" ? "WHERE rating > 0 OR wins > 0" : ""} ORDER BY ${order} LIMIT 50`,
       )
       .toArray();
   }
@@ -333,6 +333,9 @@ export default {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
 
+    const lm = url.pathname.match(/^\/lobby\/([A-Za-z0-9]{4,8})$/);
+    if (lm) return env.LOBBY.getByName(lm[1].toUpperCase()).fetch(request);
+
     const m = url.pathname.match(/^\/ws\/([A-Za-z0-9]{4,8})$/);
     if (m) {
       const stub = env.ROOM.getByName(m[1].toUpperCase());
@@ -341,7 +344,7 @@ export default {
 
     const lb = env.LB.getByName("global");
     if (url.pathname === "/lb/top" && request.method === "GET") {
-      return json(await lb.top());
+      return json(await lb.top(url.searchParams.get("by") === "rating" ? "rating" : "best"));
     }
     if (url.pathname === "/lb/submit" && request.method === "POST") {
       let body: { id?: string };
