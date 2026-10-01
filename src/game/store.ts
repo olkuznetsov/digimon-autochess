@@ -108,12 +108,18 @@ const streakBonus = (streak: number) => {
  * Resolve digivolutions after a unit changes. Auto-evolves any 3-of-a-kind whose
  * form has a single branch (looping), and stops at the first 3-of-a-kind that has
  * multiple branches — returning a PendingEvolution for the player to choose.
+ * Items of the merged copies carry over: two on the evolved unit, the rest come
+ * back in `spill` (for the item tray).
  */
-function resolveEvolutions(
-  units: Unit[],
-): { units: Unit[]; pending: PendingEvolution | null; evolved: { from: string; to: string; uid: string }[] } {
+function resolveEvolutions(units: Unit[]): {
+  units: Unit[];
+  pending: PendingEvolution | null;
+  evolved: { from: string; to: string; uid: string }[];
+  spill: string[];
+} {
   let current = units;
   const evolved: { from: string; to: string; uid: string }[] = [];
+  const spill: string[] = [];
   // guard against pathological loops
   for (let guard = 0; guard < 64; guard++) {
     const groups = new Map<string, Unit[]>();
@@ -135,9 +141,11 @@ function resolveEvolutions(
 
       if (form.evolvesTo!.length === 1) {
         const consumed = new Set(others.map((u) => u.uid));
+        const items = [...(keep.items ?? []), ...others.flatMap((u) => u.items ?? [])];
+        spill.push(...items.slice(2));
         current = current
           .filter((u) => !consumed.has(u.uid))
-          .map((u) => (u.uid === keep.uid ? { ...u, formId: form.evolvesTo![0] } : u));
+          .map((u) => (u.uid === keep.uid ? { ...u, formId: form.evolvesTo![0], items: items.slice(0, 2) } : u));
         evolved.push({ from: formId, to: form.evolvesTo![0], uid: keep.uid });
         acted = true;
         break; // re-scan from the top
@@ -153,11 +161,12 @@ function resolveEvolutions(
           placement: keep.placement,
         },
         evolved,
+        spill,
       };
     }
     if (!acted) break;
   }
-  return { units: current, pending: null, evolved };
+  return { units: current, pending: null, evolved, spill };
 }
 
 interface GameState {
@@ -417,7 +426,7 @@ export const useGame = create<GameState>((set, get) => ({
   },
 
   buy: (shopIndex) => {
-    const { gold, shop, units, pendingEvolution } = get();
+    const { gold, shop, units, pendingEvolution, inventory } = get();
     if (pendingEvolution) return;
     const formId = shop[shopIndex];
     if (!formId) return;
@@ -442,6 +451,7 @@ export const useGame = create<GameState>((set, get) => ({
       shop: newShop,
       units: resolved.units,
       pendingEvolution: resolved.pending,
+      ...(resolved.spill.length ? { inventory: [...inventory, ...resolved.spill] } : {}),
       ...(last ? { evoFlash: { ...last, key: Date.now() } } : {}),
     });
   },
@@ -468,7 +478,7 @@ export const useGame = create<GameState>((set, get) => ({
     set({
       units: resolved.units,
       pendingEvolution: resolved.pending,
-      inventory: [...inventory, ...pooled.slice(2)],
+      inventory: [...inventory, ...pooled.slice(2), ...resolved.spill],
       evoFlash: { ...flash, key: Date.now() },
     });
   },
