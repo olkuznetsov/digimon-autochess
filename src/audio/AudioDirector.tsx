@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useGame } from "../game/store";
-import { isBossRound } from "../game/tuning";
+import { isBossRound, vsRoundKind } from "../game/tuning";
 import { unlockAudio } from "./engine";
 import { music, type MusicMode } from "./music";
 import { battleSfx, sfx } from "./sfx";
@@ -24,7 +24,7 @@ export function AudioDirector() {
     const apply = (s: ReturnType<typeof useGame.getState>) => {
       const mode: MusicMode =
         s.phase === "battle"
-          ? !s.pvp && !s.ghost && isBossRound(s.round)
+          ? (s.pvp ? vsRoundKind(s.round) === "boss" : !s.ghost && isBossRound(s.round))
             ? "boss"
             : "battle"
           : s.phase === "result"

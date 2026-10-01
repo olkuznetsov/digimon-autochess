@@ -223,7 +223,7 @@ export function Hud() {
                 +{loot.gold}⛂ {loot.items.map((id) => ITEMS[id]?.emoji ?? "").join(" ")}
               </span>
             )}
-            {result === "win" && isBossRound(round) && <span className="boss-reward">👑 Boss bonus: +item +3⛂</span>}
+            {result === "win" && !pvp && isBossRound(round) && <span className="boss-reward">👑 Boss bonus: +item +3⛂</span>}
             {result === "lose" && lastDamage > 0 && <span className="dmg">-{lastDamage} ♥</span>}
             <button className="action" onClick={toPrep}>
               Continue ▸

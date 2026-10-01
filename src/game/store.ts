@@ -300,14 +300,14 @@ function arsenalOffer(behind: boolean): string[] {
 /** One player's wild/boss fight: their board (rows 0-2) against the round's wave.
  *  Built identically on both clients so the opponent's result can be simulated
  *  locally instead of being sent over the wire. */
-function pveFighters(board: PvpBoardUnit[], round: number, side: "A" | "B"): Fighter[] {
+export function pveFighters(board: PvpBoardUnit[], round: number, side: "A" | "B"): Fighter[] {
   const mine = board.map((u) => makeFighter(u.formId, `${side}_${u.uid}`, "player", u.col, u.row, 1, u.items ?? []));
   applySynergies(mine, board.map((u) => wireToUnit(`${side}_${u.uid}`, u)));
   return [...mine, ...makeVsWave(round)];
 }
 
 /** Run a fight to the end without rendering; returns how the board side fared. */
-function simulate(fighters: Fighter[]): { win: boolean; survivors: number } {
+export function simulate(fighters: Fighter[]): { win: boolean; survivors: number } {
   for (let i = 0; i < 4000; i++) {
     const players = fighters.some((f) => f.hp > 0 && f.team === "player");
     const enemies = fighters.some((f) => f.hp > 0 && f.team === "enemy");
@@ -1004,7 +1004,8 @@ export const useGame = create<GameState>((set, get) => ({
       // clients agree on both results without another message.
       const other = pvp.side === "A" ? "B" : "A";
       const opp = simulate(pveFighters(boards[other] ?? [], state.round, other));
-      sfx.battleStart();
+      if (vsRoundKind(state.round) === "boss") sfx.bossIntro();
+      else sfx.battleStart();
       set({
         phase: "battle",
         battleSeq: get().battleSeq + 1,

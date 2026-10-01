@@ -135,13 +135,17 @@ export const VS = {
   /** planning time before an automatic ready */
   planSeconds: 40,
   planSecondsTouch: 50,
-  /** wild-Digimon rounds: [rookies, champions, megas]; later stages repeat the last */
-  wild: { 1: [2, 0, 0], 2: [3, 0, 0], 5: [3, 1, 0], 15: [1, 4, 0], 25: [0, 4, 2], 35: [0, 2, 4] } as Record<number, Mix>,
+  /** wild-Digimon rounds: [rookies, champions, megas]; later stages repeat the last.
+   *  Tuned on 600 bot runs' boards (`npm run runsim -- dumpBoards=…`): a typical board wins
+   *  ~90% — loot rounds, but a weak board can trip. */
+  wild: { 1: [2, 0, 0], 2: [3, 0, 0], 5: [3, 1, 0], 15: [0, 6, 0], 25: [0, 4, 2], 35: [0, 3, 4] } as Record<number, Mix>,
+  /** bosses of rounds 10, 20, 30, 40+ — a real check, getting harder: a typical board
+   *  beats them ~68% / 63% / 57% / 52% of the time (same tuning run) */
   bosses: [
-    { id: "skullsatamon", hp: 2.6, atk: 1.2, adds: 1, addCount: 2 },
-    { id: "machinedramon", hp: 2.8, atk: 1.3, adds: 2, addCount: 2 },
-    { id: "diaboromon", hp: 3.2, atk: 1.4, adds: 3, addCount: 2 },
-    { id: "alphamon", hp: 3.6, atk: 1.5, adds: 3, addCount: 3 },
+    { id: "skullsatamon", hp: 4.4, atk: 1.8, adds: 2, addCount: 2 },
+    { id: "machinedramon", hp: 3.0, atk: 1.45, adds: 3, addCount: 2 },
+    { id: "diaboromon", hp: 3.6, atk: 1.6, adds: 3, addCount: 2 },
+    { id: "alphamon", hp: 3.6, atk: 1.6, adds: 3, addCount: 3 },
   ] as BossSpec[],
 };
 

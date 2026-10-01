@@ -8,21 +8,25 @@
  * standard curve, puts items on its carries and fronts tanks / backs casters.
  *
  * Run: npm run runsim [-- runs=300 seed=1 maxRound=25]
+ *      npm run runsim -- dumpBoards=boards.json   (bots never die; writes every run's board on
+ *      VS wild/boss rounds for tuning the VS waves offline — the solo report is then meaningless)
  * (scripts/run-sim.mjs bundles this with the network + audio modules stubbed out,
  * so bots never post to the live leaderboard.)
  */
-import { useGame } from "../src/game/store";
+import { writeFileSync } from "node:fs";
+import { useGame, pveFighters, simulate, wireBoard, type PvpBoardUnit } from "../src/game/store";
 import { FORMS } from "../src/game/creatures";
 import { SIM_DT } from "../src/game/battle";
 import { traitCounts, TRAITS } from "../src/game/synergies";
 import { COLS, BENCH_SLOTS } from "../src/game/board";
 import type { Unit, Placement } from "../src/game/types";
-import { ECONOMY, WAVES } from "../src/game/tuning";
+import { ECONOMY, WAVES, vsRoundKind } from "../src/game/tuning";
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.split("=")));
 const RUNS = Number(args.runs ?? 300);
 const SEED = Number(args.seed ?? 1);
 const MAX_ROUND = Number(args.maxRound ?? 25);
+const DUMP = args.dumpBoards as string | undefined;
 
 // ---------- tuning experiments: `variant=name` applies one of these before the runs ----------
 const VARIANTS: Record<string, () => void> = {
@@ -239,6 +243,10 @@ interface RoundLog {
   /** gold left after shopping (banked for interest) */
   gold: number;
   stages: [number, number, number];
+  /** VS wild/boss rounds only: did this board also beat the VS wave of the round? */
+  vs?: boolean;
+  /** VS wild/boss rounds, dump mode only */
+  board?: PvpBoardUnit[];
 }
 
 function playRun(): RoundLog[] {
@@ -254,6 +262,9 @@ function playRun(): RoundLog[] {
     equipItems();
     const board = onBoard();
     const goldLeft = S().gold;
+    // VS probe: how would this board fare against the VS wave of the same round?
+    const wired = vsRoundKind(S().round) === "pvp" ? undefined : wireBoard(board);
+    const vs = wired && simulate(pveFighters(wired, S().round, "A")).win;
     const stages: [number, number, number] = [0, 0, 0];
     for (const u of board) stages[FORMS[u.formId].stage - 1]++;
     S().startBattle();
@@ -270,8 +281,11 @@ function playRun(): RoundLog[] {
       level: st.level,
       gold: goldLeft,
       stages,
+      vs,
+      board: DUMP ? wired : undefined,
     });
-    if (st.gameOver) break;
+    if (DUMP) g.setState({ health: 100, gameOver: false }); // every run reaches every round
+    else if (st.gameOver) break;
     st.toPrep();
   }
   return log;
@@ -280,6 +294,12 @@ function playRun(): RoundLog[] {
 // ---------- report ----------
 const runs: RoundLog[][] = [];
 for (let i = 0; i < RUNS; i++) runs.push(playRun());
+if (DUMP) {
+  const boards: Record<number, PvpBoardUnit[][]> = {};
+  for (const x of runs.flat()) if (x.board) (boards[x.round] ??= []).push(x.board);
+  writeFileSync(DUMP, JSON.stringify(boards));
+  console.log(`wrote VS-round boards to ${DUMP}`);
+}
 
 const finalRound = runs.map((r) => (r.length === 0 ? 0 : r[r.length - 1].health <= 0 ? r[r.length - 1].round : r[r.length - 1].round + 0.5));
 const sorted = [...finalRound].sort((a, b) => a - b);
@@ -291,6 +311,24 @@ console.log(`death round: p10 ${pct(0.1)}  p25 ${pct(0.25)}  median ${pct(0.5)} 
 const beat = (round: number) => runs.filter((r) => r.some((x) => x.round === round && x.win)).length / RUNS;
 console.log(`survived R5 ${(cleared(5) * 100).toFixed(0)}%  R10 ${(cleared(10) * 100).toFixed(0)}%  R15 ${(cleared(15) * 100).toFixed(0)}%  R20 ${(cleared(20) * 100).toFixed(0)}%`);
 console.log(`beat the boss: R5 ${(beat(5) * 100).toFixed(0)}%  R10 ${(beat(10) * 100).toFixed(0)}%  R15 ${(beat(15) * 100).toFixed(0)}% (= run won)`);
+
+// VS rounds use their own waves (tuning.ts `VS`); solo boards are a fair proxy for a
+// VS player's board at the same round (same economy, shop and levels). Only rounds most
+// runs reach: later on only the strong boards are left (dumpBoards mode has them all).
+const vsRounds = Array.from({ length: MAX_ROUND }, (_, i) => i + 1).filter((r) => vsRoundKind(r) !== "pvp");
+console.log(
+  `VS wild/boss probe (same boards): ` +
+    vsRounds
+      .map((round) => {
+        const rows = runs.map((r) => r.find((x) => x.round === round)).filter((x) => x?.vs !== undefined) as RoundLog[];
+        if (rows.length < RUNS * 0.8) return null;
+        const tag = vsRoundKind(round) === "boss" ? "boss " : "";
+        return `${tag}R${round} ${((rows.filter((x) => x.vs).length / rows.length) * 100).toFixed(0)}%`;
+      })
+      .filter(Boolean)
+      .join("  ") +
+    (DUMP ? "" : "  (later rounds: dumpBoards)"),
+);
 
 console.log(`\nround  played  win%  avg-fight  avg-dmg-taken  avg-hp  lvl  banked  board stages (R/C/M)`);
 for (let round = 1; round <= MAX_ROUND; round++) {
