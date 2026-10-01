@@ -201,19 +201,30 @@ body,
 .shop-card {
   pointer-events: auto;
   cursor: pointer;
-  width: 108px;
-  height: 58px;
+  width: 142px;
+  height: 64px;
   background: rgba(14, 17, 34, 0.95);
   border: 1.5px solid #2c3358;
   border-radius: 12px;
   display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px 5px 5px;
+  position: relative;
+  text-align: left;
+  transition: transform 0.08s ease, box-shadow 0.15s ease;
+}
+.shop-card .portrait {
+  width: 52px;
+  height: 52px;
+}
+.card-info {
+  display: flex;
   flex-direction: column;
   align-items: flex-start;
-  justify-content: center;
   gap: 1px;
-  padding: 5px 10px;
-  position: relative;
-  transition: transform 0.08s ease, box-shadow 0.15s ease;
+  min-width: 0;
 }
 .shop-card:hover:not(:disabled) {
   transform: translateY(-3px);
@@ -227,19 +238,17 @@ body,
   opacity: 0.18;
   border-style: dashed;
 }
-.attr-dot {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  box-shadow: 0 0 10px currentColor;
-}
 .card-name {
   font-weight: 700;
   color: #eef3ff;
-  font-size: 13px;
+  font-size: 12px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card-name.long {
+  font-size: 10.5px;
 }
 .card-attr {
   font-size: 11px;
@@ -698,6 +707,61 @@ body,
   }
 }
 
+/* ---------- portraits (rendered by the dev studio, see src/ui/Portrait.tsx) ---------- */
+.portrait {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 62%, color-mix(in srgb, var(--attr) 42%, transparent) 0%, transparent 68%),
+    linear-gradient(160deg, rgba(30, 36, 70, 0.9), rgba(8, 10, 24, 0.95));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attr) 35%, transparent);
+}
+.portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6));
+}
+.up-portrait {
+  width: 52px;
+  height: 52px;
+}
+.up-title {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.evo-portrait {
+  width: 96px;
+  height: 96px;
+  border-radius: 12px;
+  align-self: center;
+  margin-bottom: 4px;
+}
+.evo-banner-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.evo-banner-portrait {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+}
+.evo-banner-portrait.to {
+  width: 80px;
+  height: 80px;
+  box-shadow: 0 0 24px color-mix(in srgb, var(--attr) 60%, transparent);
+}
+
 /* ---------- item tray ---------- */
 .item-tray {
   position: absolute;
@@ -814,7 +878,6 @@ body,
   letter-spacing: 1px;
   text-transform: uppercase;
   color: #8893b5;
-  flex: 1;
 }
 .up-close {
   pointer-events: auto;
@@ -1097,17 +1160,22 @@ html, body {
   .econ-btn { padding: 7px 9px; font-size: 12px; border-radius: 8px; }
   .econ-word { display: none; }
   .shop-slots { gap: 4px; }
-  .shop-card { width: 56px; height: 52px; padding: 4px 6px; border-radius: 8px; }
-  .card-name {
-    font-size: 9px;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .shop-card {
+    width: 58px;
+    height: 76px;
+    padding: 3px 3px 4px;
+    border-radius: 9px;
+    flex-direction: column;
+    gap: 2px;
   }
+  .shop-card .portrait { width: 48px; height: 44px; border-radius: 7px; }
+  .card-info { align-items: center; width: 100%; }
+  .card-name { font-size: 9px; }
   .card-attr { display: none; }
   .card-cost { font-size: 9.5px; }
-  .attr-dot { top: 4px; right: 4px; width: 7px; height: 7px; }
+  .evo-portrait { width: 64px; height: 64px; }
+  .evo-banner-portrait { width: 44px; height: 44px; }
+  .evo-banner-portrait.to { width: 54px; height: 54px; }
 
   .unit-panel {
     left: 8px;

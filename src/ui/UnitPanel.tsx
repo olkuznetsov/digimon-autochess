@@ -1,10 +1,9 @@
 import { useGame } from "../game/store";
-import { FORMS, ATTR_COLOR, FAMILY_COLOR, sellValue } from "../game/creatures";
+import { FORMS, ATTR_COLOR, FAMILY_COLOR, STAGE_NAME, sellValue } from "../game/creatures";
 import { ultimateFor } from "../game/ultimates";
 import { makeFighter } from "../game/battle";
 import { ITEMS } from "../game/items";
-
-const STAGE_NAME = ["", "Rookie", "Champion", "Ultimate"];
+import { Portrait } from "./Portrait";
 
 /** Inspector card for the clicked unit: stats (item-adjusted), ability, items.
  *  Works in prep (units) and battle (live fighters); hides when the uid is gone. */
@@ -34,8 +33,11 @@ export function UnitPanel() {
   return (
     <div className="unit-panel">
       <div className="up-head">
-        <span className="up-name">{form.name}</span>
-        <span className="up-stage">{STAGE_NAME[form.stage]}</span>
+        <Portrait formId={formId} className="up-portrait" />
+        <span className="up-title">
+          <span className="up-name">{form.name}</span>
+          <span className="up-stage">{STAGE_NAME[form.stage]}</span>
+        </span>
         <button className="up-close" onClick={() => setInspected(null)}>
           ✕
         </button>

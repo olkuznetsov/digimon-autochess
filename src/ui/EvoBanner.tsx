@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useGame } from "../game/store";
 import { FORMS, ATTR_COLOR } from "../game/creatures";
+import { Portrait } from "./Portrait";
 
 /** The digivolution moment: a big announcement banner whenever a unit evolves. */
 export function EvoBanner() {
@@ -22,9 +23,15 @@ export function EvoBanner() {
     <div className="evo-banner" key={flash.key}>
       <div className="evo-banner-label">DIGIVOLVING</div>
       <div className="evo-banner-text">
-        <span>{from.name}</span>
+        <span className="evo-banner-side">
+          <Portrait formId={flash.from} className="evo-banner-portrait" />
+          {from.name}
+        </span>
         <span className="evo-banner-arrow">▸</span>
-        <span style={{ color: ATTR_COLOR[to.attribute] }}>{to.name}</span>
+        <span className="evo-banner-side" style={{ color: ATTR_COLOR[to.attribute] }}>
+          <Portrait formId={flash.to} className="evo-banner-portrait to" />
+          {to.name}
+        </span>
       </div>
     </div>
   );

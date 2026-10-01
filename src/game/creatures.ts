@@ -92,6 +92,9 @@ export const FORMS: Record<string, Form> = {
   alphamon: f("alphamon", "Alphamon", 3, "Data", "Dragon's Roar", "bruiser"),
 };
 
+/** Display names of the three stages (the game's top tier is called Mega throughout). */
+export const STAGE_NAME = ["", "Rookie", "Champion", "Mega"] as const;
+
 export const ALL_FORM_IDS = Object.keys(FORMS);
 export const ROOKIE_IDS = ALL_FORM_IDS.filter((id) => FORMS[id].stage === 1);
 

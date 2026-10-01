@@ -1,5 +1,6 @@
 import { useGame } from "../game/store";
 import { FORMS, ATTR_COLOR } from "../game/creatures";
+import { Portrait } from "./Portrait";
 
 export function Shop() {
   const phase = useGame((s) => s.phase);
@@ -36,12 +37,14 @@ export function Shop() {
               disabled={gold < cost}
               onClick={() => buy(i)}
             >
-              <span className="attr-dot" style={{ background: color }} />
-              <span className="card-name">{form.name}</span>
-              <span className="card-attr" style={{ color }}>
-                {form.attribute}
+              <Portrait formId={formId} className="card-portrait" />
+              <span className="card-info">
+                <span className={`card-name${form.name.length > 9 ? " long" : ""}`}>{form.name}</span>
+                <span className="card-attr" style={{ color }}>
+                  {form.attribute}
+                </span>
+                <span className="card-cost">⛂ {cost}</span>
               </span>
-              <span className="card-cost">⛂ {cost}</span>
             </button>
           );
         })}

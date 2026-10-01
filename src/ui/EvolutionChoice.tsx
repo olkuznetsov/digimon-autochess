@@ -1,7 +1,6 @@
 import { useGame } from "../game/store";
-import { FORMS, ATTR_COLOR, FAMILY_COLOR } from "../game/creatures";
-
-const STAGE_NAME = ["", "Rookie", "Champion", "Ultimate"];
+import { FORMS, ATTR_COLOR, FAMILY_COLOR, STAGE_NAME } from "../game/creatures";
+import { Portrait } from "./Portrait";
 
 export function EvolutionChoice() {
   const pending = useGame((s) => s.pendingEvolution);
@@ -22,6 +21,7 @@ export function EvolutionChoice() {
             const attr = ATTR_COLOR[form.attribute];
             return (
               <button key={id} className="evo-card" style={{ borderColor: attr }} onClick={() => choose(id)}>
+                <Portrait formId={id} className="evo-portrait" />
                 <span className="evo-stage">{STAGE_NAME[form.stage]}</span>
                 <span className="evo-name">{form.name}</span>
                 <span className="evo-tags">
