@@ -16,6 +16,8 @@ export function Shop() {
   const toggleLock = useGame((s) => s.toggleShopLock);
   const dragged = useGame((s) => s.units.find((u) => u.uid === s.dragId));
   const units = useGame((s) => s.units);
+  // VS: the shared pool — copies of each rookie still out there
+  const pool = useGame((s) => (s.pvp?.snap.stage === "match" ? s.pvp.snap.pool : null));
   const [hover, setHover] = useState<number | null>(null);
   const spectating = useGame((s) => s.pvp?.snap.stage === "match" && !pvpMe(s.pvp)?.alive);
 
@@ -58,6 +60,11 @@ export function Shop() {
               {line && (
                 <span className="card-badge line" title="You have this line's Champion / Mega">
                   ★ line
+                </span>
+              )}
+              {pool && (pool[formId] ?? 0) <= 3 && (
+                <span className="card-badge pool" title="Copies left in the lobby's shared pool">
+                  {(pool[formId] ?? 0) === 0 ? "sold out" : `last ${pool[formId]}`}
                 </span>
               )}
               <Portrait formId={formId} className="card-portrait" />

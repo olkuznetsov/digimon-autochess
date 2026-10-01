@@ -3,17 +3,27 @@ import type { Env } from "./index";
 import { cleanName, cleanUnits, type BoardUnit } from "./util";
 import {
   applyOutcomes,
+  carouselEnd,
+  carouselGroups,
+  carouselItems,
+  carouselTurn,
   planRound,
+  poolLeft,
   ratingDelta,
   surrender,
+  CAROUSEL_WAIT_MS,
   MAX_PLAYERS,
+  POOL_COPIES,
   START_HP,
+  type Carousel,
   type LobbyFight,
   type LobbySnapshot,
   type Outcome,
   type RoundPlan,
   type Standing,
 } from "../../src/game/lobby";
+import { isCarouselRound } from "../../src/game/tuning";
+import { FORMS } from "../../src/game/creatures";
 
 /**
  * A lobby for 2–8 players, one Durable Object per room code. Players gather in
@@ -24,6 +34,9 @@ import {
  *  3. every client simulates every fight of the round (the sim is deterministic)
  *     and reports the outcomes; the first report is applied — damage,
  *     eliminations, places, rating — and the next round is planned.
+ * On the 3rd round of every stage the round opens with the carousel (an item
+ * draft, lowest HP first) and waits for it. Clients report the rookie copies they
+ * hold, so the room keeps the shared unit pool every shop rolls from.
  * The rules (pairings, ghosts, places, rating) live in src/game/lobby.ts, shared
  * with the clients. Clients are trusted, like the 1v1 room: a game among friends.
  */
@@ -56,6 +69,14 @@ interface Room {
   seats: Seat[];
   /** the applied report of the last resolved round (later reports are compared to it) */
   report: { round: number; hash: string } | null;
+  /** rookie copies each player holds (the shared pool is what's left) */
+  held: Record<number, Record<string, number>>;
+  /** this round's item draft, on carousel rounds */
+  carousel: Carousel | null;
+  /** seats planning the current round (the carousel opens once everyone is in) */
+  arrived: number[];
+  /** when the current round began */
+  roundAt: number;
 }
 
 interface Attach {
@@ -79,6 +100,10 @@ const newRoom = (): Room => ({
   players: 0,
   seats: [],
   report: null,
+  held: {},
+  carousel: null,
+  arrived: [],
+  roundAt: 0,
 });
 
 const standingsOf = (room: Room): Standing[] =>
@@ -101,7 +126,8 @@ function parseOutcomes(raw: unknown, alive: number[]): Outcome[] | null {
 
 export class Lobby extends DurableObject<Env> {
   private async load(): Promise<Room> {
-    return (await this.ctx.storage.get<Room>("room")) ?? newRoom();
+    // rooms saved by an older build lack the newer fields
+    return { ...newRoom(), ...(await this.ctx.storage.get<Room>("room")) };
   }
 
   private async save(room: Room) {
@@ -135,6 +161,8 @@ export class Lobby extends DurableObject<Env> {
       fighting: room.fighting,
       plan: room.plan,
       players: room.players,
+      pool: poolLeft(room.held),
+      carousel: room.carousel,
       seats: room.seats.map((s) => ({
         seat: s.seat,
         name: s.name,
@@ -161,16 +189,20 @@ export class Lobby extends DurableObject<Env> {
     }
   }
 
-  /** One alarm serves two timers: the idle-room TTL and the ready deadline. */
-  private async schedule(opts: { ttl?: boolean; deadline?: number | null }) {
+  /** One alarm serves three timers: the idle-room TTL, the ready deadline and the
+   *  carousel's next step (open / close). */
+  private async schedule(opts: { ttl?: boolean; deadline?: number | null; tick?: number | null }) {
     if (opts.ttl) await this.ctx.storage.put("ttlAt", Date.now() + ROOM_TTL_MS);
-    if (opts.deadline !== undefined) {
-      if (opts.deadline === null) await this.ctx.storage.delete("deadline");
-      else await this.ctx.storage.put("deadline", opts.deadline);
+    for (const key of ["deadline", "tick"] as const) {
+      const v = opts[key];
+      if (v === undefined) continue;
+      if (v === null) await this.ctx.storage.delete(key);
+      else await this.ctx.storage.put(key, v);
     }
     const ttlAt = (await this.ctx.storage.get<number>("ttlAt")) ?? Date.now() + ROOM_TTL_MS;
     const deadline = await this.ctx.storage.get<number>("deadline");
-    await this.ctx.storage.setAlarm(deadline ? Math.min(deadline, ttlAt) : ttlAt);
+    const tick = await this.ctx.storage.get<number>("tick");
+    await this.ctx.storage.setAlarm(Math.min(ttlAt, deadline ?? Infinity, tick ?? Infinity));
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -258,6 +290,9 @@ export class Lobby extends DurableObject<Env> {
     else if (m.t === "report") await this.report(room, m);
     else if (m.t === "surrender") await this.giveUp(room, me);
     else if (m.t === "leave") await this.leave(room, me, ws);
+    else if (m.t === "held") await this.hold(room, me, m);
+    else if (m.t === "arrived") await this.arrive(room, me, m);
+    else if (m.t === "pick") await this.pick(room, me, m);
   }
 
   private async start(room: Room, me: Seat) {
@@ -275,10 +310,12 @@ export class Lobby extends DurableObject<Env> {
     room.history = [];
     room.players = players.length;
     room.report = null;
+    room.held = {};
     room.plan = planRound(players.map((s) => s.seat), 1, [], room.seed);
+    this.beginRound(room);
     await this.ctx.storage.delete([...SEAT_KEYS, "lastFight"]);
     await this.save(room);
-    await this.schedule({ ttl: true, deadline: null });
+    await this.schedule({ ttl: true, deadline: null, tick: null });
     this.broadcast({ t: "started", snap: this.snapshot(room) });
   }
 
@@ -306,6 +343,7 @@ export class Lobby extends DurableObject<Env> {
    *  players' last boards play); otherwise start the clock on the rest. */
   private async maybeFight(room: Room, online = this.online()) {
     if (room.stage !== "match" || room.fighting) return;
+    if (room.carousel && !room.carousel.done) return; // the draft comes first
     const alive = alivePlayers(room);
     if (!alive.some((s) => s.ready)) return;
     if (alive.every((s) => s.ready || !online.has(s.seat))) return this.startFight(room);
@@ -339,6 +377,7 @@ export class Lobby extends DurableObject<Env> {
       const s = room.seats.find((x) => x.seat === st.seat);
       if (!s) continue;
       if (s.placement === null && st.placement !== null) placed.push(s);
+      if (s.alive && !st.alive) delete room.held[s.seat]; // their copies go back to the pool
       s.hp = st.hp;
       s.alive = st.alive;
       s.placement = st.placement;
@@ -369,9 +408,10 @@ export class Lobby extends DurableObject<Env> {
       room.plan = null;
     } else {
       room.plan = planRound(alivePlayers(room).map((s) => s.seat), room.round, room.history, room.seed);
+      this.beginRound(room);
     }
     await this.save(room);
-    await this.schedule({ ttl: true });
+    await this.schedule({ ttl: true, tick: room.carousel ? room.roundAt + CAROUSEL_WAIT_MS : null });
     this.broadcast({ t: "standings", round, eliminated: r.eliminated, snap: this.snapshot(room) });
     await this.rate(room, placed);
   }
@@ -392,6 +432,7 @@ export class Lobby extends DurableObject<Env> {
     await this.ctx.storage.delete(`ready:${me.seat}`);
     await this.save(room);
     this.broadcast({ t: "standings", round: null, eliminated: r.eliminated, snap: this.snapshot(room) });
+    await this.advanceCarousel(room); // they may have been the last one it waited for
     await this.maybeFight(room);
     await this.rate(room, placed);
   }
@@ -412,6 +453,98 @@ export class Lobby extends DurableObject<Env> {
       /* already closed */
     }
     this.broadcast({ t: "roster", snap: this.snapshot(room, ws) });
+  }
+
+  /** A new round's planning begins: on carousel rounds, set up the item draft. */
+  private beginRound(room: Room) {
+    room.arrived = [];
+    room.roundAt = Date.now();
+    const alive = alivePlayers(room);
+    room.carousel = isCarouselRound(room.round)
+      ? {
+          round: room.round,
+          items: carouselItems(room.round, alive.length, room.seed),
+          taken: {},
+          groups: carouselGroups(standingsOf(room), room.round, room.seed),
+          opensAt: 0,
+          done: false,
+        }
+      : null;
+  }
+
+  /** Shared pool: the rookie copies a player holds (bench and board). */
+  private async hold(room: Room, me: Seat, m: Record<string, unknown>) {
+    if (room.stage !== "match" || !me.inMatch || !me.alive || !m.counts || typeof m.counts !== "object") return;
+    const counts: Record<string, number> = {};
+    for (const [id, n] of Object.entries(m.counts as Record<string, unknown>)) {
+      const form = FORMS[id];
+      const max = form && form.stage === 1 ? (POOL_COPIES[form.cost ?? 1] ?? 18) : 0;
+      const v = Math.floor(Number(n));
+      if (max && v > 0) counts[id] = Math.min(max, v);
+    }
+    if (JSON.stringify(counts) === JSON.stringify(room.held[me.seat] ?? {})) return;
+    room.held[me.seat] = counts;
+    await this.save(room);
+    this.broadcast({ t: "roster", snap: this.snapshot(room) });
+  }
+
+  /** A player is planning the current round; the carousel opens once everyone is. */
+  private async arrive(room: Room, me: Seat, m: Record<string, unknown>) {
+    if (room.stage !== "match" || !me.alive || m.round !== room.round || room.arrived.includes(me.seat)) return;
+    room.arrived.push(me.seat);
+    await this.save(room);
+    await this.advanceCarousel(room);
+  }
+
+  /** Move the draft on when nobody holds it up any more: open it once every
+   *  connected player still standing is planning; finish it once they all picked. */
+  private async advanceCarousel(room: Room, online = this.online()) {
+    const c = room.carousel;
+    if (room.stage !== "match" || !c || c.done) return;
+    const alive = alivePlayers(room);
+    if (!c.opensAt) {
+      if (!alive.some((s) => online.has(s.seat) && !room.arrived.includes(s.seat))) await this.openCarousel(room);
+    } else if (alive.every((s) => Object.values(c.taken).includes(s.seat))) {
+      c.done = true;
+      await this.save(room);
+      await this.schedule({ tick: null });
+      this.broadcast({ t: "roster", snap: this.snapshot(room) });
+    }
+  }
+
+  private async openCarousel(room: Room) {
+    const c = room.carousel!;
+    c.opensAt = Date.now() + 1500; // a beat to read the order
+    await this.save(room);
+    await this.schedule({ tick: carouselEnd(c) });
+    this.broadcast({ t: "roster", snap: this.snapshot(room) });
+  }
+
+  private async pick(room: Room, me: Seat, m: Record<string, unknown>) {
+    const c = room.carousel;
+    const i = Number(m.index);
+    if (room.stage !== "match" || !me.alive || !c || c.done || !Number.isInteger(i) || i < 0 || i >= c.items.length) return;
+    if (c.taken[i] !== undefined || Object.values(c.taken).includes(me.seat) || Date.now() < carouselTurn(c, me.seat)) return;
+    c.taken[i] = me.seat;
+    await this.save(room);
+    this.broadcast({ t: "roster", snap: this.snapshot(room) });
+    await this.advanceCarousel(room);
+    await this.maybeFight(room);
+  }
+
+  /** Time's up: whoever hasn't picked gets the first free item, in pick order. */
+  private async closeCarousel(room: Room) {
+    const c = room.carousel!;
+    const alive = new Set(alivePlayers(room).map((s) => s.seat));
+    for (const seat of c.groups.flat()) {
+      if (!alive.has(seat) || Object.values(c.taken).includes(seat)) continue;
+      const free = c.items.findIndex((_, i) => c.taken[i] === undefined);
+      if (free >= 0) c.taken[free] = seat;
+    }
+    c.done = true;
+    await this.save(room);
+    this.broadcast({ t: "roster", snap: this.snapshot(room) });
+    await this.maybeFight(room);
   }
 
   /** Placed players' rating goes straight to the leaderboard (rated players only). */
@@ -439,7 +572,10 @@ export class Lobby extends DurableObject<Env> {
     const room = await this.load();
     this.broadcast({ t: "roster", snap: this.snapshot(room, ws) });
     // an offline player doesn't hold the round up: their last board plays
-    if (room.stage === "match") await this.maybeFight(room, this.online(ws));
+    if (room.stage === "match") {
+      await this.advanceCarousel(room, this.online(ws));
+      await this.maybeFight(room, this.online(ws));
+    }
   }
 
   async webSocketError(ws: WebSocket) {
@@ -454,6 +590,20 @@ export class Lobby extends DurableObject<Env> {
       // AFK players play their last board
       if (room.stage === "match" && !room.fighting) await this.startFight(room);
       else await this.schedule({});
+      return;
+    }
+    const tick = await this.ctx.storage.get<number>("tick");
+    if (tick && Date.now() >= tick - 50) {
+      await this.ctx.storage.delete("tick");
+      const room = await this.load();
+      const c = room.carousel;
+      if (room.stage === "match" && c && !c.done) {
+        // slow fights don't hold the draft forever; then the clock runs out on picks
+        if (!c.opensAt) await this.openCarousel(room);
+        else if (Date.now() >= carouselEnd(c) - 50) await this.closeCarousel(room);
+        else await this.schedule({ tick: carouselEnd(c) });
+      }
+      await this.schedule({});
       return;
     }
     const ttlAt = await this.ctx.storage.get<number>("ttlAt");

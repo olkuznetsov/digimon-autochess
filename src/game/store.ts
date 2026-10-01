@@ -3,9 +3,18 @@ import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types"
 import { FORMS, ROOKIE_IDS, sellValue } from "./creatures";
 import { makeFighter, stepCombat, SIM_DT, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
-import { BASE_ITEM_IDS, ITEMS, fuseResult } from "./items";
-import { ECONOMY, SHOP_ODDS, VS, isArsenalRound, isBossRound, makeEnemyWave, vsRoundKind } from "./tuning";
-import { isBehind, opponentOf, type LobbyFight, type LobbySnapshot, type Outcome, type WireUnit } from "./lobby";
+import { BASE_ITEM_IDS, FUSED_ITEM_IDS, fuseResult } from "./items";
+import { ECONOMY, SHOP_ODDS, VS, isBossRound, makeEnemyWave, vsRoundKind } from "./tuning";
+import {
+  carouselEnd,
+  carouselPick,
+  fullPool,
+  opponentOf,
+  type LobbyFight,
+  type LobbySnapshot,
+  type Outcome,
+  type WireUnit,
+} from "./lobby";
 import { duelFighters, ghostFighters, outcomesHash, pveFighters, roundOutcomes, FIGHT_STEPS } from "./vsFights";
 import { XP_TO_NEXT, MAX_LEVEL } from "./xpView";
 import { sfx, battleSfx } from "../audio/sfx";
@@ -55,6 +64,8 @@ export interface PvpState {
   pending: { snap: LobbySnapshot; eliminated: number[] } | null;
   /** knocked out, and chose to keep watching */
   watching: boolean;
+  /** the round whose carousel item is already in our tray */
+  carouselGot: number;
 }
 
 /** A live combat effect (damage number, projectile, death burst) with its spawn time. */
@@ -69,23 +80,41 @@ export interface Fx extends CombatEvent {
 let fxCounter = 0;
 const FX_TTL = 1.0; // seconds an effect stays in the list
 
-function rollShop(level: number): string[] {
+/**
+ * Five rookies for the shop: a cost tier by the player's level, then a rookie of
+ * that tier. In a VS lobby the shared pool weighs the draw — every copy left is a
+ * ticket, and a line that has run out can't show up (a tier with nothing left is
+ * skipped).
+ */
+function rollShop(level: number, pool?: Record<string, number>): string[] {
   const odds = SHOP_ODDS[Math.max(3, Math.min(8, level))];
-  const total = odds.reduce((a, b) => a + b, 0);
-  const tierPick = () => {
-    let r = Math.random() * total;
-    for (let t = 0; t < odds.length; t++) {
-      r -= odds[t];
-      if (r < 0) return t + 1;
-    }
-    return 1;
-  };
+  const left = (id: string) => (pool ? (pool[id] ?? 0) : 1);
+  const inTier = (tier: number) => ROOKIE_IDS.filter((id) => (FORMS[id].cost ?? 2) === tier && left(id) > 0);
+  const weights = odds.map((w, t) => (inTier(t + 1).length > 0 ? w : 0));
+  const total = weights.reduce((a, b) => a + b, 0);
   return Array.from({ length: SHOP_SIZE }, () => {
-    const tier = tierPick();
-    const pool = ROOKIE_IDS.filter((id) => (FORMS[id].cost ?? 2) === tier);
-    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : ROOKIE_IDS[0];
+    if (total === 0) return "";
+    let r = Math.random() * total;
+    let tier = 1;
+    for (let t = 0; t < weights.length; t++) {
+      r -= weights[t];
+      if (r < 0) {
+        tier = t + 1;
+        break;
+      }
+    }
+    const cands = inTier(tier);
+    let x = Math.random() * cands.reduce((a, id) => a + left(id), 0);
+    for (const id of cands) {
+      x -= left(id);
+      if (x < 0) return id;
+    }
+    return cands[cands.length - 1];
   });
 }
+
+/** The shared pool shops roll from — only during a VS match. */
+const shopPool = (s: { pvp: PvpState | null }) => (s.pvp?.snap.stage === "match" ? s.pvp.snap.pool : undefined);
 
 function gainXp(level: number, xp: number, amount: number): { level: number; xp: number } {
   let L = level;
@@ -204,8 +233,6 @@ interface GameState {
   simSpeed: number;
   /** keep the current shop through the next round */
   shopLocked: boolean;
-  /** VS "Arsenal" round: three items to choose one from */
-  arsenal: string[] | null;
   /** rewards of the round that just ended (result screen) */
   loot: { gold: number; items: string[] } | null;
   boardSnapshot: Unit[] | null;
@@ -267,7 +294,8 @@ interface GameState {
   pvpConnectionLost: () => void;
   /** back to the solo run that was paused for the match */
   pvpQuit: () => void;
-  pickArsenal: (id: string) => void;
+  /** carousel: take the item at this index (when it's our turn) */
+  pvpPick: (index: number) => void;
 
   ghostFight: (board: PvpBoardUnit[], name: string) => void;
   ghostReturn: () => void;
@@ -278,17 +306,9 @@ const touchDevice = () => typeof matchMedia !== "undefined" && matchMedia("(poin
 const planDeadline = () => Date.now() + (touchDevice() ? VS.planSecondsTouch : VS.planSeconds) * 1000;
 
 const randomOf = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-const FUSED_IDS = Object.values(ITEMS)
-  .filter((d) => d.from)
-  .map((d) => d.id);
-
-/** Three different base items; a player behind on health also gets a fused one
- *  (the catch-up of TFT's carousel, where the weakest pick first). */
-function arsenalOffer(behind: boolean): string[] {
-  const pool = [...BASE_ITEM_IDS].sort(() => Math.random() - 0.5).slice(0, 3);
-  if (behind) pool[2] = randomOf(FUSED_IDS);
-  return pool;
-}
+const FUSED_IDS = FUSED_ITEM_IDS;
+/** after the carousel, at least this long to equip the new item */
+const AFTER_CAROUSEL_MS = 20_000;
 
 /** What a VS round pays: wild rounds drop a base item, bosses a fused one, a loss
  *  still pays 1; a fight with a player pays the win gold and moves the streak. */
@@ -301,9 +321,6 @@ function vsRewards(round: number, o: Outcome, streak: number) {
     streak: pve ? streak : o.won ? Math.max(1, streak + 1) : Math.min(-1, streak - 1),
   };
 }
-
-const standingsOf = (snap: LobbySnapshot) =>
-  snap.seats.filter((s) => s.inMatch).map((s) => ({ seat: s.seat, hp: s.hp, alive: s.alive, placement: s.placement }));
 
 /** Our seat in the room (HP, alive, place). */
 export const pvpMe = (pvp: PvpState | null) => pvp?.snap.seats.find((s) => s.seat === pvp.seat) ?? null;
@@ -322,7 +339,7 @@ function freshMatchRun() {
     gameOver: false,
     units: [] as Unit[],
     inventory: [] as string[],
-    shop: rollShop(START_LEVEL),
+    shop: rollShop(START_LEVEL, fullPool()),
     shopLocked: false,
     phase: "prep" as Phase,
     result: null,
@@ -331,7 +348,6 @@ function freshMatchRun() {
     fx: [] as Fx[],
     pendingEvolution: null,
     inspected: null,
-    arsenal: null,
     loot: null,
   };
 }
@@ -372,7 +388,6 @@ function initialState() {
     tick: 0,
     simSpeed: readSpeed(),
     shopLocked: false,
-    arsenal: null as string[] | null,
     loot: null as { gold: number; items: string[] } | null,
     boardSnapshot: null as Unit[] | null,
     dragId: null as string | null,
@@ -422,7 +437,7 @@ export const useGame = create<GameState>((set, get) => ({
     const { gold } = get();
     if (gold < REROLL_COST) return;
     sfx.reroll();
-    set({ gold: gold - REROLL_COST, shop: rollShop(get().level) });
+    set({ gold: gold - REROLL_COST, shop: rollShop(get().level, shopPool(get())) });
   },
 
   buy: (shopIndex) => {
@@ -765,15 +780,13 @@ export const useGame = create<GameState>((set, get) => ({
       round: state.round + 1,
       level: leveled.level,
       xp: leveled.xp,
-      shop: state.shopLocked ? state.shop : rollShop(leveled.level),
+      shop: state.shopLocked ? state.shop : rollShop(leveled.level, shopPool(state)),
       viewFlip: false,
       loot: null,
-      arsenal:
-        state.pvp && isArsenalRound(state.round + 1)
-          ? arsenalOffer(isBehind(standingsOf(state.pvp.snap), state.pvp.seat))
-          : null,
       ...(state.pvp ? { pvp: { ...state.pvp, myReady: false, prepEndsAt: planDeadline(), fight: null, scout: null } } : {}),
     });
+    // planning the next round: the room opens the carousel once everyone is here
+    if (state.pvp?.snap.stage === "match") net.send?.({ t: "arrived", round: state.round + 1 });
   },
 
   reset: () => {
@@ -819,6 +832,7 @@ export const useGame = create<GameState>((set, get) => ({
         fight: null,
         pending: null,
         watching: false,
+        carouselGot: 0,
       },
     });
   },
@@ -845,6 +859,7 @@ export const useGame = create<GameState>((set, get) => ({
         fight: null,
         pending: null,
         watching: false,
+        carouselGot: 0,
       },
     });
   },
@@ -870,6 +885,7 @@ export const useGame = create<GameState>((set, get) => ({
     if (snap.stage === "over" && pvp.snap.stage !== "over" && me?.placement === 1) sfx.win();
     set({ pvp: { ...pvp, snap }, ...(me?.inMatch ? { health: me.hp } : {}) });
     if (snap.stage === "match" && me?.inMatch && me.alive) catchUp(snap, lastFight);
+    collectCarousel(snap);
   },
 
   pvpSeatReady: (seat, round) => {
@@ -911,7 +927,6 @@ export const useGame = create<GameState>((set, get) => ({
       set({ pvp: { ...pvp, boards } }); // knocked out: just keeping score
       return;
     }
-    if (state.arsenal) get().pickArsenal(state.arsenal[0]); // the clock ran out on the pick
     const oppBoard = opp ? (fight.boards[opp.seat] ?? []) : [];
     const fighters = !opp
       ? pveFighters(myBoard, fight.round, pvp.seat)
@@ -946,17 +961,21 @@ export const useGame = create<GameState>((set, get) => ({
     });
   },
 
-  pickArsenal: (id) => {
-    const { arsenal, inventory } = get();
-    if (!arsenal?.includes(id)) return;
-    sfx.equip();
-    set({ arsenal: null, inventory: [...inventory, id] });
+  pvpPick: (index) => {
+    const { pvp } = get();
+    const c = pvp?.snap.carousel;
+    if (!pvp || !c || c.done || c.taken[index] !== undefined || carouselPick(c, pvp.seat)) return;
+    net.send?.({ t: "pick", index });
+    sfx.click();
   },
 
   pvpReadyUp: (force = false) => {
-    const { pvp, units, round, pendingEvolution, arsenal } = get();
+    const { pvp, units, round, pendingEvolution } = get();
     if (!pvp || pvp.myReady || pvp.snap.stage !== "match" || !pvpMe(pvp)?.alive) return;
-    if ((pendingEvolution || arsenal) && !force) return;
+    // the carousel comes first: pick before locking in
+    const c = pvp.snap.carousel;
+    const drafting = !!c && c.round === round && !c.done && !carouselPick(c, pvp.seat);
+    if ((pendingEvolution || drafting) && !force) return;
     const board = wireBoard(units);
     // an empty board can only go in when the planning timer forces it
     if (board.length === 0 && !force) return;
@@ -969,8 +988,7 @@ export const useGame = create<GameState>((set, get) => ({
     const s = get();
     if (!s.pvp || s.pvp.myReady || s.phase !== "prep") return;
     for (let i = 0; i < 4 && get().pendingEvolution; i++) get().chooseEvolution(get().pendingEvolution!.options[0]);
-    const offer = get().arsenal;
-    if (offer) get().pickArsenal(offer[0]);
+    // an unpicked carousel item is handed out by the room when the draft closes
     get().pvpReadyUp(true);
   },
 
@@ -1101,6 +1119,23 @@ function savedRun(): Partial<GameState> {
 useGame.setState(savedRun());
 
 // ---------- VS helpers that drive the store from outside an action ----------
+
+/** The carousel: our pick (or the one the room handed us) goes into the tray once;
+ *  while the draft runs, the planning clock waits for it. */
+function collectCarousel(snap: LobbySnapshot) {
+  const s = useGame.getState();
+  const pvp = s.pvp;
+  const c = snap.carousel;
+  if (!pvp || !c || c.round !== s.round) return;
+  const got = carouselPick(c, pvp.seat);
+  const prepEndsAt = c.opensAt ? Math.max(pvp.prepEndsAt, carouselEnd(c) + AFTER_CAROUSEL_MS) : pvp.prepEndsAt;
+  if (got && pvp.carouselGot !== c.round) {
+    sfx.equip();
+    useGame.setState({ inventory: [...s.inventory, got], pvp: { ...pvp, carouselGot: c.round, prepEndsAt } });
+  } else if (prepEndsAt !== pvp.prepEndsAt && !pvp.myReady) {
+    useGame.setState({ pvp: { ...pvp, prepEndsAt } });
+  }
+}
 
 /** Set while a fight is fast-forwarded: no sounds for a fight nobody watches. */
 let silent = false;

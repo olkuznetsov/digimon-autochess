@@ -122,9 +122,9 @@ export function makeEnemyWave(round: number): Fighter[] {
 }
 
 // ---------- VS (1v1): Teamfight Tactics' round rhythm ----------
-// Stages of 5 rounds: fights against the other player, an item pick on the 3rd
-// round of every stage, wild Digimon on the 5th and a boss on every 10th; the
-// first two rounds are easy wild fights so both players start with loot.
+// Stages of 5 rounds: fights against other players, an item draft (the carousel)
+// on the 3rd round of every stage, wild Digimon on the 5th and a boss on every
+// 10th; the first two rounds are easy wild fights so everyone starts with loot.
 
 export type VsRound = "pvp" | "pve" | "boss";
 
@@ -156,7 +156,8 @@ export function vsRoundKind(round: number): VsRound {
   return "pvp";
 }
 
-export const isArsenalRound = (round: number) => round % VS.stageLength === 3;
+/** The 3rd round of every stage opens with the carousel (an item draft, lowest HP first). */
+export const isCarouselRound = (round: number) => round % VS.stageLength === 3;
 
 export function vsStageDamage(round: number): number {
   const stage = Math.ceil(round / VS.stageLength);

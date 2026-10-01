@@ -3,12 +3,29 @@
  * results through the shared rules (src/game/lobby.ts) and verifies what the
  * players rely on — everyone fights exactly once per round, no rematch two fight
  * rounds in a row when avoidable, the ghost round rotates, places 1..n are all
- * given out, rating points balance.
+ * given out, rating points balance; the carousel's order and offer, the shared
+ * pool's bookkeeping.
  *
  * Run: npm run lobbycheck [-- matches=2000 seed=1]
  */
-import { applyOutcomes, isBehind, planRound, ratingDelta, rng, surrender, START_HP, type RoundPlan, type Standing } from "../src/game/lobby";
-import { vsRoundKind, vsStageDamage } from "../src/game/tuning";
+import {
+  applyOutcomes,
+  carouselGroups,
+  carouselItems,
+  fullPool,
+  heldCopies,
+  planRound,
+  poolLeft,
+  ratingDelta,
+  rng,
+  surrender,
+  START_HP,
+  type RoundPlan,
+  type Standing,
+} from "../src/game/lobby";
+import { isCarouselRound, vsRoundKind, vsStageDamage } from "../src/game/tuning";
+import { ITEMS } from "../src/game/items";
+import { FORMS } from "../src/game/creatures";
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.split("=")));
 const MATCHES = Number(args.matches ?? 2000);
@@ -78,10 +95,19 @@ for (let m = 0; m < MATCHES; m++) {
       standings = r.standings;
       if (r.over) fail("surrender ended a match with 3+ players");
     }
-    const behind = standings.filter((s) => s.alive && isBehind(standings, s.seat)).length;
-    if (standings.filter((s) => s.alive).length >= 2 && behind === 0) {
-      const hps = standings.filter((s) => s.alive).map((s) => s.hp);
-      if (new Set(hps).size > 1) fail(`nobody behind with hp ${hps}`);
+    if (isCarouselRound(round)) {
+      // the draft: everyone standing picks once, lowest HP first; one offer for all
+      const groups = carouselGroups(standings, round, m + 1);
+      const order = groups.flat();
+      const standingNow = standings.filter((s) => s.alive);
+      if (order.length !== standingNow.length || new Set(order).size !== order.length) fail(`carousel order ${order}`);
+      const hpOrder = order.map((seat) => standings.find((s) => s.seat === seat)!.hp);
+      if (hpOrder.some((hp, i) => i > 0 && hp < hpOrder[i - 1])) fail(`carousel not lowest HP first: ${hpOrder}`);
+      const items = carouselItems(round, standingNow.length, m + 1);
+      if (items.length !== standingNow.length + 2 || items.some((id) => !ITEMS[id])) fail(`carousel offer ${items}`);
+      if (items.join() !== carouselItems(round, standingNow.length, m + 1).join()) fail("carousel offer not deterministic");
+      const most = Math.max(...Object.values(items.reduce<Record<string, number>>((a, id) => ({ ...a, [id]: (a[id] ?? 0) + 1 }), {})));
+      if (most > 2) fail(`carousel offer repeats an item ${most}x: ${items}`);
     }
     const r = applyOutcomes(standings, outcomes);
     standings = r.standings;
@@ -104,6 +130,16 @@ for (const [n, s] of Object.entries(stats)) {
     `${n.padStart(7)}  ${String(s.matches).padStart(7)}  ${String(s.rounds).padStart(12)}  ${String(s.repeats).padStart(12)}  ${String(s.byeTwice).padStart(11)}  ${String(s.cycles).padStart(11)}  ${(full * 100).toFixed(0).padStart(13)}%`,
   );
 }
+// shared pool bookkeeping: a Champion holds 3 copies of its line's rookie, a Mega 9
+const champ = Object.keys(FORMS).find((id) => FORMS[id].stage === 2)!;
+const mega = Object.keys(FORMS).find((id) => FORMS[id].stage === 3)!;
+const held = heldCopies(["agumon", "agumon", champ, mega]);
+if (Object.values(held).reduce((a, b) => a + b, 0) !== 2 + 3 + 9) fail(`heldCopies ${JSON.stringify(held)}`);
+const full = fullPool();
+const left = poolLeft({ 0: { agumon: 5 }, 1: { agumon: 4 }, 2: { agumon: 999 } });
+if (left.agumon !== 0 || left.gabumon !== full.gabumon) fail(`poolLeft ${left.agumon} / ${left.gabumon}`);
+console.log(`\npool: ${Object.keys(full).length} rookies, ${Object.values(full).reduce((a, b) => a + b, 0)} copies in all`);
+
 const sums = [2, 3, 4, 5, 6, 7, 8].map((n) => Array.from({ length: n }, (_, i) => ratingDelta(n, i + 1)));
 console.log(`\nrating by place: ${sums.map((r) => `${r.length}p [${r.join(" ")}]`).join("  ")}`);
 console.log(failures ? `\n${failures} FAILURES` : "\nall checks passed");

@@ -1,5 +1,5 @@
 import { useGame, wireBoard, pvpMe, type PvpBoardUnit } from "../game/store";
-import type { LobbyFight, LobbySnapshot } from "../game/lobby";
+import { heldCopies, type LobbyFight, type LobbySnapshot } from "../game/lobby";
 import { net } from "./bus";
 import { playerId } from "./leaderboard";
 
@@ -156,6 +156,22 @@ useGame.subscribe((s, prev) => {
     if (key === lastSent) return;
     lastSent = key;
     net.send?.({ t: "board", board });
+  }, 400);
+});
+
+// Shared pool: the rookie copies we hold (bench and board), whenever our units change.
+let heldTimer: ReturnType<typeof setTimeout> | null = null;
+let heldSent = "";
+useGame.subscribe((s, prev) => {
+  if (!s.pvp || s.pvp.snap.stage !== "match" || s.units === prev.units || !pvpMe(s.pvp)?.alive) return;
+  if (heldTimer) clearTimeout(heldTimer);
+  heldTimer = setTimeout(() => {
+    const { units, pvp } = useGame.getState();
+    const counts = heldCopies(units.map((u) => u.formId));
+    const key = `${pvp?.snap.match}:${JSON.stringify(counts)}`;
+    if (key === heldSent) return;
+    heldSent = key;
+    net.send?.({ t: "held", counts });
   }, 400);
 });
 

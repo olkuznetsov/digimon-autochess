@@ -12,7 +12,7 @@ import { Hotkeys } from "./ui/Hotkeys";
 import { DamageMeter } from "./ui/DamageMeter";
 import { NextWave } from "./ui/NextWave";
 import { Onboarding } from "./ui/Onboarding";
-import { ArsenalChoice } from "./ui/ArsenalChoice";
+import { CarouselPanel } from "./ui/CarouselPanel";
 import { Standings } from "./ui/Standings";
 
 export default function App() {
@@ -33,7 +33,7 @@ export default function App() {
       <UnitPanel />
       <EvoBanner />
       <EvolutionChoice />
-      <ArsenalChoice />
+      <CarouselPanel />
       <LoadingScreen />
       <AudioDirector />
       <Hotkeys />

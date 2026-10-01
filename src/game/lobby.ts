@@ -1,11 +1,13 @@
-import { vsRoundKind } from "./tuning";
+import { VS, vsRoundKind } from "./tuning";
+import { FORMS, LINE_ROOT, ROOKIE_IDS } from "./creatures";
+import { BASE_ITEM_IDS, FUSED_ITEM_IDS } from "./items";
 
 /**
  * Lobby rules for 2–8 players, shared by the clients and the match server
- * (server/src/index.ts imports this file): who fights whom each round, the ghost
- * for an odd player count, damage, eliminations, placements and rating points.
- * Pure and deterministic — the server plans and keeps the standings, clients
- * show them.
+ * (server/src/lobby.ts imports this file): who fights whom each round, the ghost
+ * for an odd player count, damage, eliminations, placements, rating points, the
+ * shared unit pool and the carousel. Pure and deterministic — the server plans
+ * and keeps the standings, clients show them.
  */
 
 export const MAX_PLAYERS = 8;
@@ -177,19 +179,117 @@ function settle(next: Standing[]): { standings: Standing[]; eliminated: number[]
   return { standings: next, eliminated: falling.map((s) => s.seat), over };
 }
 
-/** Behind on HP = more players still standing above you than below (the bottom
- *  half; ties at the bottom count too) — the Arsenal's catch-up offer. */
-export function isBehind(standings: Standing[], seat: number): boolean {
-  const me = standings.find((s) => s.seat === seat);
-  if (!me?.alive) return false;
-  const alive = standings.filter((s) => s.alive);
-  return alive.filter((s) => s.hp > me.hp).length > alive.filter((s) => s.hp < me.hp).length;
-}
-
 /** Rating points for a final place: ±40 for 1st / last of eight, scaled down in
  *  smaller lobbies (a 1v1 win is worth ±6). */
 export function ratingDelta(players: number, placement: number): number {
   return Math.round((40 * (players + 1 - 2 * placement)) / 7);
+}
+
+// ---------- shared unit pool ----------
+// Teamfight Tactics' shared pool: every rookie exists in a limited number of copies
+// for the whole lobby, so what one player collects the others can't. A Mega takes
+// 9 copies; at cost 1 three players can finish the same line, at cost 4 only one.
+
+export const POOL_COPIES: Record<number, number> = { 1: 27, 2: 22, 3: 18, 4: 12 };
+
+/** A full pool: copies of every rookie. */
+export function fullPool(): Record<string, number> {
+  return Object.fromEntries(ROOKIE_IDS.map((id) => [id, POOL_COPIES[FORMS[id].cost ?? 1] ?? 18]));
+}
+
+/** Rookie copies held by a set of units (a Champion is 3 copies of its line's
+ *  rookie, a Mega 9). */
+export function heldCopies(formIds: string[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const id of formIds) {
+    const root = LINE_ROOT[id];
+    if (!root) continue;
+    out[root] = (out[root] ?? 0) + 3 ** (FORMS[id].stage - 1);
+  }
+  return out;
+}
+
+/** What's left: the full pool minus everyone's holdings (never below 0). */
+export function poolLeft(held: Record<number, Record<string, number>>): Record<string, number> {
+  const pool = fullPool();
+  for (const counts of Object.values(held)) {
+    for (const [id, n] of Object.entries(counts)) if (id in pool) pool[id] -= n;
+  }
+  for (const id in pool) pool[id] = Math.max(0, pool[id]);
+  return pool;
+}
+
+// ---------- carousel ----------
+// The item draft on the 3rd round of every stage (Teamfight Tactics' carousel):
+// one shared offer of players + 2 items, the lowest HP picks first, released in
+// pairs every few seconds; whoever doesn't pick gets one at the end.
+
+export const CAROUSEL_STEP_MS = 4000;
+/** the carousel opens once everyone is planning — or after this, for slow fights */
+export const CAROUSEL_WAIT_MS = 25_000;
+
+export interface Carousel {
+  round: number;
+  items: string[];
+  /** item index → the seat that took it */
+  taken: Record<number, number>;
+  /** pick order, lowest HP first; each group is released CAROUSEL_STEP_MS after the last */
+  groups: number[][];
+  /** when the first group may pick (ms epoch); 0 = still waiting for players */
+  opensAt: number;
+  done: boolean;
+}
+
+/** The offer: players + 2 items, mostly base items early, more fused ones later —
+ *  varied: no item repeats until every one of its kind is on the carousel. */
+export function carouselItems(round: number, players: number, seed: number): string[] {
+  const rand = rng(seed * 131 + round * 7);
+  const shuffled = <T,>(arr: T[]) => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+  const n = players + 2;
+  const stage = Math.ceil(round / VS.stageLength);
+  const fused = Math.min(n, stage <= 1 ? 1 : stage === 2 ? 2 : Math.ceil(n / 2));
+  const deal = (ids: string[], k: number) => {
+    const out: string[] = [];
+    while (out.length < k) out.push(...shuffled(ids));
+    return out.slice(0, k);
+  };
+  return shuffled([...deal(FUSED_ITEM_IDS, fused), ...deal(BASE_ITEM_IDS, n - fused)]);
+}
+
+/** Pick order: lowest HP first (ties shuffled), in pairs from four players up. */
+export function carouselGroups(standings: Standing[], round: number, seed: number): number[][] {
+  const rand = rng(seed * 977 + round);
+  const order = standings
+    .filter((s) => s.alive)
+    .map((s) => ({ s, tie: rand() }))
+    .sort((a, b) => a.s.hp - b.s.hp || a.tie - b.tie)
+    .map((x) => x.s.seat);
+  const size = order.length >= 4 ? 2 : 1;
+  const groups: number[][] = [];
+  for (let i = 0; i < order.length; i += size) groups.push(order.slice(i, i + size));
+  return groups;
+}
+
+/** When a seat's group may start picking (Infinity while the carousel is closed). */
+export function carouselTurn(c: Carousel, seat: number): number {
+  const g = c.groups.findIndex((grp) => grp.includes(seat));
+  return c.opensAt > 0 && g >= 0 ? c.opensAt + g * CAROUSEL_STEP_MS : Infinity;
+}
+
+/** When the carousel closes: the last group released still gets two steps to pick. */
+export const carouselEnd = (c: Carousel) => c.opensAt + (c.groups.length + 1) * CAROUSEL_STEP_MS;
+
+/** The item a seat took, if any. */
+export function carouselPick(c: Carousel, seat: number): string | null {
+  const i = Object.entries(c.taken).find(([, s]) => s === seat)?.[0];
+  return i === undefined ? null : c.items[Number(i)];
 }
 
 // ---------- wire format (server → clients) ----------
@@ -232,6 +332,10 @@ export interface LobbySnapshot {
   /** players at the start of the match (rating scale) */
   players: number;
   seats: LobbySeat[];
+  /** copies of each rookie left in the shared pool */
+  pool: Record<string, number>;
+  /** this round's item draft, on carousel rounds */
+  carousel: Carousel | null;
 }
 
 /** A round's fight as broadcast when every player is locked in. */

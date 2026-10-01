@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useGame, pvpMe, pvpName } from "../game/store";
-import { isArsenalRound, isBossRound, vsRoundKind } from "../game/tuning";
-import { opponentOf, ratingDelta } from "../game/lobby";
+import { isCarouselRound, isBossRound, vsRoundKind } from "../game/tuning";
+import { carouselPick, opponentOf, ratingDelta } from "../game/lobby";
 import { ITEMS } from "../game/items";
 import { PlanTimer } from "./PlanTimer";
 import { XP_TO_NEXT as XP_VIEW } from "../game/xpView";
@@ -41,7 +41,6 @@ export function Hud() {
   const toPrep = useGame((s) => s.toPrep);
   const reset = useGame((s) => s.reset);
   const simSpeed = useGame((s) => s.simSpeed);
-  const arsenal = useGame((s) => s.arsenal);
   const loot = useGame((s) => s.loot);
   const setSimSpeed = useGame((s) => s.setSimSpeed);
   const boardUnits = useGame((s) => s.units.filter((u) => u.placement.kind === "board").length);
@@ -74,6 +73,9 @@ export function Hud() {
   const roundKind = vsRoundKind(round);
   const nextOpp = pvp && phase === "prep" ? opponentOf(pvp.snap.plan, pvp.seat) : null;
   const waitingOn = pvp ? pvp.snap.seats.filter((s) => s.alive && s.inMatch && s.online && !s.ready && s.seat !== pvp.seat).length : 0;
+  // the carousel runs before anyone locks in
+  const carousel = pvp?.snap.carousel?.round === round && !pvp.snap.carousel.done ? pvp.snap.carousel : null;
+  const drafting = !!carousel && !!pvp && !carouselPick(carousel, pvp.seat);
 
   // VS result screens move on by themselves
   const autoContinue = vs && phase === "result" && alive && stage === "match";
@@ -140,7 +142,7 @@ export function Hud() {
             {vs && (
               <span className={`round-kind ${roundKind}`}>
                 {roundKind === "pvp" ? "⚔ PvP" : roundKind === "boss" ? "☠ Boss" : "🐾 Wild"}
-                {isArsenalRound(round) && " · 🎁"}
+                {isCarouselRound(round) && " · 🎠"}
               </span>
             )}
           </div>
@@ -181,13 +183,15 @@ export function Hud() {
         )}
         {phase === "prep" && vs && stage === "match" && alive && pvp && (
           <div className="battle-bar">
-            <button className="action" disabled={boardUnits === 0 || pvp.myReady || !!arsenal} onClick={() => pvpReadyUp()}>
+            <button className="action" disabled={boardUnits === 0 || pvp.myReady || drafting} onClick={() => pvpReadyUp()}>
               {pvp.myReady
-                ? waitingOn > 0
-                  ? `Waiting for ${waitingOn} tamer${waitingOn > 1 ? "s" : ""}…`
-                  : "Starting…"
-                : arsenal
-                  ? "Pick an Arsenal item"
+                ? carousel
+                  ? "Waiting for the carousel…"
+                  : waitingOn > 0
+                    ? `Waiting for ${waitingOn} tamer${waitingOn > 1 ? "s" : ""}…`
+                    : "Starting…"
+                : drafting
+                  ? "🎠 Pick from the carousel"
                   : roundKind === "boss"
                     ? "☠ Ready for the boss"
                     : roundKind === "pve"
@@ -373,7 +377,7 @@ export function Hud() {
               <li>🔒 <b>Lock the shop</b> to keep it for next round; ⏩ speeds battles up 2×.</li>
               <li>⌨ <b>Keys</b>: D reroll · F buy XP · 1–5 buy · L lock · E sell selected · Space start / continue · S speed.</li>
               <li>☠ Every <b>5th round is a BOSS</b> — beat it for a guaranteed item + bonus gold.</li>
-              <li>⚔ <b>VS</b>: create a lobby and send the 4-letter code — 2 to 8 tamers. Each round your board fights another player's (odd one out fights a ghost copy), wild Digimon on rounds 1–2 and every 5th, a boss every 10th, an item pick every stage. Last tamer standing wins; your place moves your rating. 🏳️ to surrender.</li>
+              <li>⚔ <b>VS</b>: create a lobby and send the 4-letter code — 2 to 8 tamers. Each round your board fights another player's (odd one out fights a ghost copy), wild Digimon on rounds 1–2 and every 5th, a boss every 10th. Every stage opens with a 🎠 <b>carousel</b>: one shared set of items, lowest HP picks first. Rookies come from a <b>shared pool</b> — what others collect, you can't. Last tamer standing wins; your place moves your rating. 🏳️ to surrender.</li>
               <li>🏆 <b>Leaderboard</b>: finish a run to post your best round — and <b>fight other players' saved boards</b> as risk-free ghost battles.</li>
               <li>🏆 Survive <b>round {VICTORY_ROUND}</b> to complete the run. Losing costs ♥ — at 0 it's game over.</li>
             </ul>

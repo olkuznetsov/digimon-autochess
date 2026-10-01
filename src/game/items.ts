@@ -47,6 +47,8 @@ export const ITEMS: Record<string, ItemDef> = { ...BASE, ...FUSED };
 export const ITEM_IDS = Object.keys(ITEMS);
 /** what battles drop */
 export const BASE_ITEM_IDS = Object.keys(BASE);
+/** two base items fused (bosses and the VS carousel hand these out) */
+export const FUSED_ITEM_IDS = Object.keys(FUSED);
 
 const RECIPES = new Map(Object.values(FUSED).map((d) => [[...d.from!].sort().join("+"), d.id]));
 

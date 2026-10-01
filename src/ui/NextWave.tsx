@@ -19,6 +19,8 @@ export function NextWave() {
     [round, vs],
   );
   if (phase !== "prep" || (pvp && !vs)) return null;
+  // the carousel panel takes this spot while it runs
+  if (pvp?.snap.carousel?.round === round && !pvp.snap.carousel.done) return null;
 
   const opp = pvp ? opponentOf(pvp.snap.plan, pvp.seat) : null;
   const scout = pvp?.scout ?? null;
