@@ -1,19 +1,22 @@
 import { DurableObject } from "cloudflare:workers";
 import { cleanBoard, cleanName } from "./util";
 import { Lobby } from "./lobby";
+import { Matchmaker } from "./queue";
 
 /**
  * Multiplayer server for Digimon Auto Chess (Cloudflare Worker + Durable Objects):
  * - Lobby (src/lobby.ts): rooms of 2–8 players, the current VS mode;
+ * - Matchmaker (src/queue.ts): the public queue that forms lobbies;
  * - MatchRoom: the original 1v1 relay, kept for clients still running an older build;
  * - Leaderboard: best runs, VS wins, lobby rating and saved boards for ghost battles.
  */
 
-export { Lobby };
+export { Lobby, Matchmaker };
 
 export interface Env {
   ROOM: DurableObjectNamespace<MatchRoom>;
   LOBBY: DurableObjectNamespace<Lobby>;
+  QUEUE: DurableObjectNamespace<Matchmaker>;
   LB: DurableObjectNamespace<Leaderboard>;
   /** worker secret guarding /lb/admin/* (wrangler secret put ADMIN_KEY) */
   ADMIN_KEY?: string;
@@ -340,6 +343,7 @@ export default {
 
     const lm = url.pathname.match(/^\/lobby\/([A-Za-z0-9]{4,8})$/);
     if (lm) return env.LOBBY.getByName(lm[1].toUpperCase()).fetch(request);
+    if (url.pathname === "/queue") return env.QUEUE.getByName("global").fetch(request);
 
     const m = url.pathname.match(/^\/ws\/([A-Za-z0-9]{4,8})$/);
     if (m) {

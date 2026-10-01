@@ -338,6 +338,10 @@ export interface LobbySnapshot {
   pool: Record<string, number>;
   /** this round's item draft, on carousel rounds */
   carousel: Carousel | null;
+  /** a public match from the matchmaking queue: it starts by itself */
+  public: boolean;
+  /** public match: the players it waits for before starting */
+  expect: number;
 }
 
 /** A round's fight as broadcast when every player is locked in. */

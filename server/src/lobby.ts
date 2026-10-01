@@ -80,6 +80,10 @@ interface Room {
   roundAt: number;
   /** each player's augments this match */
   augments: Record<number, string[]>;
+  /** made by the matchmaking queue: no host to press start */
+  public: boolean;
+  /** public room still waiting for its group: how many, and until when */
+  auto: { expect: number; until: number } | null;
 }
 
 interface Attach {
@@ -87,6 +91,8 @@ interface Attach {
 }
 
 const ROOM_TTL_MS = 3 * 60 * 60 * 1000; // idle rooms are wiped after 3h
+/** a public match waits this long for its group, then starts with whoever came (2+) */
+const AUTO_JOIN_MS = 20_000;
 /** once someone is locked in, the rest get this long (clients auto-ready at 40–50 s) */
 const READY_DEADLINE_MS = 75 * 1000;
 const SEAT_KEYS = Array.from({ length: MAX_PLAYERS }, (_, i) => [`ready:${i}`, `board:${i}`]).flat();
@@ -108,6 +114,8 @@ const newRoom = (): Room => ({
   arrived: [],
   roundAt: 0,
   augments: {},
+  public: false,
+  auto: null,
 });
 
 const standingsOf = (room: Room): Standing[] =>
@@ -167,6 +175,8 @@ export class Lobby extends DurableObject<Env> {
       players: room.players,
       pool: poolLeft(room.held),
       carousel: room.carousel,
+      public: room.public,
+      expect: room.auto?.expect ?? 0,
       seats: room.seats.map((s) => ({
         seat: s.seat,
         name: s.name,
@@ -208,6 +218,18 @@ export class Lobby extends DurableObject<Env> {
     const deadline = await this.ctx.storage.get<number>("deadline");
     const tick = await this.ctx.storage.get<number>("tick");
     await this.ctx.storage.setAlarm(Math.min(ttlAt, deadline ?? Infinity, tick ?? Infinity));
+  }
+
+  /** The matchmaking queue opens a public room for a group of `expect` players
+   *  (RPC). False if the code is taken — the queue then picks another. */
+  async setup(opts: { expect: number }): Promise<boolean> {
+    const room = await this.load();
+    if (room.stage !== "lobby" || room.seats.length > 0 || room.public) return false;
+    room.public = true;
+    room.auto = { expect: Math.max(2, Math.min(MAX_PLAYERS, Math.floor(opts.expect))), until: Date.now() + AUTO_JOIN_MS };
+    await this.save(room);
+    await this.schedule({ ttl: true, tick: room.auto.until });
+    return true;
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -261,6 +283,8 @@ export class Lobby extends DurableObject<Env> {
       JSON.stringify({ t: "joined", seat: seat.seat, pid: seat.pid, snap: this.snapshot(room), lastFight, boards: await this.liveBoards(room) }),
     );
     this.broadcast({ t: "roster", snap: this.snapshot(room) }, seat.seat);
+    // a public match starts once its whole group is in
+    if (room.auto && room.stage === "lobby" && this.online().size >= room.auto.expect) await this.startMatch(room);
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -302,10 +326,15 @@ export class Lobby extends DurableObject<Env> {
   }
 
   private async start(room: Room, me: Seat) {
+    if (room.stage === "match" || me.seat !== this.host(room, this.online())) return;
+    await this.startMatch(room);
+  }
+
+  private async startMatch(room: Room) {
     const online = this.online();
-    if (room.stage === "match" || me.seat !== this.host(room, online)) return;
     const players = room.seats.filter((s) => online.has(s.seat));
     if (players.length < 2) return;
+    room.auto = null;
     // whoever is gone by now sits this one out
     room.seats = players.map((s) => ({ ...s, inMatch: true, hp: START_HP, alive: true, placement: null, ready: false }));
     room.stage = "match";
@@ -614,6 +643,17 @@ export class Lobby extends DurableObject<Env> {
     if (tick && Date.now() >= tick - 50) {
       await this.ctx.storage.delete("tick");
       const room = await this.load();
+      if (room.stage === "lobby" && room.auto) {
+        // the group didn't all make it: play with whoever came, or send a lone player back
+        if (this.online().size >= 2) await this.startMatch(room);
+        else {
+          room.auto = null;
+          await this.save(room);
+          this.broadcast({ t: "requeue" });
+        }
+        await this.schedule({});
+        return;
+      }
       const c = room.carousel;
       if (room.stage === "match" && c && !c.done) {
         // slow fights don't hold the draft forever; then the clock runs out on picks

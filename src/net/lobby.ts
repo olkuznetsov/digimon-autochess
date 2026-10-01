@@ -89,6 +89,11 @@ function open() {
       case "standings":
         g.pvpSync(m.snap as LobbySnapshot, (m.eliminated as number[]) ?? []);
         break;
+      case "requeue":
+        // a public match whose group never showed up: back to the menu to search again
+        onError?.("Not enough tamers showed up — search again.");
+        lobbyLeave();
+        break;
     }
   };
 

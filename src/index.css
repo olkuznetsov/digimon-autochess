@@ -2514,3 +2514,15 @@ html, body {
   .aug-emoji { font-size: 28px; }
   .aug-desc { font-size: 10.5px; }
 }
+
+/* ---------- VS: public matchmaking ---------- */
+.queue-count {
+  font-size: 15px;
+  color: #c6d2f0;
+}
+.queue-count b {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--gold);
+  margin-right: 4px;
+}
