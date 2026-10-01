@@ -182,8 +182,10 @@ interface GameState {
   fx: Fx[];
   battleTime: number;
   tick: number;
-  /** battle playback speed multiplier (1 = normal) */
+  /** battle playback speed multiplier (1 = normal; solo/ghost only — VS stays at 1) */
   simSpeed: number;
+  /** keep the current shop through the next round */
+  shopLocked: boolean;
   boardSnapshot: Unit[] | null;
 
   dragId: string | null;
@@ -210,6 +212,8 @@ interface GameState {
   stepBattle: (dt: number) => void;
   toPrep: () => void;
   reset: () => void;
+  toggleShopLock: () => void;
+  setSimSpeed: (speed: number) => void;
 
   pvpJoined: (
     code: string,
@@ -233,6 +237,14 @@ interface GameState {
 
   ghostFight: (board: PvpBoardUnit[], name: string) => void;
   ghostReturn: () => void;
+}
+
+function readSpeed(): number {
+  try {
+    return localStorage.getItem("dac-speed") === "2" ? 2 : 1;
+  } catch {
+    return 1;
+  }
 }
 
 function initialState() {
@@ -260,7 +272,8 @@ function initialState() {
     fx: [] as Fx[],
     battleTime: 0,
     tick: 0,
-    simSpeed: 1,
+    simSpeed: readSpeed(),
+    shopLocked: false,
     boardSnapshot: null as Unit[] | null,
     dragId: null as string | null,
     dragPos: null as { x: number; z: number } | null,
@@ -645,7 +658,7 @@ export const useGame = create<GameState>((set, get) => ({
       round: state.round + 1,
       level: leveled.level,
       xp: leveled.xp,
-      shop: rollShop(),
+      shop: state.shopLocked ? state.shop : rollShop(),
       viewFlip: false,
       ...(state.pvp ? { pvp: { ...state.pvp, myReady: false, oppReady: false } } : {}),
     });
@@ -654,6 +667,18 @@ export const useGame = create<GameState>((set, get) => ({
   reset: () => {
     try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
     set({ ...initialState() });
+  },
+
+  toggleShopLock: () => {
+    sfx.click();
+    set({ shopLocked: !get().shopLocked });
+  },
+
+  setSimSpeed: (speed) => {
+    try {
+      localStorage.setItem("dac-speed", String(speed));
+    } catch { /* ignore */ }
+    set({ simSpeed: speed });
   },
 
   // ---------- VS friend (multiplayer) ----------
@@ -924,7 +949,7 @@ function saveRun() {
       JSON.stringify({
         gold: s.gold, level: s.level, xp: s.xp, health: s.health, round: s.round,
         streak: s.streak, units: s.units, inventory: s.inventory, shop: s.shop,
-        uidCounter,
+        shopLocked: s.shopLocked, uidCounter,
       }),
     );
   } catch { /* ignore */ }
@@ -945,7 +970,7 @@ try {
       useGame.setState({
         gold: d.gold, level: d.level, xp: d.xp, health: d.health, round: d.round,
         streak: d.streak, units: d.units, inventory: d.inventory ?? [], shop: d.shop,
-        phase: "prep",
+        shopLocked: !!d.shopLocked, phase: "prep",
       });
     }
   }

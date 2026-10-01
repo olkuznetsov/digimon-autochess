@@ -33,6 +33,8 @@ export function Hud() {
   const startBattle = useGame((s) => s.startBattle);
   const toPrep = useGame((s) => s.toPrep);
   const reset = useGame((s) => s.reset);
+  const simSpeed = useGame((s) => s.simSpeed);
+  const setSimSpeed = useGame((s) => s.setSimSpeed);
   const boardUnits = useGame((s) => s.units.filter((u) => u.placement.kind === "board").length);
   const [muted, setMutedUi] = useState(isMuted());
   const [musicOn, setMusicOnUi] = useState(isMusicOn());
@@ -156,7 +158,20 @@ export function Hud() {
           </button>
         )}
         {phase === "battle" && battleTime === 0 && <div className="fight-banner">FIGHT!</div>}
-        {phase === "battle" && battleTime > 0 && <div className="phase-tag battling">Battle in progress…</div>}
+        {phase === "battle" && battleTime > 0 && (
+          <div className="battle-bar">
+            <div className="phase-tag battling">Battle in progress…</div>
+            {!pvp && (
+              <button
+                className={`icon-btn speed${simSpeed > 1 ? " on" : ""}`}
+                title="Battle speed (S)"
+                onClick={() => setSimSpeed(simSpeed > 1 ? 1 : 2)}
+              >
+                {simSpeed > 1 ? "⏩ 2×" : "▶ 1×"}
+              </button>
+            )}
+          </div>
+        )}
         {phase === "result" && ghost && (
           <div className={`result ${result}`}>
             <span className="result-text">
@@ -265,7 +280,9 @@ export function Hud() {
               <li>🧩 <b>Synergies</b> (left panel): matching Attributes &amp; Families buff your team.</li>
               <li>⚔ Battles run themselves. Units gain <b>mana</b> and cast role abilities when full.</li>
               <li>🎒 Win rounds to earn <b>items</b> — click an item, then a Digimon to equip it.</li>
-              <li>🔍 <b>Click any Digimon</b> to see its stats, ability and items — or to sell it.</li>
+              <li>🔍 <b>Click any Digimon</b> to see its stats, ability and items — or drag it onto the shop to sell it.</li>
+              <li>🔒 <b>Lock the shop</b> to keep it for next round; ⏩ speeds battles up 2×.</li>
+              <li>⌨ <b>Keys</b>: D reroll · F buy XP · 1–5 buy · L lock · E sell selected · Space start / continue · S speed.</li>
               <li>☠ Every <b>5th round is a BOSS</b> — beat it for a guaranteed item + bonus gold.</li>
               <li>⚔ <b>VS mode</b>: create a room, send the 4-letter code to a friend — your boards fight each round. First to 0 ♥ loses. 🏳️ to surrender.</li>
               <li>🏆 <b>Leaderboard</b>: finish a run to post your best round — and <b>fight other players' saved boards</b> as risk-free ghost battles.</li>

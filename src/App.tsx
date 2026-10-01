@@ -8,6 +8,7 @@ import { UnitPanel } from "./ui/UnitPanel";
 import { EvoBanner } from "./ui/EvoBanner";
 import { LoadingScreen } from "./ui/LoadingScreen";
 import { AudioDirector } from "./audio/AudioDirector";
+import { Hotkeys } from "./ui/Hotkeys";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
       <EvolutionChoice />
       <LoadingScreen />
       <AudioDirector />
+      <Hotkeys />
     </div>
   );
 }

@@ -176,7 +176,7 @@ export function CreatureModel({ url, tweak, drive, color, spawnOnMount, onDissol
     if (!hasClips) return;
 
     // frozen units hold their pose; hit-stop / slow-mo scale every animation
-    mixer.timeScale = (d.stunned && !d.dead ? 0 : 1) * juice.timeScale;
+    mixer.timeScale = (d.stunned && !d.dead ? 0 : 1) * juice.timeScale * juice.speed;
 
     // ---- one-shot events ----
     if (d.spawnKey !== seen.current.spawnKey) {
@@ -201,7 +201,7 @@ export function CreatureModel({ url, tweak, drive, color, spawnOnMount, onDissol
         const played = play(down, true, 0.1, 1.2, true);
         dissolveAt.current = played && down ? Math.min(0.85, (down.getClip().duration / 1.2) * 0.55) : 0.12;
       }
-      deathT.current += dt;
+      deathT.current += dt * juice.speed;
       if (deathT.current >= dissolveAt.current && dissolveAt.current !== Infinity) {
         dissolveAt.current = Infinity;
         dissolveDir.current = 1;

@@ -814,6 +814,55 @@ body,
   }
 }
 
+/* ---------- QoL: battle speed, shop lock, drag-to-sell ---------- */
+.battle-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.icon-btn.speed {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #cfe0ff;
+}
+.icon-btn.speed.on {
+  color: var(--gold);
+  border-color: rgba(255, 211, 77, 0.6);
+  box-shadow: 0 0 14px rgba(255, 211, 77, 0.3);
+}
+.econ-btn.lock {
+  align-self: stretch;
+  padding: 0 10px;
+  font-size: 16px;
+}
+.econ-btn.lock.on {
+  border-color: rgba(255, 211, 77, 0.7);
+  box-shadow: 0 0 14px rgba(255, 211, 77, 0.3), var(--panel-glow);
+}
+.shop.sell-zone {
+  background: linear-gradient(0deg, rgba(60, 10, 24, 0.9), rgba(60, 10, 24, 0));
+}
+.shop.sell-zone .shop-card,
+.shop.sell-zone .econ-btn {
+  opacity: 0.35;
+}
+.sell-hint {
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  transform: translate(-50%, -100%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  color: #ffd0d8;
+  background: rgba(40, 8, 16, 0.92);
+  border: 1px solid rgba(255, 77, 109, 0.6);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* ---------- portraits (rendered by the dev studio, see src/ui/Portrait.tsx) ---------- */
 .portrait {
   position: relative;

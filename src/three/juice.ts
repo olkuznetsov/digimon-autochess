@@ -22,6 +22,8 @@ export const juice = {
   sinceSlow: 9,
   /** settings: camera shake on/off (reduced motion) */
   shakeEnabled: true,
+  /** battle playback speed (2× button) — effects and animations keep pace with the sim */
+  speed: 1,
 };
 
 /** Advance once per frame (CameraRig does it, before everything else). */
@@ -38,7 +40,7 @@ export function tickJuice(dt: number) {
   } else {
     juice.timeScale = 1;
   }
-  juice.now += step * juice.timeScale;
+  juice.now += step * juice.timeScale * juice.speed;
   juice.trauma = Math.max(0, juice.trauma - step * 1.5);
   juice.flash = Math.max(0, juice.flash - step * 3.2);
 }

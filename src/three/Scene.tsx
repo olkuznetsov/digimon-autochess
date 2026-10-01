@@ -238,14 +238,20 @@ function BattleRunner() {
   const acc = useRef(0);
   // units materialize before the first blow; the HUD shows "FIGHT!" while battleTime is 0
   const intro = useRef(0.9);
-  useEffect(() => resetJuice(), []);
+  useEffect(() => {
+    resetJuice();
+    return () => {
+      juice.speed = 1;
+    };
+  }, []);
   useFrame((_, dt) => {
     const game = useGame.getState();
+    juice.speed = game.pvp ? 1 : game.simSpeed;
     if (intro.current > 0) {
       intro.current -= Math.min(dt, 0.25);
       return;
     }
-    acc.current += Math.min(dt, 0.25) * game.simSpeed * juice.timeScale;
+    acc.current += Math.min(dt, 0.25) * juice.speed * juice.timeScale;
     let steps = 0;
     while (acc.current >= SIM_DT && steps < 12) {
       acc.current -= SIM_DT;
@@ -272,9 +278,18 @@ function SceneContents() {
   const moveUnit = useGame((s) => s.moveUnit);
   const [hovered, setHovered] = useState<{ col: number; row: number } | null>(null);
 
-  const commitDrag = () => {
+  const commitDrag = (clientX?: number, clientY?: number) => {
     const { dragId: id, dragPos } = useGame.getState();
-    if (!id || !dragPos) return;
+    if (!id) return;
+    // dropped on the shop panel → sell it
+    if (clientX !== undefined && clientY !== undefined && document.elementFromPoint(clientX, clientY)?.closest(".shop")) {
+      dragStart = null;
+      useGame.getState().sellUnit(id);
+      setDrag(null, null);
+      setHovered(null);
+      return;
+    }
+    if (!dragPos) return;
     // barely moved = a click, not a drag -> open the unit inspector
     const moved = dragStart ? Math.hypot(dragPos.x - dragStart.x, dragPos.z - dragStart.z) : 99;
     dragStart = null;
@@ -296,8 +311,8 @@ function SceneContents() {
 
   // fallback: release outside the catcher plane still ends the drag
   useEffect(() => {
-    const up = () => {
-      if (useGame.getState().dragId) commitDrag();
+    const up = (e: PointerEvent) => {
+      if (useGame.getState().dragId) commitDrag(e.clientX, e.clientY);
     };
     window.addEventListener("pointerup", up);
     return () => window.removeEventListener("pointerup", up);
@@ -352,7 +367,7 @@ function SceneContents() {
           if (z >= BENCH_BOUNDARY) setHovered(worldToPlayerCell(x, z));
           else setHovered(null);
         }}
-        onPointerUp={commitDrag}
+        onPointerUp={(e: ThreeEvent<PointerEvent>) => commitDrag(e.nativeEvent.clientX, e.nativeEvent.clientY)}
       >
         <planeGeometry args={[60, 60]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
