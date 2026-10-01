@@ -14,7 +14,8 @@
  * so bots never post to the live leaderboard.)
  */
 import { writeFileSync } from "node:fs";
-import { useGame, pveFighters, simulate, wireBoard, type PvpBoardUnit } from "../src/game/store";
+import { useGame, wireBoard, type PvpBoardUnit } from "../src/game/store";
+import { pveFighters, simulate } from "../src/game/vsFights";
 import { FORMS } from "../src/game/creatures";
 import { SIM_DT } from "../src/game/battle";
 import { traitCounts, TRAITS } from "../src/game/synergies";
@@ -264,7 +265,7 @@ function playRun(): RoundLog[] {
     const goldLeft = S().gold;
     // VS probe: how would this board fare against the VS wave of the same round?
     const wired = vsRoundKind(S().round) === "pvp" ? undefined : wireBoard(board);
-    const vs = wired && simulate(pveFighters(wired, S().round, "A")).win;
+    const vs = wired && simulate(pveFighters(wired, S().round, 0)).win;
     const stages: [number, number, number] = [0, 0, 0];
     for (const u of board) stages[FORMS[u.formId].stage - 1]++;
     S().startBattle();

@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { useGame } from "../game/store";
 import { fetchTop, fetchBoard, playerId, type LbEntry } from "../net/leaderboard";
 
-/** Global top-50 with ghost battles: fight any player's saved board. */
+/** Global top-50: best solo runs (with ghost battles against their saved boards)
+ *  and the VS lobby rating. */
 export function LeaderboardModal({ onClose }: { onClose: () => void }) {
+  const [tab, setTab] = useState<"best" | "rating">("best");
   const [rows, setRows] = useState<LbEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -14,10 +16,16 @@ export function LeaderboardModal({ onClose }: { onClose: () => void }) {
   const me = playerId();
 
   useEffect(() => {
-    fetchTop()
-      .then(setRows)
-      .catch(() => setError("Leaderboard unavailable — try again later."));
-  }, []);
+    let live = true;
+    setRows(null);
+    setError(null);
+    fetchTop(tab)
+      .then((r) => live && setRows(r))
+      .catch(() => live && setError("Leaderboard unavailable — try again later."));
+    return () => {
+      live = false;
+    };
+  }, [tab]);
 
   const canFight = phase === "prep" && !pvp && boardUnits > 0;
 
@@ -37,10 +45,34 @@ export function LeaderboardModal({ onClose }: { onClose: () => void }) {
     <div className="help-overlay" onClick={onClose}>
       <div className="help-modal lb" onClick={(ev) => ev.stopPropagation()}>
         <div className="help-title">🏆 Leaderboard</div>
+        <div className="lb-tabs">
+          <button className={`lb-tab${tab === "best" ? " on" : ""}`} onClick={() => setTab("best")}>
+            Best runs
+          </button>
+          <button className={`lb-tab${tab === "rating" ? " on" : ""}`} onClick={() => setTab("rating")}>
+            VS rating
+          </button>
+        </div>
         {!rows && !error && <div className="lb-loading">Loading…</div>}
         {error && <div className="pvp-error">{error}</div>}
-        {rows && rows.length === 0 && <div className="lb-loading">No tamers yet — finish a run to enter!</div>}
-        {rows && rows.length > 0 && (
+        {rows && rows.length === 0 && (
+          <div className="lb-loading">
+            {tab === "best" ? "No tamers yet — finish a run to enter!" : "No VS matches yet — create a lobby!"}
+          </div>
+        )}
+        {rows && rows.length > 0 && tab === "rating" && (
+          <div className="lb-table">
+            {rows.map((e, i) => (
+              <div key={e.id} className={`lb-row rating${e.id === me ? " me" : ""}`}>
+                <span className="lb-rank">{i + 1}</span>
+                <span className="lb-name">{e.name}</span>
+                <span className="lb-best" title="VS lobby rating">★{e.rating ?? 0}</span>
+                <span className="lb-wins" title="VS matches won">⚔{e.wins}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {rows && rows.length > 0 && tab === "best" && (
           <div className="lb-table">
             {rows.map((e, i) => (
               <div key={e.id} className={`lb-row${e.id === me ? " me" : ""}`}>
@@ -64,7 +96,11 @@ export function LeaderboardModal({ onClose }: { onClose: () => void }) {
             ))}
           </div>
         )}
-        <div className="pvp-note">Ghost battles are friendly scrims — win or lose, your run is untouched.</div>
+        <div className="pvp-note">
+          {tab === "best"
+            ? "Ghost battles are friendly scrims — win or lose, your run is untouched."
+            : "Every VS match moves your rating by your place: up to +40 for 1st of eight, less in smaller lobbies."}
+        </div>
         <button className="action ghost" onClick={onClose}>
           Close
         </button>

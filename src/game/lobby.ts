@@ -194,6 +194,15 @@ export function ratingDelta(players: number, placement: number): number {
 
 // ---------- wire format (server → clients) ----------
 
+/** A board unit as sent over the wire (VS boards, live scouting, ghost boards). */
+export interface WireUnit {
+  uid: string;
+  formId: string;
+  col: number;
+  row: number;
+  items: string[];
+}
+
 /** A seat as every client sees it. */
 export interface LobbySeat {
   seat: number;
@@ -230,5 +239,5 @@ export interface LobbyFight {
   match: number;
   round: number;
   plan: RoundPlan;
-  boards: Record<number, { uid: string; formId: string; col: number; row: number; items: string[] }[]>;
+  boards: Record<number, WireUnit[]>;
 }

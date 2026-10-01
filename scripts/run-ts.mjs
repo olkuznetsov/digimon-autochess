@@ -29,7 +29,7 @@ await build({
     {
       name: "stub-side-effects",
       setup(b) {
-        b.onResolve({ filter: /\/(net\/(bus|leaderboard|pvp)|audio\/sfx)$/ }, (a) => ({ path: a.path, namespace: "stub" }));
+        b.onResolve({ filter: /\/(net\/(bus|leaderboard|lobby)|audio\/sfx)$/ }, (a) => ({ path: a.path, namespace: "stub" }));
         b.onLoad({ filter: /.*/, namespace: "stub" }, () => ({ contents: STUB, loader: "js" }));
       },
     },

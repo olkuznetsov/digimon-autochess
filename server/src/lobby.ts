@@ -428,6 +428,13 @@ export class Lobby extends DurableObject<Env> {
   }
 
   async webSocketClose(ws: WebSocket) {
+    // answer the close frame: until we do, the browser sits in the closing
+    // handshake and only then fires "close" and starts reconnecting
+    try {
+      ws.close(1000, "closed");
+    } catch {
+      /* already closed */
+    }
     if (!ws.deserializeAttachment()) return; // retired (replaced / left) — already handled
     const room = await this.load();
     this.broadcast({ t: "roster", snap: this.snapshot(room, ws) });

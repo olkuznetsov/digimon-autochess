@@ -15,11 +15,11 @@ for model sources.*
   32 named signature ultimates (Terra Force, Cocytus Breath, Positron Laser…).
 - **Synergies** (three attributes in a counter triangle, five families), **items** that fuse in pairs into
   12 stronger ones, boss rounds, a 15-round run plus endless mode.
-- **VS a friend** over a 4-letter room code, in Teamfight Tactics' round rhythm: stages of five rounds with
-  wild-Digimon rounds, an item pick every stage (the player behind gets a stronger offer), a boss every tenth
-  round, loss damage that grows by stage, a planning timer and live scouting of the opponent's board.
-  Deterministic battles both players simulate identically, reconnects that survive a phone switching apps,
-  rematches in the same room.
+- **VS lobbies for 2–8 players** over a 4-letter room code, in Teamfight Tactics' round rhythm: a round-robin
+  of opponents (a ghost copy of someone's board for the odd one out), stages of five rounds with wild-Digimon
+  rounds, an item pick every stage (players behind get a stronger offer), a boss every tenth round, loss damage
+  that grows by stage, a planning timer, live scouting of any player's board, knockouts, places 1–8 and a
+  rating. Reconnects survive a phone switching apps; play again in the same room.
 - **Leaderboard and ghost battles** against other players' saved boards.
 - **Game feel**: hit-stop, camera shake, sparks, pooled damage numbers, a cinematic beat for Mega ultimates,
   "data deletion" deaths, a materialize-in at the start of every fight.
@@ -34,14 +34,18 @@ for model sources.*
 |---|---|
 | UI and state | React 19, TypeScript, zustand |
 | 3D | React Three Fiber (three.js 0.185), drei, postprocessing (HDR bloom, Neutral tone mapping) |
-| Multiplayer, leaderboard | Cloudflare Worker with Durable Objects (`MatchRoom`, `Leaderboard`) |
+| Multiplayer, leaderboard | Cloudflare Worker with Durable Objects (`Lobby`, `Leaderboard`) |
 | Hosting | Cloudflare Pages, long-lived immutable caching for hashed models and assets |
 
 Design choices worth a look:
 
 - **One deterministic simulation everywhere.** `src/game/battle.ts` steps combat at a fixed 0.05 s, with stable
   iteration order and `Math.sqrt` instead of `Math.hypot` (whose rounding differs between engines). The browser,
-  both PvP clients and the balance bots run the exact same code; PvP clients compare an end-of-fight hash.
+  every VS client and the balance bots run the exact same code.
+- **A lobby with no game server.** In VS, every client simulates *every* fight of the round from the same boards
+  and reports the outcomes; the room (`server/src/lobby.ts`) applies the first report and compares the rest.
+  Pairings, ghosts, places and rating are pure rules in `src/game/lobby.ts`, shared by the worker and the
+  clients; `npm run lobbycheck` plays thousands of random lobbies through them.
 - **Cosmetics never touch the sim.** Hit-stop, slow motion and 2× speed only change *when* fixed steps run in
   real time (`src/three/juice.ts`), so replays and PvP results stay identical.
 - **No per-tick React renders for units.** Each unit reads its fighter state in `useFrame` through a small mutable
@@ -63,6 +67,7 @@ npm run dev            # Vite dev server
 npm run build          # type-check + production build
 npm run balance        # per-form win rates, role matrix, fight lengths
 npm run runsim         # bot full-run simulator (runs=300 seed=1 variant=current)
+npm run lobbycheck     # VS lobby rules: pairings, ghosts, knockouts, places (matches=2000)
 npm run optimize-models
 npm run check-models
 ```

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { useGame } from "../game/store";
+import { useGame, pvpMe } from "../game/store";
 
 /** VS planning countdown; at zero it settles open choices and readies the board. */
 export function PlanTimer() {
-  const endsAt = useGame((s) => (s.phase === "prep" && s.pvp && !s.pvp.myReady && s.pvp.oppOnline ? s.pvp.prepEndsAt : 0));
+  const endsAt = useGame((s) =>
+    s.phase === "prep" && s.pvp?.snap.stage === "match" && !s.pvp.myReady && pvpMe(s.pvp)?.alive ? s.pvp.prepEndsAt : 0,
+  );
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {

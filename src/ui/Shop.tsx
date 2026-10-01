@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGame } from "../game/store";
+import { useGame, pvpMe } from "../game/store";
 import { FORMS, ATTR_COLOR, sellValue } from "../game/creatures";
 import { Portrait } from "./Portrait";
 import { FormTooltip } from "./FormTooltip";
@@ -16,8 +16,9 @@ export function Shop() {
   const toggleLock = useGame((s) => s.toggleShopLock);
   const dragged = useGame((s) => s.units.find((u) => u.uid === s.dragId));
   const [hover, setHover] = useState<number | null>(null);
+  const spectating = useGame((s) => s.pvp?.snap.stage === "match" && !pvpMe(s.pvp)?.alive);
 
-  if (phase !== "prep") return null;
+  if (phase !== "prep" || spectating) return null;
 
   return (
     <div className={`shop${dragged ? " sell-zone" : ""}`}>

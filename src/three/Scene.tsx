@@ -7,7 +7,8 @@ import { Board } from "./Board";
 import { Creature } from "./Creature";
 import { BattleFx } from "./BattleFx";
 import { DigitalEnvironment, HORIZON } from "./Environment";
-import { useGame } from "../game/store";
+import { useGame, type PvpBoardUnit } from "../game/store";
+import { opponentOf } from "../game/lobby";
 import { useSettings } from "../settings";
 import { newDrive, type UnitDrive } from "./unitDrive";
 import { juice, resetJuice, tickJuice } from "./juice";
@@ -135,15 +136,22 @@ function PrepUnits() {
   );
 }
 
-/** Who waits on the enemy half during planning: the opponent's live board in a VS
- *  fight round (scouting), otherwise the round's wild / boss / solo wave. */
+const NO_BOARD: PvpBoardUnit[] = [];
+
+/** Who waits on the enemy half during planning: in VS the live board of the player
+ *  being scouted, else of this round's opponent; otherwise the wild / boss / solo wave. */
 function EnemyPreview() {
   const round = useGame((s) => s.round);
-  const pvp = useGame((s) => !!s.pvp);
-  const oppBoard = useGame((s) => s.pvp?.oppBoard ?? null);
+  const vs = useGame((s) => !!s.pvp && s.pvp.snap.stage !== "lobby");
+  const scouting = useGame((s) => s.pvp?.scout != null);
+  const shown = useGame((s) => {
+    const p = s.pvp;
+    const seat = p ? (p.scout ?? opponentOf(p.snap.plan, p.seat)?.seat) : undefined;
+    return p && seat != null ? (p.boards[seat] ?? NO_BOARD) : NO_BOARD;
+  });
   const units = useMemo(() => {
-    if (pvp && vsRoundKind(round) === "pvp") {
-      return (oppBoard ?? []).map((u) => ({
+    if (vs && (scouting || vsRoundKind(round) === "pvp")) {
+      return shown.map((u) => ({
         key: `o${u.uid}`,
         formId: u.formId,
         col: COLS - 1 - u.col,
@@ -152,9 +160,9 @@ function EnemyPreview() {
         items: u.items ?? [],
       }));
     }
-    const wave = pvp ? makeVsWave(round) : makeEnemyWave(round);
+    const wave = vs ? makeVsWave(round) : makeEnemyWave(round);
     return wave.map((f) => ({ key: f.uid, formId: f.formId, col: f.col, row: f.row, boss: !!f.boss, items: [] as string[] }));
-  }, [round, pvp, oppBoard]);
+  }, [round, vs, scouting, shown]);
 
   return (
     <>

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useGame } from "../game/store";
+import { useGame, pvpMe } from "../game/store";
 
 /**
  * Keyboard shortcuts: D reroll · F buy XP · 1–5 buy · L lock shop · E sell the
@@ -13,6 +13,9 @@ export function Hotkeys() {
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
       const s = useGame.getState();
       const key = e.key.toLowerCase();
+      // in the lobby screen the solo run waits behind it untouched
+      if (s.pvp?.snap.stage === "lobby") return;
+      const playing = !s.pvp || (s.pvp.snap.stage === "match" && !!pvpMe(s.pvp)?.alive);
 
       if (s.phase === "prep" && !s.pendingEvolution) {
         if (key === "d") s.reroll();
@@ -22,14 +25,13 @@ export function Hotkeys() {
         else if (key === "e" && s.inspected) s.sellUnit(s.inspected);
         else if (key === " ") {
           e.preventDefault();
-          if (s.pvp) {
-            if (!s.pvp.myReady && s.pvp.oppOnline) s.pvpReadyUp();
-          } else s.startBattle();
+          if (s.pvp) s.pvpReadyUp();
+          else s.startBattle();
         }
       } else if (s.phase === "result" && key === " ") {
         e.preventDefault();
         if (s.ghost) s.ghostReturn();
-        else if (!s.gameOver && !s.pvp) s.toPrep();
+        else if (!s.gameOver && playing) s.toPrep();
       } else if (s.phase === "battle" && key === "s" && !s.pvp) {
         s.setSimSpeed(s.simSpeed > 1 ? 1 : 2);
       }

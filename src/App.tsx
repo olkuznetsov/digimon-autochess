@@ -13,6 +13,7 @@ import { DamageMeter } from "./ui/DamageMeter";
 import { NextWave } from "./ui/NextWave";
 import { Onboarding } from "./ui/Onboarding";
 import { ArsenalChoice } from "./ui/ArsenalChoice";
+import { Standings } from "./ui/Standings";
 
 export default function App() {
   return (
@@ -24,7 +25,11 @@ export default function App() {
       <NextWave />
       <Onboarding />
       <Shop />
-      <ItemTray />
+      {/* right rail: VS players above the item tray */}
+      <div className="right-rail">
+        <Standings />
+        <ItemTray />
+      </div>
       <UnitPanel />
       <EvoBanner />
       <EvolutionChoice />

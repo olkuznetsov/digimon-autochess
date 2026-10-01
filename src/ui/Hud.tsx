@@ -1,14 +1,18 @@
-import { useState } from "react";
-import { useGame } from "../game/store";
+import { useEffect, useState } from "react";
+import { useGame, pvpMe, pvpName } from "../game/store";
 import { isArsenalRound, isBossRound, vsRoundKind } from "../game/tuning";
+import { opponentOf, ratingDelta } from "../game/lobby";
 import { ITEMS } from "../game/items";
 import { PlanTimer } from "./PlanTimer";
 import { XP_TO_NEXT as XP_VIEW } from "../game/xpView";
 import { isMuted, setMuted, isMusicOn, setMusicOn, sfx } from "../audio/sfx";
-import { PvpModal } from "./PvpModal";
+import { LobbyModal } from "./LobbyModal";
 import { LeaderboardModal } from "./LeaderboardModal";
 import { SettingsModal } from "./SettingsModal";
-import { pvpClose } from "../net/pvp";
+import { lobbyClose, lobbyLeave } from "../net/lobby";
+
+/** VS result screens move on by themselves — the other tamers are already planning. */
+const VS_RESULT_SECONDS = 6;
 
 const VICTORY_ROUND = 15;
 
@@ -53,13 +57,33 @@ export function Hud() {
   const pvpReadyUp = useGame((s) => s.pvpReadyUp);
   const pvpQuit = useGame((s) => s.pvpQuit);
   const pvpSurrender = useGame((s) => s.pvpSurrender);
-  const pvpRequestRematch = useGame((s) => s.pvpRequestRematch);
+  const pvpStart = useGame((s) => s.pvpStart);
+  const pvpWatch = useGame((s) => s.pvpWatch);
   const [confirmFlag, setConfirmFlag] = useState(false);
 
   const xpNeed = XP_VIEW[level];
   const xpPct = xpNeed ? Math.min(1, xp / xpNeed) : 1;
   const streakLabel = streak > 0 ? `🔥 ${streak}W` : streak < 0 ? `💀 ${-streak}L` : "";
+  // VS: `pvp` is also set while waiting in the lobby (the solo run sits behind it)
+  const stage = pvp?.snap.stage;
+  const vs = !!pvp && stage !== "lobby";
+  const me = pvpMe(pvp);
+  const alive = !!me?.alive;
+  const players = pvp?.snap.seats.filter((s) => s.inMatch) ?? [];
   const beatTheRun = !pvp && !ghost && result === "win" && round === VICTORY_ROUND;
+  const roundKind = vsRoundKind(round);
+  const nextOpp = pvp && phase === "prep" ? opponentOf(pvp.snap.plan, pvp.seat) : null;
+  const waitingOn = pvp ? pvp.snap.seats.filter((s) => s.alive && s.inMatch && s.online && !s.ready && s.seat !== pvp.seat).length : 0;
+
+  // VS result screens move on by themselves
+  const autoContinue = vs && phase === "result" && alive && stage === "match";
+  useEffect(() => {
+    if (!autoContinue) return;
+    const id = setTimeout(() => {
+      if (useGame.getState().phase === "result") useGame.getState().toPrep();
+    }, VS_RESULT_SECONDS * 1000);
+    return () => clearTimeout(id);
+  }, [autoContinue, round]);
 
   return (
     <>
@@ -99,7 +123,7 @@ export function Hud() {
             ❓
           </button>
           {!pvp && (
-            <button className="icon-btn vs" title="Play vs a friend" onClick={() => setShowPvp(true)}>
+            <button className="icon-btn vs" title="VS lobby — 2 to 8 tamers" onClick={() => setShowPvp(true)}>
               ⚔ VS
             </button>
           )}
@@ -110,25 +134,18 @@ export function Hud() {
           )}
         </div>
         <div className="stats">
-          <div className={`stat round${!pvp && isBossRound(round) ? " boss" : ""}`}>
+          <div className={`stat round${!vs && isBossRound(round) ? " boss" : ""}`}>
             Round {round}
-            {!pvp && isBossRound(round) && <span className="boss-chip">☠ BOSS</span>}
-            {pvp && (
-              <span className={`round-kind ${vsRoundKind(round)}`}>
-                {vsRoundKind(round) === "pvp" ? "⚔ PvP" : vsRoundKind(round) === "boss" ? "☠ Boss" : "🐾 Wild"}
+            {!vs && isBossRound(round) && <span className="boss-chip">☠ BOSS</span>}
+            {vs && (
+              <span className={`round-kind ${roundKind}`}>
+                {roundKind === "pvp" ? "⚔ PvP" : roundKind === "boss" ? "☠ Boss" : "🐾 Wild"}
                 {isArsenalRound(round) && " · 🎁"}
               </span>
             )}
           </div>
           <div className="stat health">♥ {health}</div>
-          {pvp && (
-            <div className={`stat opp${pvp.oppDisconnected ? " away" : ""}`}>
-              🗡 {pvp.oppName ?? pvp.code} ♥ {pvp.oppHealth}
-              {pvp.oppDisconnected && <span className="opp-away">reconnecting…</span>}
-              {!pvp.oppDisconnected && pvp.oppReady && phase === "prep" && <span className="opp-ready">✓</span>}
-            </div>
-          )}
-          {pvp && !pvp.matchOver && (
+          {vs && stage === "match" && alive && (
             <button
               className={`icon-btn flag${confirmFlag ? " confirm" : ""}`}
               title="Surrender the match"
@@ -157,40 +174,39 @@ export function Hud() {
       </div>
 
       <div className="actionbar">
-        {phase === "prep" && !pvp && (
+        {phase === "prep" && !vs && (
           <button className="action" disabled={boardUnits === 0} onClick={startBattle}>
             ⚔ Start Battle
           </button>
         )}
-        {phase === "prep" && pvp && !pvp.matchOver && (
+        {phase === "prep" && vs && stage === "match" && alive && pvp && (
           <div className="battle-bar">
-            <button
-              className="action"
-              disabled={boardUnits === 0 || pvp.myReady || !pvp.oppOnline || !!arsenal}
-              onClick={() => pvpReadyUp()}
-            >
-              {pvp.oppDisconnected
-                ? `${pvp.oppName ?? "Opponent"} is reconnecting…`
-                : !pvp.oppOnline
-                  ? `Waiting for a friend… (${pvp.code})`
-                  : pvp.myReady
-                    ? `Waiting for ${pvp.oppName ?? "opponent"}…`
-                    : arsenal
-                      ? "Pick an Arsenal item"
-                      : vsRoundKind(round) === "pvp"
-                        ? "⚔ Ready"
-                        : vsRoundKind(round) === "boss"
-                          ? "☠ Ready for the boss"
-                          : "🐾 Ready"}
+            <button className="action" disabled={boardUnits === 0 || pvp.myReady || !!arsenal} onClick={() => pvpReadyUp()}>
+              {pvp.myReady
+                ? waitingOn > 0
+                  ? `Waiting for ${waitingOn} tamer${waitingOn > 1 ? "s" : ""}…`
+                  : "Starting…"
+                : arsenal
+                  ? "Pick an Arsenal item"
+                  : roundKind === "boss"
+                    ? "☠ Ready for the boss"
+                    : roundKind === "pve"
+                      ? "🐾 Ready"
+                      : nextOpp?.ghost
+                        ? `👻 Ready · ${pvpName(pvp, nextOpp.seat)}'s ghost`
+                        : `⚔ Ready · vs ${pvpName(pvp, nextOpp?.seat)}`}
             </button>
             <PlanTimer />
           </div>
+        )}
+        {phase === "prep" && vs && stage === "match" && !alive && me?.inMatch && (
+          <div className="phase-tag battling">💀 Out in #{me.placement} — watching the others</div>
         )}
         {phase === "battle" && battleTime === 0 && <div className="fight-banner">FIGHT!</div>}
         {phase === "battle" && battleTime > 0 && (
           <div className="battle-bar">
             <div className="phase-tag battling">Battle in progress…</div>
-            {!pvp && (
+            {!vs && (
               <button
                 className={`icon-btn speed${simSpeed > 1 ? " on" : ""}`}
                 title="Battle speed (S)"
@@ -215,15 +231,23 @@ export function Hud() {
         {phase === "result" && !ghost && !gameOver && !beatTheRun && (
           <div className={`result ${result}`}>
             <span className="result-text">{result === "win" ? "VICTORY" : "DEFEAT"}</span>
-            {pvp && vsRoundKind(round) !== "pvp" && (
-              <span className="runwon-sub">{vsRoundKind(round) === "boss" ? "vs the stage boss" : "vs wild Digimon"}</span>
+            {vs && pvp && (
+              <span className="runwon-sub">
+                {roundKind === "boss"
+                  ? "vs the stage boss"
+                  : roundKind === "pve"
+                    ? "vs wild Digimon"
+                    : pvp.fight?.ghost
+                      ? `vs ${pvpName(pvp, pvp.fight.opp)}'s ghost`
+                      : `vs ${pvpName(pvp, pvp.fight?.opp)}`}
+              </span>
             )}
             {loot && (loot.gold > 0 || loot.items.length > 0) && (
               <span className="loot">
                 +{loot.gold}⛂ {loot.items.map((id) => ITEMS[id]?.emoji ?? "").join(" ")}
               </span>
             )}
-            {result === "win" && !pvp && isBossRound(round) && <span className="boss-reward">👑 Boss bonus: +item +3⛂</span>}
+            {result === "win" && !vs && isBossRound(round) && <span className="boss-reward">👑 Boss bonus: +item +3⛂</span>}
             {result === "lose" && lastDamage > 0 && <span className="dmg">-{lastDamage} ♥</span>}
             <button className="action" onClick={toPrep}>
               Continue ▸
@@ -244,18 +268,16 @@ export function Hud() {
         )}
       </div>
 
-      {pvp?.selfOffline && !pvp.matchOver && (
-        <div className="net-banner">📡 Connection dropped — reconnecting…</div>
-      )}
+      {pvp?.selfOffline && !pvp.connLost && <div className="net-banner">📡 Connection dropped — reconnecting…</div>}
 
-      {pvp?.connLost && !pvp.matchOver && (
+      {pvp?.connLost && (
         <div className="gameover">
           <div className="go-title draw">📡 CONNECTION LOST</div>
           <div className="go-sub">Couldn't get back into room {pvp.code}</div>
           <button
             className="action"
             onClick={() => {
-              pvpClose();
+              lobbyClose();
               pvpQuit();
             }}
           >
@@ -264,36 +286,55 @@ export function Hud() {
         </div>
       )}
 
-      {pvp?.matchOver && (
+      {vs && pvp && me && stage === "match" && !me.alive && !pvp.watching && phase !== "battle" && !pvp.connLost && (
         <div className="gameover">
-          <div className={`go-title ${pvp.matchOver}`}>
-            {pvp.matchOver === "win" ? "🏆 MATCH WON" : pvp.matchOver === "lose" ? "💀 MATCH LOST" : "🤝 DRAW"}
-          </div>
+          <div className="go-title long lose">💀 KNOCKED OUT</div>
           <div className="go-sub">
-            {pvp.oppLeft
-              ? `${pvp.oppName ?? "Opponent"} fled the Digital World`
-              : pvp.matchOver === "win"
-                ? `You defeated ${pvp.oppName ?? "your opponent"}!`
-                : pvp.matchOver === "lose"
-                  ? `${pvp.oppName ?? "Opponent"} takes the crown`
-                  : "Both tamers fall together"}
+            You finish <b>#{me.placement}</b> of {players.length}
           </div>
-          {!pvp.oppLeft && pvp.oppOnline && (
-            <button className="action" disabled={pvp.rematchMe} onClick={pvpRequestRematch}>
-              {pvp.rematchMe
-                ? `Waiting for ${pvp.oppName ?? "opponent"}…`
-                : pvp.rematchOpp
-                  ? `⚔ ${pvp.oppName ?? "Opponent"} wants a rematch!`
-                  : "⚔ Rematch"}
-            </button>
+          <button className="action" onClick={pvpWatch}>
+            👁 Watch the rest
+          </button>
+          <button className="action ghost" onClick={lobbyLeave}>
+            ↻ Back to Solo
+          </button>
+        </div>
+      )}
+
+      {vs && pvp && stage === "over" && phase !== "battle" && !pvp.connLost && (
+        <div className="gameover">
+          <div className={`go-title long ${me?.placement === 1 ? "win" : "lose"}`}>
+            {me?.placement === 1 ? "🏆 LAST TAMER STANDING" : me?.inMatch ? `#${me.placement} of ${players.length}` : "MATCH OVER"}
+          </div>
+          <div className="final-ranks">
+            {[...players]
+              .sort((a, b) => (a.placement ?? 9) - (b.placement ?? 9))
+              .map((s) => (
+                <div key={s.seat} className={`final-rank${s.seat === pvp.seat ? " me" : ""}`}>
+                  <span className="fr-place">#{s.placement}</span>
+                  <span className="fr-name">{s.name}</span>
+                  {s.placement === 1 && <span>🏆</span>}
+                </div>
+              ))}
+          </div>
+          {me?.inMatch && me.placement !== null && (
+            <div className="go-sub">
+              Rating {ratingDelta(pvp.snap.players, me.placement) >= 0 ? "+" : ""}
+              {ratingDelta(pvp.snap.players, me.placement)}
+            </div>
           )}
-          <button
-            className="action ghost"
-            onClick={() => {
-              pvpClose();
-              pvpQuit();
-            }}
-          >
+          {pvp.snap.host === pvp.seat ? (
+            <button
+              className="action"
+              disabled={pvp.snap.seats.filter((s) => s.online).length < 2}
+              onClick={pvpStart}
+            >
+              ⚔ Play again
+            </button>
+          ) : (
+            <div className="pvp-waiting">{pvpName(pvp, pvp.snap.host)} can start another match…</div>
+          )}
+          <button className="action ghost" onClick={lobbyLeave}>
             ↻ Back to Solo
           </button>
         </div>
@@ -312,7 +353,7 @@ export function Hud() {
         </div>
       )}
 
-      {showPvp && <PvpModal onClose={() => setShowPvp(false)} />}
+      {(showPvp || stage === "lobby") && <LobbyModal onClose={() => setShowPvp(false)} />}
       {showLb && <LeaderboardModal onClose={() => setShowLb(false)} />}
 
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
@@ -332,7 +373,7 @@ export function Hud() {
               <li>🔒 <b>Lock the shop</b> to keep it for next round; ⏩ speeds battles up 2×.</li>
               <li>⌨ <b>Keys</b>: D reroll · F buy XP · 1–5 buy · L lock · E sell selected · Space start / continue · S speed.</li>
               <li>☠ Every <b>5th round is a BOSS</b> — beat it for a guaranteed item + bonus gold.</li>
-              <li>⚔ <b>VS mode</b>: create a room, send the 4-letter code to a friend — your boards fight each round. First to 0 ♥ loses. 🏳️ to surrender.</li>
+              <li>⚔ <b>VS</b>: create a lobby and send the 4-letter code — 2 to 8 tamers. Each round your board fights another player's (odd one out fights a ghost copy), wild Digimon on rounds 1–2 and every 5th, a boss every 10th, an item pick every stage. Last tamer standing wins; your place moves your rating. 🏳️ to surrender.</li>
               <li>🏆 <b>Leaderboard</b>: finish a run to post your best round — and <b>fight other players' saved boards</b> as risk-free ghost battles.</li>
               <li>🏆 Survive <b>round {VICTORY_ROUND}</b> to complete the run. Losing costs ♥ — at 0 it's game over.</li>
             </ul>

@@ -180,6 +180,11 @@ export class MatchRoom extends DurableObject<Env> {
   }
 
   async webSocketClose(ws: WebSocket) {
+    try {
+      ws.close(1000, "closed"); // complete the closing handshake for the client
+    } catch {
+      /* already closed */
+    }
     const a = ws.deserializeAttachment() as Attach | null;
     if (a) {
       await this.ctx.storage.delete(`ready:${a.side}`);

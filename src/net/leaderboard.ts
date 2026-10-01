@@ -9,6 +9,8 @@ export interface LbEntry {
   name: string;
   best: number;
   wins: number;
+  /** VS lobby rating (moves with every final place) */
+  rating: number;
   hasBoard: number;
 }
 
@@ -49,8 +51,8 @@ export function submitScore(data: { best?: number; winsDelta?: 1; board?: PvpBoa
   }
 }
 
-export async function fetchTop(): Promise<LbEntry[]> {
-  const r = await fetch(`${BASE}/lb/top`);
+export async function fetchTop(by: "best" | "rating" = "best"): Promise<LbEntry[]> {
+  const r = await fetch(`${BASE}/lb/top${by === "rating" ? "?by=rating" : ""}`);
   if (!r.ok) throw new Error("leaderboard unavailable");
   return r.json();
 }
