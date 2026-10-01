@@ -27,7 +27,14 @@ interface CreatureProps {
   evolveKey?: number;
   /** equipped item emojis shown next to the name */
   itemEmojis?: string[];
+  /** battle: max HP, for the segment ticks on the HP bar */
+  maxHp?: number;
   onPointerDown?: (e: ThreeEvent<PointerEvent>) => void;
+}
+
+/** HP per segment tick: fine for regular units, coarser for big bosses. */
+function hpTick(maxHp: number): number {
+  return maxHp <= 1000 ? 100 : maxHp <= 2500 ? 250 : 500;
 }
 
 let shadowTex: THREE.Texture | null = null;
@@ -70,6 +77,7 @@ export function Creature({
   spawn = false,
   evolveKey,
   itemEmojis,
+  maxHp,
   onPointerDown,
 }: CreatureProps) {
   // visible digivolution growth: Rookie 0.75 -> Champion 1.02 -> Mega 1.29
@@ -219,8 +227,10 @@ export function Creature({
       ))}
 
       <Html center position={[0, 1.55, 0]} distanceFactor={9} zIndexRange={[10, 0]}>
-        <div ref={label} className={`unit-label ${team}`}>
+        {/* battle shows bars only (names are prep information) — bosses keep their title */}
+        <div ref={label} className={`unit-label ${team}${showHealth ? " battle" : ""}${boss ? " boss" : ""}`}>
           <span className="unit-name">
+            <span className="attr-gem" style={{ background: color, color }} />
             {boss ? "👑 " : ""}
             {name}
             {itemEmojis && itemEmojis.length > 0 && <span className="unit-items"> {itemEmojis.join("")}</span>}
@@ -229,6 +239,7 @@ export function Creature({
             <span className="hp-track">
               <span ref={hpFill} className="hp-fill" style={{ width: "100%" }} />
               <span ref={shieldFill} className="shield-fill" style={{ width: "0%" }} />
+              {maxHp ? <span className="hp-ticks" style={{ backgroundSize: `${(hpTick(maxHp) / maxHp) * 100}% 100%` }} /> : null}
             </span>
           )}
           {showHealth && (

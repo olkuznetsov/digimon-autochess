@@ -208,6 +208,7 @@ function BattleUnit({ uid }: { uid: string }) {
       boss={f0.boss}
       spawn
       itemEmojis={(f0.items ?? []).map((id) => ITEMS[id]?.emoji ?? "")}
+      maxHp={f0.maxHp}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
         useGame.getState().setInspected(uid);

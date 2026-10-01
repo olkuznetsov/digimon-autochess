@@ -334,25 +334,52 @@ body,
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  font-family: "Segoe UI", system-ui, sans-serif;
   white-space: nowrap;
 }
 .unit-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
   font-weight: 700;
   color: #eaf2ff;
   text-shadow: 0 1px 3px #000, 0 0 6px #000;
 }
+.attr-gem {
+  width: 7px;
+  height: 7px;
+  transform: rotate(45deg);
+  border-radius: 1px;
+  box-shadow: 0 0 6px currentColor, 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+.unit-label.battle:not(.boss) .unit-name {
+  display: none;
+}
 .unit-label.enemy .unit-name {
   color: #ffd0d8;
 }
 .hp-track {
-  width: 46px;
-  height: 5px;
-  background: rgba(0, 0, 0, 0.6);
+  width: 54px;
+  height: 7px;
+  background: rgba(0, 0, 0, 0.65);
   border-radius: 3px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.unit-label.boss .hp-track {
+  width: 84px;
+  height: 9px;
+}
+.unit-label.boss .mana-track {
+  width: 84px;
+}
+/* one dark notch per HP segment, drawn over the fill */
+.hp-ticks {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(90deg, transparent calc(100% - 1px), rgba(0, 0, 0, 0.6) calc(100% - 1px));
+  background-repeat: repeat-x;
 }
 .hp-fill {
   display: block;
@@ -908,7 +935,7 @@ body,
 
 /* ---------- mana bar + item pips on units ---------- */
 .mana-track {
-  width: 46px;
+  width: 54px;
   height: 4px;
   background: rgba(0, 0, 0, 0.6);
   border-radius: 3px;
