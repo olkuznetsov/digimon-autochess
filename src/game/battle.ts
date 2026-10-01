@@ -52,6 +52,9 @@ export interface CombatEvent {
   heavy?: boolean;
   /** hit only: dealt by an ultimate */
   ability?: boolean;
+  /** hit only: attacker and target uids (damage meter) */
+  src?: string;
+  tgt?: string;
 }
 
 /** Build a combat-ready Fighter from a form. Used by the store and the balance sim. */
@@ -125,6 +128,8 @@ function dealDamage(src: Fighter, tgt: Fighter, amount: number, events?: CombatE
     ranged: src.range > 1.5,
     heavy: amount >= tgt.maxHp * 0.14,
     ability,
+    src: src.uid,
+    tgt: tgt.uid,
   });
   // only on the killing blow: later hits in the same step land on a corpse
   if (wasAlive && tgt.hp <= 0) events?.push({ kind: "death", col: tgt.col, row: tgt.row, attr: tgt.attribute });

@@ -179,6 +179,8 @@ interface GameState {
   corpses: Fighter[];
   /** bumped whenever a fight starts, so every battle mounts fresh units and effects */
   battleSeq: number;
+  /** damage dealt / taken per fighter uid this battle */
+  meter: Record<string, { dealt: number; taken: number }>;
   fx: Fx[];
   battleTime: number;
   tick: number;
@@ -269,6 +271,7 @@ function initialState() {
     fighters: [] as Fighter[],
     corpses: [] as Fighter[],
     battleSeq: 0,
+    meter: {} as Record<string, { dealt: number; taken: number }>,
     fx: [] as Fx[],
     battleTime: 0,
     tick: 0,
@@ -488,6 +491,7 @@ export const useGame = create<GameState>((set, get) => ({
     set({
       phase: "battle",
       battleSeq: get().battleSeq + 1,
+      meter: {},
       result: null,
       viewFlip: false,
       boardSnapshot: units,
@@ -507,6 +511,15 @@ export const useGame = create<GameState>((set, get) => ({
     const events: CombatEvent[] = [];
     stepCombat(fighters, dt, events);
     for (const e of events) battleSfx(e);
+    let meter = state.meter;
+    for (const e of events) {
+      if (e.kind !== "hit" || !e.src || !e.tgt || !e.amount) continue;
+      if (meter === state.meter) meter = { ...meter };
+      const a = (meter[e.src] = { ...(meter[e.src] ?? { dealt: 0, taken: 0 }) });
+      a.dealt += e.amount;
+      const b = (meter[e.tgt] = { ...(meter[e.tgt] ?? { dealt: 0, taken: 0 }) });
+      b.taken += e.amount;
+    }
     const bt = state.battleTime + dt;
 
     // effects list: prune old, append this step's events (incl. the final blow —
@@ -555,6 +568,7 @@ export const useGame = create<GameState>((set, get) => ({
           fighters: alive,
           corpses,
           fx,
+          meter,
           battleTime: bt,
           tick: state.tick + 1,
         });
@@ -586,6 +600,7 @@ export const useGame = create<GameState>((set, get) => ({
           fighters: alive,
           corpses,
           fx,
+          meter,
           battleTime: bt,
           tick: state.tick + 1,
           pvp,
@@ -627,6 +642,7 @@ export const useGame = create<GameState>((set, get) => ({
         fighters: alive,
         corpses,
         fx,
+        meter,
         battleTime: bt,
         streak,
         inventory,
@@ -637,7 +653,7 @@ export const useGame = create<GameState>((set, get) => ({
         tick: state.tick + 1,
       });
     } else {
-      set({ fighters: alive, corpses, fx, battleTime: bt, tick: state.tick + 1 });
+      set({ fighters: alive, corpses, fx, meter, battleTime: bt, tick: state.tick + 1 });
     }
   },
 
@@ -794,6 +810,7 @@ export const useGame = create<GameState>((set, get) => ({
     set({
       phase: "battle",
       battleSeq: get().battleSeq + 1,
+      meter: {},
       result: null,
       boardSnapshot: state.units,
       // alternate who acts first each round so perfect mirror fights don't
@@ -909,6 +926,7 @@ export const useGame = create<GameState>((set, get) => ({
     set({
       phase: "battle",
       battleSeq: get().battleSeq + 1,
+      meter: {},
       ghost: { name },
       viewFlip: false,
       result: null,

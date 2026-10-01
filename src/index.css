@@ -863,6 +863,117 @@ body,
   pointer-events: none;
 }
 
+/* ---------- damage meter (battle/result) ---------- */
+.dmg-meter {
+  position: absolute;
+  top: 120px;
+  left: 18px;
+  width: 196px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 5;
+}
+.meter-title {
+  align-self: flex-start;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #7e8bb0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.meter-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 8px 3px 3px;
+  border-radius: 9px;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+}
+.meter-row.dead {
+  opacity: 0.5;
+}
+.meter-portrait {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+.meter-bars {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.meter-dealt,
+.meter-taken {
+  display: block;
+  border-radius: 2px;
+  transition: width 0.2s linear;
+}
+.meter-dealt {
+  height: 6px;
+  background: linear-gradient(90deg, #ffb02e, #ffe27a);
+}
+.meter-taken {
+  height: 3px;
+  background: rgba(255, 110, 140, 0.75);
+}
+.meter-num {
+  min-width: 30px;
+  text-align: right;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  color: #ffe9a8;
+}
+
+/* ---------- next wave preview (prep, solo) ---------- */
+.next-wave {
+  position: absolute;
+  top: 118px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 12px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  z-index: 5;
+  pointer-events: none;
+}
+.next-wave.boss {
+  border-color: rgba(255, 51, 85, 0.6);
+  box-shadow: 0 0 18px rgba(255, 51, 85, 0.25);
+}
+.next-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #ff8aa0;
+  margin-right: 3px;
+}
+.next-portrait {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+.next-portrait.boss {
+  width: 40px;
+  height: 40px;
+  box-shadow: 0 0 0 1.5px #ff3355, 0 0 14px rgba(255, 51, 85, 0.5);
+}
+
 /* ---------- portraits (rendered by the dev studio, see src/ui/Portrait.tsx) ---------- */
 .portrait {
   position: relative;
@@ -1307,6 +1418,13 @@ html, body {
   .syn-pip { width: 8px; height: 8px; }
 
   .item-tray { top: 128px; right: 6px; width: 116px; }
+  .dmg-meter { top: 128px; left: 6px; width: 130px; }
+  .meter-row { gap: 5px; padding: 2px 6px 2px 2px; }
+  .meter-portrait { width: 22px; height: 22px; }
+  .meter-num { font-size: 10px; min-width: 24px; }
+  .next-wave { top: 136px; padding: 3px 8px; gap: 3px; }
+  .next-portrait { width: 24px; height: 24px; }
+  .next-portrait.boss { width: 30px; height: 30px; }
   .tray-title { font-size: 10px; }
   .item-chip { padding: 4px 7px; column-gap: 5px; border-radius: 8px; }
   .item-emoji { font-size: 13px; }

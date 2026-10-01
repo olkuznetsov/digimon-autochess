@@ -9,6 +9,8 @@ import { EvoBanner } from "./ui/EvoBanner";
 import { LoadingScreen } from "./ui/LoadingScreen";
 import { AudioDirector } from "./audio/AudioDirector";
 import { Hotkeys } from "./ui/Hotkeys";
+import { DamageMeter } from "./ui/DamageMeter";
+import { NextWave } from "./ui/NextWave";
 
 export default function App() {
   return (
@@ -16,6 +18,8 @@ export default function App() {
       <Scene />
       <Hud />
       <SynergyPanel />
+      <DamageMeter />
+      <NextWave />
       <Shop />
       <ItemTray />
       <UnitPanel />
