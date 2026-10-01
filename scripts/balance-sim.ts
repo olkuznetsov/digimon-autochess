@@ -12,7 +12,7 @@
 import type { Attribute, Fighter, Form, Role, Unit } from "../src/game/types";
 import { FORMS, ALL_FORM_IDS, statsFor } from "../src/game/creatures";
 import { applySynergies } from "../src/game/synergies";
-import { makeFighter, stepCombat, SIM_DT } from "../src/game/battle";
+import { makeFighter, stepCombat, SIM_DT, HP_SCALE } from "../src/game/battle";
 
 const DT = SIM_DT;
 const MAX_TICKS = Math.round(120 / DT); // 120s cap → draw
@@ -80,8 +80,8 @@ function syntheticTeam(role: Role, stage: 1 | 2 | 3, attribute: Attribute, team:
     team,
     attribute,
     role,
-    hp: s.hp,
-    maxHp: s.hp,
+    hp: s.hp * HP_SCALE,
+    maxHp: s.hp * HP_SCALE,
     attack: s.attack,
     attackSpeed: s.attackSpeed,
     range: s.range,
@@ -95,6 +95,9 @@ function syntheticTeam(role: Role, stage: 1 | 2 | 3, attribute: Attribute, team:
     shield: 0,
     lifesteal: 0,
     manaMult: 1,
+    dmgReduction: 0,
+    castShield: 0,
+    regen: 0,
     stunned: 0,
     castKey: 0,
     items: [],

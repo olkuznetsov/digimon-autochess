@@ -286,6 +286,7 @@ export function Hud() {
               <li>🧩 <b>Synergies</b> (left panel): matching Attributes &amp; Families buff your team.</li>
               <li>⚔ Battles run themselves. Units gain <b>mana</b> and cast role abilities when full.</li>
               <li>🎒 Win rounds to earn <b>items</b> — click an item, then a Digimon to equip it.</li>
+              <li>⚗ <b>Fuse two items</b> into a stronger one: select an item, then click a glowing partner (12 recipes).</li>
               <li>🔍 <b>Click any Digimon</b> to see its stats, ability and items — or drag it onto the shop to sell it.</li>
               <li>🔒 <b>Lock the shop</b> to keep it for next round; ⏩ speeds battles up 2×.</li>
               <li>⌨ <b>Keys</b>: D reroll · F buy XP · 1–5 buy · L lock · E sell selected · Space start / continue · S speed.</li>

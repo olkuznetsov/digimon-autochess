@@ -90,6 +90,9 @@ export function makeFighter(
     shield: 0,
     lifesteal: 0,
     manaMult: 1,
+    dmgReduction: 0,
+    castShield: 0,
+    regen: 0,
     stunned: 0,
     castKey: 0,
     items,
@@ -105,7 +108,8 @@ const dist = (a: Fighter, b: Fighter) => {
 };
 
 /** Apply damage through shields, feed lifesteal + on-hit mana, emit FX events. */
-function dealDamage(src: Fighter, tgt: Fighter, amount: number, events?: CombatEvent[], mult = 1, ability = false) {
+function dealDamage(src: Fighter, tgt: Fighter, raw: number, events?: CombatEvent[], mult = 1, ability = false) {
+  const amount = raw * (1 - tgt.dmgReduction);
   let dmg = amount;
   if (tgt.shield > 0) {
     const absorbed = Math.min(tgt.shield, dmg);
@@ -153,6 +157,7 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], events?:
     toRow: target.row,
   });
   fr.castKey++;
+  if (fr.castShield > 0) fr.shield += fr.maxHp * fr.castShield;
   const ctx: UltCtx = {
     caster: fr,
     target,
@@ -178,6 +183,7 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], events?:
 export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent[]): void {
   for (const fr of fighters) {
     if (fr.hp <= 0) continue;
+    if (fr.regen > 0) fr.hp = Math.min(fr.maxHp, fr.hp + fr.maxHp * fr.regen * dt);
     fr.cooldown = Math.max(0, fr.cooldown - dt);
     // frozen units can't move, attack, or cast until the stun wears off
     if (fr.stunned > 0) {

@@ -3,7 +3,7 @@ import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types"
 import { FORMS, ROOKIE_IDS, sellValue } from "./creatures";
 import { makeFighter, stepCombat, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
-import { ITEM_IDS } from "./items";
+import { BASE_ITEM_IDS, fuseResult } from "./items";
 import { ECONOMY, isBossRound, makeEnemyWave } from "./tuning";
 import { XP_TO_NEXT, MAX_LEVEL } from "./xpView";
 import { sfx, battleSfx } from "../audio/sfx";
@@ -204,6 +204,8 @@ interface GameState {
   buyXp: () => void;
   chooseEvolution: (formId: string) => void;
   selectItem: (id: string | null) => void;
+  /** fuse inventory items at indices a and b (a recipe must exist) */
+  fuseItems: (a: number, b: number) => void;
   equipItem: (uid: string) => void;
   setInspected: (uid: string | null) => void;
   clearEvoFlash: () => void;
@@ -406,6 +408,18 @@ export const useGame = create<GameState>((set, get) => ({
   },
 
   selectItem: (id) => set({ selectedItem: id }),
+
+  fuseItems: (a, b) => {
+    const { inventory } = get();
+    if (a === b || !inventory[a] || !inventory[b]) return;
+    const result = fuseResult(inventory[a], inventory[b]);
+    if (!result) return;
+    sfx.evolve();
+    set({
+      inventory: [...inventory.filter((_, i) => i !== a && i !== b), result],
+      selectedItem: null,
+    });
+  },
 
   setInspected: (uid) => set({ inspected: uid }),
 
@@ -620,7 +634,7 @@ export const useGame = create<GameState>((set, get) => ({
       const bossBonus = win && isBossRound(state.round);
       const inventory =
         win && state.inventory.length < 8 && (bossBonus || Math.random() < 0.55)
-          ? [...state.inventory, ITEM_IDS[Math.floor(Math.random() * ITEM_IDS.length)]]
+          ? [...state.inventory, BASE_ITEM_IDS[Math.floor(Math.random() * BASE_ITEM_IDS.length)]]
           : state.inventory;
       if (win) sfx.win();
       else sfx.lose();
@@ -839,7 +853,7 @@ export const useGame = create<GameState>((set, get) => ({
     const streak = draw ? 0 : iWon ? Math.max(1, state.streak + 1) : Math.min(-1, state.streak - 1);
     const inventory =
       iWon && state.inventory.length < 8 && Math.random() < 0.55
-        ? [...state.inventory, ITEM_IDS[Math.floor(Math.random() * ITEM_IDS.length)]]
+        ? [...state.inventory, BASE_ITEM_IDS[Math.floor(Math.random() * BASE_ITEM_IDS.length)]]
         : state.inventory;
     const matchOver: PvpState["matchOver"] =
       health <= 0 && oppHealth <= 0 ? "draw" : health <= 0 ? "lose" : oppHealth <= 0 ? "win" : null;
