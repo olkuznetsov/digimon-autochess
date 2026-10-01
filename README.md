@@ -15,12 +15,13 @@ for model sources.*
   32 named signature ultimates (Terra Force, Cocytus Breath, Positron Laser…).
 - **Synergies** (three attributes in a counter triangle, five families), **items** that fuse in pairs into
   12 stronger ones, boss rounds, a 15-round run plus endless mode.
-- **VS lobbies for 2–8 players** over a 4-letter room code, in Teamfight Tactics' round rhythm: a round-robin
-  of opponents (a ghost copy of someone's board for the odd one out), stages of five rounds with wild-Digimon
-  rounds, a carousel item draft every stage (lowest HP picks first), a shared unit pool (what one player collects
-  the others can't), a boss every tenth round, loss damage that grows by stage, a planning timer, live scouting
-  of any player's board, knockouts, places 1–8 and a rating. Reconnects survive a phone switching apps; play
-  again in the same room.
+- **VS for 2–8 players** — with friends over a 4-letter room code, or with strangers through a public
+  matchmaking queue — in Teamfight Tactics' round rhythm: a round-robin of opponents (a ghost copy of someone's
+  board for the odd one out), stages of five rounds with wild-Digimon rounds, a carousel item draft every stage
+  (lowest HP picks first), three augment picks per match, a shared unit pool (what one player collects the
+  others can't), a boss every tenth round, loss damage that grows by stage, a planning timer, live scouting of
+  any player's board, knockouts, places 1–8 and a rating. Reconnects survive a phone switching apps; play again
+  in the same room.
 - **Leaderboard and ghost battles** against other players' saved boards.
 - **Game feel**: hit-stop, camera shake, sparks, pooled damage numbers, a cinematic beat for Mega ultimates,
   "data deletion" deaths, a materialize-in at the start of every fight.
@@ -35,7 +36,7 @@ for model sources.*
 |---|---|
 | UI and state | React 19, TypeScript, zustand |
 | 3D | React Three Fiber (three.js 0.185), drei, postprocessing (HDR bloom, Neutral tone mapping) |
-| Multiplayer, leaderboard | Cloudflare Worker with Durable Objects (`Lobby`, `Leaderboard`) |
+| Multiplayer, leaderboard | Cloudflare Worker with Durable Objects (`Lobby`, `Matchmaker`, `Leaderboard`) |
 | Hosting | Cloudflare Pages, long-lived immutable caching for hashed models and assets |
 
 Design choices worth a look:

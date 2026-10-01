@@ -386,7 +386,7 @@ export function Hud() {
               <li>🔒 <b>Lock the shop</b> to keep it for next round; ⏩ speeds battles up 2×.</li>
               <li>⌨ <b>Keys</b>: D reroll · F buy XP · 1–5 buy · L lock · E sell selected · Space start / continue · S speed.</li>
               <li>☠ Every <b>5th round is a BOSS</b> — beat it for a guaranteed item + bonus gold.</li>
-              <li>⚔ <b>VS</b>: create a lobby and send the 4-letter code — 2 to 8 tamers. Each round your board fights another player's (odd one out fights a ghost copy), wild Digimon on rounds 1–2 and every 5th, a boss every 10th. Every stage opens with a 🎠 <b>carousel</b>: one shared set of items, lowest HP picks first. Rookies come from a <b>shared pool</b> — what others collect, you can't. Last tamer standing wins; your place moves your rating. 🏳️ to surrender.</li>
+              <li>⚔ <b>VS</b>: create a lobby and send the 4-letter code — 2 to 8 tamers. Each round your board fights another player's (odd one out fights a ghost copy), wild Digimon on rounds 1–2 and every 5th, a boss every 10th. Every stage opens with a 🎠 <b>carousel</b>: one shared set of items, lowest HP picks first; rounds 4, 9 and 14 offer ✨ <b>augments</b> (pick 1 of 3). Rookies come from a <b>shared pool</b> — what others collect, you can't. Last tamer standing wins; your place moves your rating. 🌐 <b>Find a match</b> plays strangers. 🏳️ to surrender.</li>
               <li>🏆 <b>Leaderboard</b>: finish a run to post your best round — and <b>fight other players' saved boards</b> as risk-free ghost battles.</li>
               <li>🏆 Survive <b>round {VICTORY_ROUND}</b> to complete the run. Losing costs ♥ — at 0 it's game over.</li>
             </ul>
