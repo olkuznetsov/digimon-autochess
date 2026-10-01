@@ -1,6 +1,7 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
-import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
+import { EffectComposer, Bloom, ToneMapping, Vignette } from "@react-three/postprocessing";
+import { Environment, Lightformer } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Board } from "./Board";
 import { Creature } from "./Creature";
@@ -258,6 +259,10 @@ function BattleRunner() {
   return null;
 }
 
+// postprocessing's ToneMappingMode.NEUTRAL (the enum lives in a nested dependency
+// that can't be imported directly): keeps the neon hues, only rolls off highlights
+const TONE_MAPPING = 8;
+
 function SceneContents() {
   const phase = useGame((s) => s.phase);
   const dragId = useGame((s) => s.dragId);
@@ -308,8 +313,15 @@ function SceneContents() {
       <DigitalEnvironment />
 
       <CameraRig />
-      <ambientLight intensity={0.5} />
-      <hemisphereLight args={["#6fa8ff", "#1a1030", 0.6]} />
+      {/* image-based light: soft key + synthwave rims, baked once into a cube map */}
+      <Environment resolution={128} frames={1} environmentIntensity={0.55}>
+        <Lightformer form="rect" intensity={2.2} color="#ffffff" position={[0, 6, -6]} scale={[10, 4, 1]} />
+        <Lightformer form="rect" intensity={3} color="#39d8ff" position={[-8, 2, 4]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} />
+        <Lightformer form="rect" intensity={3} color="#ff4d88" position={[8, 2, 4]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} />
+        <Lightformer form="ring" intensity={1.2} color="#7a5cff" position={[0, -4, 0]} rotation-x={Math.PI / 2} scale={6} />
+      </Environment>
+      <ambientLight intensity={0.25} />
+      <hemisphereLight args={["#6fa8ff", "#1a1030", 0.45]} />
       <directionalLight
         position={[4, 10, -2]}
         intensity={1.4}
@@ -345,8 +357,11 @@ function SceneContents() {
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
-      <EffectComposer>
-        <Bloom intensity={0.9} luminanceThreshold={0.35} luminanceSmoothing={0.2} mipmapBlur />
+      <EffectComposer multisampling={4}>
+        {/* bloom reads the HDR buffer: only emissive and effects (> 1.0) glow, not lit fur */}
+        <Bloom intensity={0.85} luminanceThreshold={0.9} luminanceSmoothing={0.3} mipmapBlur />
+        {/* the composer disables the renderer's tone mapping, so it happens here */}
+        <ToneMapping mode={TONE_MAPPING} />
         <Vignette eskil={false} offset={0.25} darkness={0.8} />
       </EffectComposer>
     </>

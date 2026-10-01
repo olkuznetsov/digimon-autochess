@@ -19,10 +19,14 @@
  *     clips lack those tracks (e.g. Angemon attack01, Ikkakumon special01 — GRP_mesh is 1.0
  *     statically but 0.394 in idle), so playing them lets parts of the model drift to another
  *     size. Every kept clip gets idle's constant scale tracks where it has none.
+ *  7. materials: drop KHR_materials_specular / KHR_materials_volume — assimp artifacts (black
+ *     specular on 40 of 60 materials = no highlights at all; volume without transmission is
+ *     inert) that also force the heavier MeshPhysicalMaterial — and cap roughness at 0.7 so
+ *     the models catch the scene's environment light.
  *
- * Deliberately NOT done: any material change — this step must be visually lossless.
- * (meshopt "medium" quantizes vertices; gltf-transform re-derives the skins' inverse bind
- * matrices for that — verified on all 46 models.)
+ * Geometry, textures and animation stay visually lossless (meshopt "medium" quantizes
+ * vertices; gltf-transform re-derives the skins' inverse bind matrices for that — verified
+ * on all 46 models).
  *
  * Usage: npm run optimize-models [-- <formId> ...]
  */
@@ -78,6 +82,7 @@ for (const file of files) {
   }
 
   const fixed = harmonizeScale(doc);
+  normalizeMaterials(doc);
 
   await doc.transform(
     dedup(),
@@ -101,6 +106,14 @@ for (const file of files) {
       .padStart(5)} MB   clips kept ${clips.length - dropped}/${clips.length}` +
       (fixed.length ? `   scale added: ${fixed.join(", ")}` : ""),
   );
+}
+
+/** Plain metal/rough materials that react to the environment light (see step 7). */
+function normalizeMaterials(doc) {
+  for (const m of doc.getRoot().listMaterials()) m.setRoughnessFactor(Math.min(m.getRoughnessFactor(), 0.7));
+  for (const ext of doc.getRoot().listExtensionsUsed()) {
+    if (ext.extensionName === "KHR_materials_specular" || ext.extensionName === "KHR_materials_volume") ext.dispose();
+  }
 }
 
 /** Give every clip idle's constant scale tracks where it has none (see step 6). */
