@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useGame } from "../game/store";
-import { isBossRound } from "../game/tuning";
+import { isArsenalRound, isBossRound, vsRoundKind } from "../game/tuning";
+import { ITEMS } from "../game/items";
+import { PlanTimer } from "./PlanTimer";
 import { XP_TO_NEXT as XP_VIEW } from "../game/xpView";
 import { isMuted, setMuted, isMusicOn, setMusicOn, sfx } from "../audio/sfx";
 import { PvpModal } from "./PvpModal";
@@ -35,6 +37,8 @@ export function Hud() {
   const toPrep = useGame((s) => s.toPrep);
   const reset = useGame((s) => s.reset);
   const simSpeed = useGame((s) => s.simSpeed);
+  const arsenal = useGame((s) => s.arsenal);
+  const loot = useGame((s) => s.loot);
   const setSimSpeed = useGame((s) => s.setSimSpeed);
   const boardUnits = useGame((s) => s.units.filter((u) => u.placement.kind === "board").length);
   const [muted, setMutedUi] = useState(isMuted());
@@ -109,6 +113,12 @@ export function Hud() {
           <div className={`stat round${!pvp && isBossRound(round) ? " boss" : ""}`}>
             Round {round}
             {!pvp && isBossRound(round) && <span className="boss-chip">☠ BOSS</span>}
+            {pvp && (
+              <span className={`round-kind ${vsRoundKind(round)}`}>
+                {vsRoundKind(round) === "pvp" ? "⚔ PvP" : vsRoundKind(round) === "boss" ? "☠ Boss" : "🐾 Wild"}
+                {isArsenalRound(round) && " · 🎁"}
+              </span>
+            )}
           </div>
           <div className="stat health">♥ {health}</div>
           {pvp && (
@@ -153,15 +163,28 @@ export function Hud() {
           </button>
         )}
         {phase === "prep" && pvp && !pvp.matchOver && (
-          <button className="action" disabled={boardUnits === 0 || pvp.myReady || !pvp.oppOnline} onClick={pvpReadyUp}>
-            {pvp.oppDisconnected
-              ? `${pvp.oppName ?? "Opponent"} is reconnecting…`
-              : !pvp.oppOnline
-                ? `Waiting for a friend… (${pvp.code})`
-                : pvp.myReady
-                ? `Waiting for ${pvp.oppName ?? "opponent"}…`
-                : "⚔ Ready"}
-          </button>
+          <div className="battle-bar">
+            <button
+              className="action"
+              disabled={boardUnits === 0 || pvp.myReady || !pvp.oppOnline || !!arsenal}
+              onClick={() => pvpReadyUp()}
+            >
+              {pvp.oppDisconnected
+                ? `${pvp.oppName ?? "Opponent"} is reconnecting…`
+                : !pvp.oppOnline
+                  ? `Waiting for a friend… (${pvp.code})`
+                  : pvp.myReady
+                    ? `Waiting for ${pvp.oppName ?? "opponent"}…`
+                    : arsenal
+                      ? "Pick an Arsenal item"
+                      : vsRoundKind(round) === "pvp"
+                        ? "⚔ Ready"
+                        : vsRoundKind(round) === "boss"
+                          ? "☠ Ready for the boss"
+                          : "🐾 Ready"}
+            </button>
+            <PlanTimer />
+          </div>
         )}
         {phase === "battle" && battleTime === 0 && <div className="fight-banner">FIGHT!</div>}
         {phase === "battle" && battleTime > 0 && (
@@ -192,6 +215,14 @@ export function Hud() {
         {phase === "result" && !ghost && !gameOver && !beatTheRun && (
           <div className={`result ${result}`}>
             <span className="result-text">{result === "win" ? "VICTORY" : "DEFEAT"}</span>
+            {pvp && vsRoundKind(round) !== "pvp" && (
+              <span className="runwon-sub">{vsRoundKind(round) === "boss" ? "vs the stage boss" : "vs wild Digimon"}</span>
+            )}
+            {loot && (loot.gold > 0 || loot.items.length > 0) && (
+              <span className="loot">
+                +{loot.gold}⛂ {loot.items.map((id) => ITEMS[id]?.emoji ?? "").join(" ")}
+              </span>
+            )}
             {result === "win" && isBossRound(round) && <span className="boss-reward">👑 Boss bonus: +item +3⛂</span>}
             {result === "lose" && lastDamage > 0 && <span className="dmg">-{lastDamage} ♥</span>}
             <button className="action" onClick={toPrep}>

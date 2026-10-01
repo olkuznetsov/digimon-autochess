@@ -1,10 +1,20 @@
 import { create } from "zustand";
 import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types";
 import { FORMS, ROOKIE_IDS, sellValue } from "./creatures";
-import { makeFighter, stepCombat, type CombatEvent } from "./battle";
+import { makeFighter, stepCombat, SIM_DT, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
-import { BASE_ITEM_IDS, fuseResult } from "./items";
-import { ECONOMY, isBossRound, makeEnemyWave } from "./tuning";
+import { BASE_ITEM_IDS, ITEMS, fuseResult } from "./items";
+import {
+  ECONOMY,
+  SHOP_ODDS,
+  VS,
+  isArsenalRound,
+  isBossRound,
+  makeEnemyWave,
+  makeVsWave,
+  vsRoundKind,
+  vsStageDamage,
+} from "./tuning";
 import { XP_TO_NEXT, MAX_LEVEL } from "./xpView";
 import { sfx, battleSfx } from "../audio/sfx";
 import { BENCH_SLOTS, COLS, ROWS } from "./board";
@@ -18,8 +28,6 @@ const START_LEVEL = 3;
 const START_GOLD = 10;
 const START_HEALTH = 100;
 
-// Shop appearance weight by cost (cheaper shows up more — keeps 3-of-a-kind reachable).
-const COST_WEIGHT: Record<number, number> = { 1: 40, 2: 30, 3: 18, 4: 12 };
 
 let uidCounter = 0;
 const nextUid = () => `u${uidCounter++}`;
@@ -60,6 +68,12 @@ export interface PvpState {
   /** after the match: who has asked for a rematch */
   rematchMe: boolean;
   rematchOpp: boolean;
+  /** the opponent's board as they arrange it (live scouting during prep) */
+  oppBoard: PvpBoardUnit[] | null;
+  /** planning deadline (ms epoch); 0 = no timer running */
+  prepEndsAt: number;
+  /** wild/boss rounds: the opponent's result, simulated locally from their board */
+  pveOpp: { win: boolean; damage: number } | null;
 }
 
 /** A live combat effect (damage number, projectile, death burst) with its spawn time. */
@@ -74,13 +88,22 @@ export interface Fx extends CombatEvent {
 let fxCounter = 0;
 const FX_TTL = 1.0; // seconds an effect stays in the list
 
-function rollShop(): string[] {
-  const pool: string[] = [];
-  for (const id of ROOKIE_IDS) {
-    const w = COST_WEIGHT[FORMS[id].cost ?? 2] ?? 10;
-    for (let i = 0; i < w; i++) pool.push(id);
-  }
-  return Array.from({ length: SHOP_SIZE }, () => pool[Math.floor(Math.random() * pool.length)]);
+function rollShop(level: number): string[] {
+  const odds = SHOP_ODDS[Math.max(3, Math.min(8, level))];
+  const total = odds.reduce((a, b) => a + b, 0);
+  const tierPick = () => {
+    let r = Math.random() * total;
+    for (let t = 0; t < odds.length; t++) {
+      r -= odds[t];
+      if (r < 0) return t + 1;
+    }
+    return 1;
+  };
+  return Array.from({ length: SHOP_SIZE }, () => {
+    const tier = tierPick();
+    const pool = ROOKIE_IDS.filter((id) => (FORMS[id].cost ?? 2) === tier);
+    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : ROOKIE_IDS[0];
+  });
 }
 
 function gainXp(level: number, xp: number, amount: number): { level: number; xp: number } {
@@ -191,6 +214,10 @@ interface GameState {
   simSpeed: number;
   /** keep the current shop through the next round */
   shopLocked: boolean;
+  /** VS "Arsenal" round: three items to choose one from */
+  arsenal: string[] | null;
+  /** rewards of the round that just ended (result screen) */
+  loot: { gold: number; items: string[] } | null;
   boardSnapshot: Unit[] | null;
 
   dragId: string | null;
@@ -229,7 +256,7 @@ interface GameState {
     rejoin?: boolean,
   ) => void;
   pvpPeer: (players: { A: string | null; B: string | null; online: string[] }) => void;
-  pvpReadyUp: () => void;
+  pvpReadyUp: (force?: boolean) => void;
   pvpOppReady: () => void;
   pvpFight: (boards: Record<"A" | "B", PvpBoardUnit[]>) => void;
   pvpResult: (winner: "A" | "B" | "draw", damage: number, hash?: string, round?: number) => void;
@@ -241,12 +268,54 @@ interface GameState {
   pvpSurrender: () => void;
   pvpSurrendered: (side: "A" | "B") => void;
   pvpQuit: () => void;
+  pickArsenal: (id: string) => void;
+  pvpOppBoard: (board: PvpBoardUnit[]) => void;
+  /** planning timer ran out: settle open choices and ready with the current board */
+  pvpAutoReady: () => void;
   pvpRequestRematch: () => void;
   pvpRematchOffered: () => void;
   pvpRematchStart: () => void;
 
   ghostFight: (board: PvpBoardUnit[], name: string) => void;
   ghostReturn: () => void;
+}
+
+const touchDevice = () => typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
+/** When the VS planning phase that starts now runs out. */
+const planDeadline = () => Date.now() + (touchDevice() ? VS.planSecondsTouch : VS.planSeconds) * 1000;
+
+const randomOf = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+const FUSED_IDS = Object.values(ITEMS)
+  .filter((d) => d.from)
+  .map((d) => d.id);
+
+/** Three different base items; the player behind on health also gets a fused one
+ *  (the catch-up of TFT's carousel, where the weakest picks first). */
+function arsenalOffer(behind: boolean): string[] {
+  const pool = [...BASE_ITEM_IDS].sort(() => Math.random() - 0.5).slice(0, 3);
+  if (behind) pool[2] = randomOf(FUSED_IDS);
+  return pool;
+}
+
+/** One player's wild/boss fight: their board (rows 0-2) against the round's wave.
+ *  Built identically on both clients so the opponent's result can be simulated
+ *  locally instead of being sent over the wire. */
+function pveFighters(board: PvpBoardUnit[], round: number, side: "A" | "B"): Fighter[] {
+  const mine = board.map((u) => makeFighter(u.formId, `${side}_${u.uid}`, "player", u.col, u.row, 1, u.items ?? []));
+  applySynergies(mine, board.map((u) => wireToUnit(`${side}_${u.uid}`, u)));
+  return [...mine, ...makeVsWave(round)];
+}
+
+/** Run a fight to the end without rendering; returns how the board side fared. */
+function simulate(fighters: Fighter[]): { win: boolean; survivors: number } {
+  for (let i = 0; i < 4000; i++) {
+    const players = fighters.some((f) => f.hp > 0 && f.team === "player");
+    const enemies = fighters.some((f) => f.hp > 0 && f.team === "enemy");
+    if (!players || !enemies) break;
+    stepCombat(fighters, SIM_DT);
+  }
+  const survivors = fighters.filter((f) => f.hp > 0 && f.team === "enemy").length;
+  return { win: survivors === 0 && fighters.some((f) => f.hp > 0 && f.team === "player"), survivors };
 }
 
 /** Run state for a fresh VS match — both players start equal. */
@@ -261,7 +330,7 @@ function freshMatchRun() {
     gameOver: false,
     units: [] as Unit[],
     inventory: [] as string[],
-    shop: rollShop(),
+    shop: rollShop(START_LEVEL),
     shopLocked: false,
     phase: "prep" as Phase,
     result: null,
@@ -270,6 +339,8 @@ function freshMatchRun() {
     fx: [] as Fx[],
     pendingEvolution: null,
     inspected: null,
+    arsenal: null,
+    loot: null,
   };
 }
 
@@ -290,7 +361,7 @@ function initialState() {
     round: 1,
     streak: 0,
     gameOver: false,
-    shop: rollShop(),
+    shop: rollShop(START_LEVEL),
     units: [] as Unit[],
     inventory: [] as string[],
     selectedItem: null as string | null,
@@ -309,6 +380,8 @@ function initialState() {
     tick: 0,
     simSpeed: readSpeed(),
     shopLocked: false,
+    arsenal: null as string[] | null,
+    loot: null as { gold: number; items: string[] } | null,
     boardSnapshot: null as Unit[] | null,
     dragId: null as string | null,
     dragPos: null as { x: number; z: number } | null,
@@ -360,8 +433,8 @@ function checkPvpSync(pvp: PvpState) {
   else console.warn("[pvp] DESYNC: host", pvp.hostHash, "local", pvp.localHash);
 }
 
-/** Serialize on-board units for leaderboard ghost boards. */
-function wireBoard(units: Unit[]): PvpBoardUnit[] {
+/** Serialize on-board units (VS boards, live scouting, leaderboard ghost boards). */
+export function wireBoard(units: Unit[]): PvpBoardUnit[] {
   return units
     .filter((u) => u.placement.kind === "board")
     .map((u) => {
@@ -377,7 +450,7 @@ export const useGame = create<GameState>((set, get) => ({
     const { gold } = get();
     if (gold < REROLL_COST) return;
     sfx.reroll();
-    set({ gold: gold - REROLL_COST, shop: rollShop() });
+    set({ gold: gold - REROLL_COST, shop: rollShop(get().level) });
   },
 
   buy: (shopIndex) => {
@@ -618,6 +691,40 @@ export const useGame = create<GameState>((set, get) => ({
         });
         return;
       }
+      if (state.pvp && vsRoundKind(state.round) !== "pvp") {
+        const kind = vsRoundKind(state.round);
+        const survivors = alive.filter((fr) => fr.team === "enemy").length;
+        const damage = win ? 0 : vsStageDamage(state.round) + survivors;
+        const opp = state.pvp.pveOpp ?? { win: true, damage: 0 };
+        const health = Math.max(0, state.health - damage);
+        const oppHealth = Math.max(0, state.pvp.oppHealth - opp.damage);
+        // loot: wild rounds drop a base item, bosses a fused one; a loss still pays 1
+        const items = win ? [randomOf(kind === "boss" ? FUSED_IDS : BASE_ITEM_IDS)] : [];
+        const lootGold = win ? (kind === "boss" ? 4 : 2) : 1;
+        const matchOver: PvpState["matchOver"] =
+          health <= 0 && oppHealth <= 0 ? "draw" : health <= 0 ? "lose" : oppHealth <= 0 ? "win" : null;
+        if (matchOver === "win") submitScore({ winsDelta: 1 });
+        if (win) sfx.win();
+        else sfx.lose();
+        if (items.length) sfx.drop();
+        set({
+          phase: "result",
+          result: win ? "win" : "lose",
+          fighters: alive,
+          corpses,
+          fx,
+          meter,
+          battleTime: bt,
+          tick: state.tick + 1,
+          health,
+          lastDamage: damage,
+          gold: state.gold + lootGold,
+          inventory: [...state.inventory, ...items].slice(0, 10),
+          loot: { gold: lootGold, items },
+          pvp: { ...state.pvp, oppHealth, matchOver, resultRound: state.round, pveOpp: null },
+        });
+        return;
+      }
       if (state.pvp) {
         // VS match: both clients run the SAME canonical fight (host = "player",
         // guest = "enemy"); the host reports the result and BOTH apply health
@@ -630,7 +737,7 @@ export const useGame = create<GameState>((set, get) => ({
             t: "result",
             round: state.round,
             winner: playersLeft && !enemiesLeft ? "A" : enemiesLeft && !playersLeft ? "B" : "draw",
-            damage: 4 + alive.length * 2,
+            damage: vsStageDamage(state.round) + alive.length,
             hash,
           });
         }
@@ -718,9 +825,13 @@ export const useGame = create<GameState>((set, get) => ({
       round: state.round + 1,
       level: leveled.level,
       xp: leveled.xp,
-      shop: state.shopLocked ? state.shop : rollShop(),
+      shop: state.shopLocked ? state.shop : rollShop(leveled.level),
       viewFlip: false,
-      ...(state.pvp ? { pvp: { ...state.pvp, myReady: false, oppReady: false } } : {}),
+      loot: null,
+      arsenal: state.pvp && isArsenalRound(state.round + 1) ? arsenalOffer(state.health < state.pvp.oppHealth) : null,
+      ...(state.pvp
+        ? { pvp: { ...state.pvp, myReady: false, oppReady: false, prepEndsAt: planDeadline(), pveOpp: null } }
+        : {}),
     });
   },
 
@@ -779,9 +890,33 @@ export const useGame = create<GameState>((set, get) => ({
         oppDisconnected: false,
         rematchMe: false,
         rematchOpp: false,
+        oppBoard: null,
+        prepEndsAt: players.online.includes(other) ? planDeadline() : 0,
+        pveOpp: null,
       },
       ...freshMatchRun(),
     });
+  },
+
+  pickArsenal: (id) => {
+    const { arsenal, inventory } = get();
+    if (!arsenal?.includes(id)) return;
+    sfx.equip();
+    set({ arsenal: null, inventory: [...inventory, id] });
+  },
+
+  pvpOppBoard: (board) => {
+    const { pvp } = get();
+    if (pvp) set({ pvp: { ...pvp, oppBoard: board } });
+  },
+
+  pvpAutoReady: () => {
+    const s = get();
+    if (!s.pvp || s.pvp.myReady || s.phase !== "prep") return;
+    for (let i = 0; i < 4 && get().pendingEvolution; i++) get().chooseEvolution(get().pendingEvolution!.options[0]);
+    const offer = get().arsenal;
+    if (offer) get().pickArsenal(offer[0]);
+    get().pvpReadyUp(true);
   },
 
   pvpRequestRematch: () => {
@@ -817,6 +952,9 @@ export const useGame = create<GameState>((set, get) => ({
         lastReady: null,
         rematchMe: false,
         rematchOpp: false,
+        oppBoard: null,
+        prepEndsAt: planDeadline(),
+        pveOpp: null,
       },
       ...freshMatchRun(),
     });
@@ -834,20 +972,18 @@ export const useGame = create<GameState>((set, get) => ({
         oppName: players[other],
         oppOnline: nowOnline,
         oppDisconnected: nowOnline ? false : pvp.oppDisconnected,
+        // the planning clock starts once both players are in the room
+        prepEndsAt: nowOnline && !pvp.prepEndsAt && !pvp.myReady ? planDeadline() : pvp.prepEndsAt,
       },
     });
   },
 
-  pvpReadyUp: () => {
-    const { pvp, units, round, pendingEvolution } = get();
-    if (!pvp || pvp.myReady || pendingEvolution) return;
-    const board: PvpBoardUnit[] = units
-      .filter((u) => u.placement.kind === "board")
-      .map((u) => {
-        const p = u.placement as { col: number; row: number };
-        return { uid: u.uid, formId: u.formId, col: p.col, row: p.row, items: u.items ?? [] };
-      });
-    if (board.length === 0) return;
+  pvpReadyUp: (force = false) => {
+    const { pvp, units, round, pendingEvolution, arsenal } = get();
+    if (!pvp || pvp.myReady || ((pendingEvolution || arsenal) && !force)) return;
+    const board = wireBoard(units);
+    // an empty board can only go in when the planning timer forces it
+    if (board.length === 0 && !force) return;
     net.send?.({ t: "ready", round, board });
     sfx.click();
     set({ pvp: { ...pvp, myReady: true, lastReady: board } });
@@ -862,6 +998,36 @@ export const useGame = create<GameState>((set, get) => ({
     const state = get();
     const pvp = state.pvp;
     if (!pvp) return;
+    if (vsRoundKind(state.round) !== "pvp") {
+      // wild / boss round: each player fights the same wave on their own board.
+      // Ours is rendered; theirs runs headless here — deterministic, so both
+      // clients agree on both results without another message.
+      const other = pvp.side === "A" ? "B" : "A";
+      const opp = simulate(pveFighters(boards[other] ?? [], state.round, other));
+      sfx.battleStart();
+      set({
+        phase: "battle",
+        battleSeq: get().battleSeq + 1,
+        meter: {},
+        result: null,
+        loot: null,
+        boardSnapshot: state.units,
+        fighters: pveFighters(boards[pvp.side] ?? [], state.round, pvp.side),
+        viewFlip: false,
+        pvp: {
+          ...pvp,
+          hostHash: null,
+          localHash: null,
+          oppBoard: boards[other] ?? pvp.oppBoard,
+          pveOpp: { win: opp.win, damage: opp.win ? 0 : vsStageDamage(state.round) + opp.survivors },
+        },
+        corpses: [],
+        fx: [],
+        battleTime: 0,
+        tick: 0,
+      });
+      return;
+    }
     // Canonical fight, identical on both clients: host board A on rows 0-2 as
     // "player", guest board B mirrored onto rows 3-5 as "enemy", order [A..., B...].
     // The guest only renders it mirrored (viewFlip), so their own units still
@@ -886,7 +1052,8 @@ export const useGame = create<GameState>((set, get) => ({
       // always favor the same side (both clients agree: same round number)
       fighters: state.round % 2 === 1 ? [...aFighters, ...bFighters] : [...bFighters, ...aFighters],
       viewFlip: pvp.side === "B",
-      pvp: { ...pvp, hostHash: null, localHash: null },
+      loot: null,
+      pvp: { ...pvp, hostHash: null, localHash: null, oppBoard: (pvp.side === "A" ? B : A) ?? pvp.oppBoard },
       corpses: [],
       fx: [],
       battleTime: 0,
@@ -903,13 +1070,12 @@ export const useGame = create<GameState>((set, get) => ({
     checkPvpSync(pvp);
     const iWon = winner === pvp.side;
     const draw = winner === "draw";
-    const health = Math.max(0, state.health - (draw ? 4 : iWon ? 0 : damage));
-    const oppHealth = Math.max(0, pvp.oppHealth - (draw ? 4 : iWon ? damage : 0));
+    const health = Math.max(0, state.health - (iWon ? 0 : damage));
+    const oppHealth = Math.max(0, pvp.oppHealth - (iWon && !draw ? damage : draw ? damage : 0));
     const streak = draw ? 0 : iWon ? Math.max(1, state.streak + 1) : Math.min(-1, state.streak - 1);
-    const inventory =
-      iWon && state.inventory.length < 8 && Math.random() < 0.55
-        ? [...state.inventory, BASE_ITEM_IDS[Math.floor(Math.random() * BASE_ITEM_IDS.length)]]
-        : state.inventory;
+    // items come from Arsenal and wild/boss rounds now; a PvP win pays gold
+    const winGold = iWon && !draw ? ECONOMY.winGold : 0;
+    const inventory = state.inventory;
     const matchOver: PvpState["matchOver"] =
       health <= 0 && oppHealth <= 0 ? "draw" : health <= 0 ? "lose" : oppHealth <= 0 ? "win" : null;
     if (matchOver === "win") submitScore({ winsDelta: 1 });
@@ -917,7 +1083,9 @@ export const useGame = create<GameState>((set, get) => ({
       health,
       streak,
       inventory,
-      lastDamage: iWon || draw ? 0 : damage,
+      gold: state.gold + winGold,
+      loot: winGold ? { gold: winGold, items: [] } : null,
+      lastDamage: iWon && !draw ? 0 : damage,
       pvp: { ...pvp, oppHealth, matchOver },
     });
   },

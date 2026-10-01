@@ -57,6 +57,9 @@ interface ReadyPayload {
 }
 
 const ROOM_TTL_MS = 3 * 60 * 60 * 1000; // idle rooms are wiped after 3h
+/** once one player is ready, the other gets this long (clients auto-ready at 40–50 s;
+ *  this covers AFK players and background tabs whose timers are throttled) */
+const READY_DEADLINE_MS = 75 * 1000;
 
 export class MatchRoom extends DurableObject<Env> {
   async fetch(request: Request): Promise<Response> {
@@ -87,7 +90,7 @@ export class MatchRoom extends DurableObject<Env> {
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({ side, name } satisfies Attach);
     await this.ctx.storage.put(`name:${side}`, name);
-    await this.ctx.storage.setAlarm(Date.now() + ROOM_TTL_MS);
+    await this.schedule({ ttl: true });
 
     const players = await this.roster();
     // a rejoining client catches up on the fight/result it may have missed
@@ -108,6 +111,31 @@ export class MatchRoom extends DurableObject<Env> {
       B: (await this.ctx.storage.get<string>("name:B")) ?? null,
       online,
     };
+  }
+
+  /** One alarm serves two timers: the idle-room TTL and the ready deadline. */
+  private async schedule(opts: { ttl?: boolean; deadline?: number | null }) {
+    if (opts.ttl) await this.ctx.storage.put("ttlAt", Date.now() + ROOM_TTL_MS);
+    if (opts.deadline !== undefined) {
+      if (opts.deadline === null) await this.ctx.storage.delete("deadline");
+      else await this.ctx.storage.put("deadline", opts.deadline);
+    }
+    const ttlAt = (await this.ctx.storage.get<number>("ttlAt")) ?? Date.now() + ROOM_TTL_MS;
+    const deadline = await this.ctx.storage.get<number>("deadline");
+    await this.ctx.storage.setAlarm(deadline ? Math.min(deadline, ttlAt) : ttlAt);
+  }
+
+  /** Both boards are in (or the deadline passed): start the round's fight. */
+  private async startFight(round: number) {
+    const A = await this.ctx.storage.get<ReadyPayload>("ready:A");
+    const B = await this.ctx.storage.get<ReadyPayload>("ready:B");
+    const board = async (side: Side, ready?: ReadyPayload) =>
+      ready?.board ?? (await this.ctx.storage.get(`lastBoard:${side}`)) ?? [];
+    const fight = { round, boards: { A: await board("A", A), B: await board("B", B) } };
+    await this.ctx.storage.delete(["ready:A", "ready:B"]);
+    await this.ctx.storage.put("lastFight", fight);
+    await this.schedule({ deadline: null });
+    this.broadcast({ t: "fight", ...fight });
   }
 
   private broadcast(msg: unknown, exceptSide?: Side) {
@@ -136,16 +164,22 @@ export class MatchRoom extends DurableObject<Env> {
 
     if (m.t === "ready" && typeof m.round === "number") {
       await this.ctx.storage.put(`ready:${a.side}`, { round: m.round, board: m.board } satisfies ReadyPayload);
-      await this.ctx.storage.setAlarm(Date.now() + ROOM_TTL_MS); // keep active rooms alive
+      await this.ctx.storage.put(`lastBoard:${a.side}`, m.board);
       this.broadcast({ t: "oppready", side: a.side, round: m.round }, a.side);
       const A = await this.ctx.storage.get<ReadyPayload>("ready:A");
       const B = await this.ctx.storage.get<ReadyPayload>("ready:B");
       if (A && B && A.round === B.round) {
-        await this.ctx.storage.delete(["ready:A", "ready:B"]);
-        const fight = { round: A.round, boards: { A: A.board, B: B.board } };
-        await this.ctx.storage.put("lastFight", fight);
-        this.broadcast({ t: "fight", ...fight });
+        await this.schedule({ ttl: true });
+        await this.startFight(A.round);
+      } else {
+        // the other player has READY_DEADLINE_MS to answer; the alarm fights for them after
+        await this.ctx.storage.put("deadlineRound", m.round);
+        await this.schedule({ ttl: true, deadline: Date.now() + READY_DEADLINE_MS });
       }
+    } else if (m.t === "board") {
+      // live scouting: keep the latest arrangement and show it to the opponent
+      await this.ctx.storage.put(`lastBoard:${a.side}`, m.board);
+      this.broadcast({ t: "board", side: a.side, board: m.board }, a.side);
     } else if (m.t === "result") {
       if (a.side !== "A") return; // host simulation is authoritative
       const result = {
@@ -163,8 +197,8 @@ export class MatchRoom extends DurableObject<Env> {
       await this.ctx.storage.put(`rematch:${a.side}`, true);
       const other: Side = a.side === "A" ? "B" : "A";
       if (await this.ctx.storage.get(`rematch:${other}`)) {
-        await this.ctx.storage.delete(["rematch:A", "rematch:B", "ready:A", "ready:B", "lastFight", "lastResult"]);
-        await this.ctx.storage.setAlarm(Date.now() + ROOM_TTL_MS);
+        await this.ctx.storage.delete(["rematch:A", "rematch:B", "ready:A", "ready:B", "lastFight", "lastResult", "lastBoard:A", "lastBoard:B"]);
+        await this.schedule({ ttl: true, deadline: null });
         this.broadcast({ t: "rematch-go" });
       } else {
         this.broadcast({ t: "rematch-req", side: a.side }, a.side);
@@ -185,6 +219,18 @@ export class MatchRoom extends DurableObject<Env> {
   }
 
   async alarm() {
+    const deadline = await this.ctx.storage.get<number>("deadline");
+    if (deadline && Date.now() >= deadline - 50) {
+      const round = await this.ctx.storage.get<number>("deadlineRound");
+      if (typeof round === "number") await this.startFight(round);
+      else await this.schedule({ deadline: null });
+      return;
+    }
+    const ttlAt = await this.ctx.storage.get<number>("ttlAt");
+    if (ttlAt && Date.now() < ttlAt - 1000) {
+      await this.schedule({});
+      return;
+    }
     for (const ws of this.ctx.getWebSockets()) {
       try {
         ws.close(1000, "room expired");

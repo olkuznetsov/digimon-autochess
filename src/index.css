@@ -814,6 +814,59 @@ body,
   }
 }
 
+/* ---------- VS: Arsenal pick, round chip, planning timer, loot ---------- */
+.arsenal-card {
+  gap: 6px;
+  min-width: 150px;
+}
+.arsenal-card.fused {
+  border-color: rgba(255, 211, 77, 0.8) !important;
+  box-shadow: 0 0 22px rgba(255, 211, 77, 0.3);
+}
+.arsenal-emoji {
+  font-size: 40px;
+  line-height: 1;
+}
+.arsenal-desc {
+  font-size: 12px;
+  color: #b9c4e8;
+  max-width: 170px;
+}
+.round-kind {
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.round-kind.pve {
+  color: #6ff0b4;
+}
+.round-kind.boss {
+  color: #ff8aa0;
+}
+.round-kind.pvp {
+  color: #9be7ff;
+}
+.plan-timer {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #cfe0ff;
+  min-width: 46px;
+  text-align: center;
+}
+.plan-timer.urgent {
+  color: #ff8aa0;
+  animation: pulse 0.6s ease-in-out infinite;
+}
+.loot {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #ffe9a8;
+}
+
 /* ---------- item fusion ---------- */
 .item-chip.fused {
   border-color: rgba(255, 211, 77, 0.65);
@@ -1227,6 +1280,10 @@ body,
   text-transform: uppercase;
   color: #ff8aa0;
   margin-right: 3px;
+}
+.next-empty {
+  font-size: 11px;
+  color: var(--text-dim);
 }
 .next-portrait {
   width: 30px;

@@ -17,6 +17,17 @@ export const ECONOMY = {
   xpPerBuy: 4,
 };
 
+/** Shop odds by player level: chance of each rookie cost tier (1–4), like TFT's
+ *  level-based odds — low levels see cheap rookies, high levels the expensive lines. */
+export const SHOP_ODDS: Record<number, [number, number, number, number]> = {
+  3: [45, 40, 13, 2],
+  4: [38, 40, 18, 4],
+  5: [30, 40, 24, 6],
+  6: [24, 36, 30, 10],
+  7: [18, 32, 34, 16],
+  8: [14, 28, 36, 22],
+};
+
 export const WAVES = {
   /** enemy HP +x per round (rounds 1..15), then +endlessRamp per round beyond 15 */
   hpRamp: 0.02,
@@ -62,32 +73,34 @@ function bossIdFor(round: number): string {
   return BOSS_IDS[round] ?? ENDLESS_BOSSES[(round / 5) % ENDLESS_BOSSES.length];
 }
 
-export function makeEnemyWave(round: number): Fighter[] {
-  const hpScale = 1 + (round - 1) * WAVES.hpRamp + (round > 15 ? (round - 15) * WAVES.endlessRamp : 0);
+type Mix = [number, number, number];
+type BossSpec = { id: string; hp: number; atk: number; adds: 1 | 2 | 3; addCount: number };
+
+/** Deterministic wave from a round number: the same round always fields the same
+ *  forms in the same cells (both VS clients rely on this). `prefix` keeps uids apart. */
+function buildWave(round: number, hpScale: number, boss: BossSpec | null, mix: Mix, prefix = "e"): Fighter[] {
   const pick = (stage: 1 | 2 | 3, i: number) => {
     const pool = ALL_FORM_IDS.filter((id) => FORMS[id].stage === stage);
     return pool[(round * 3 + i * 5) % pool.length];
   };
   const at = (i: number) => ({ col: i % COLS, row: 5 - Math.floor(i / COLS) });
 
-  if (isBossRound(round)) {
-    const b = WAVES.boss[round <= 5 ? 0 : round <= 10 ? 1 : round <= 15 ? 2 : 3];
-    const boss = makeFighter(bossIdFor(round), "boss", "enemy", 2, 4, hpScale);
+  if (boss) {
+    const b = makeFighter(boss.id, prefix === "e" ? "boss" : `${prefix}boss`, "enemy", 2, 4, hpScale);
     // one huge focused threat instead of a wall: big HP, harder hits, boss flag
-    boss.hp = Math.round(boss.hp * b.hp);
-    boss.maxHp = boss.hp;
-    boss.attack = Math.round(boss.attack * b.atk);
-    boss.boss = true;
-    const addCount = round > 15 ? 3 : 2;
-    const adds = Array.from({ length: addCount }, (_, i) => {
+    b.hp = Math.round(b.hp * boss.hp);
+    b.maxHp = b.hp;
+    b.attack = Math.round(b.attack * boss.atk);
+    b.boss = true;
+    const adds = Array.from({ length: boss.addCount }, (_, i) => {
       const p = at(i * 2 + 1); // flank the boss
-      return makeFighter(pick(b.adds, i), `e${i}`, "enemy", p.col, p.row, hpScale * 0.9);
+      return makeFighter(pick(boss.adds, i), `${prefix}${i}`, "enemy", p.col, p.row, hpScale * 0.9);
     });
-    return [boss, ...adds];
+    return [b, ...adds];
   }
 
-  const [rookies, champs, megas] = WAVES.table[round] ?? WAVES.endless;
-  // megas first (front-left), then champions, then rookies — same layout as before
+  const [rookies, champs, megas] = mix;
+  // megas first (front-left), then champions, then rookies
   const stages: (1 | 2 | 3)[] = [
     ...Array<3>(megas).fill(3),
     ...Array<2>(champs).fill(2),
@@ -95,6 +108,66 @@ export function makeEnemyWave(round: number): Fighter[] {
   ];
   return stages.map((stage, i) => {
     const p = at(i);
-    return makeFighter(pick(stage, i), `e${i}`, "enemy", p.col, p.row, hpScale);
+    return makeFighter(pick(stage, i), `${prefix}${i}`, "enemy", p.col, p.row, hpScale);
   });
+}
+
+export function makeEnemyWave(round: number): Fighter[] {
+  const hpScale = 1 + (round - 1) * WAVES.hpRamp + (round > 15 ? (round - 15) * WAVES.endlessRamp : 0);
+  if (isBossRound(round)) {
+    const b = WAVES.boss[round <= 5 ? 0 : round <= 10 ? 1 : round <= 15 ? 2 : 3];
+    return buildWave(round, hpScale, { id: bossIdFor(round), ...b, addCount: round > 15 ? 3 : 2 }, [0, 0, 0]);
+  }
+  return buildWave(round, hpScale, null, WAVES.table[round] ?? WAVES.endless);
+}
+
+// ---------- VS (1v1): Teamfight Tactics' round rhythm ----------
+// Stages of 5 rounds: fights against the other player, an item pick on the 3rd
+// round of every stage, wild Digimon on the 5th and a boss on every 10th; the
+// first two rounds are easy wild fights so both players start with loot.
+
+export type VsRound = "pvp" | "pve" | "boss";
+
+export const VS = {
+  stageLength: 5,
+  /** damage for losing a round, by stage (then +8 per stage), plus 1 per surviving enemy */
+  stageDamage: [2, 5, 9, 14, 20, 28],
+  /** planning time before an automatic ready */
+  planSeconds: 40,
+  planSecondsTouch: 50,
+  /** wild-Digimon rounds: [rookies, champions, megas]; later stages repeat the last */
+  wild: { 1: [2, 0, 0], 2: [3, 0, 0], 5: [3, 1, 0], 15: [1, 4, 0], 25: [0, 4, 2], 35: [0, 2, 4] } as Record<number, Mix>,
+  bosses: [
+    { id: "skullsatamon", hp: 2.6, atk: 1.2, adds: 1, addCount: 2 },
+    { id: "machinedramon", hp: 2.8, atk: 1.3, adds: 2, addCount: 2 },
+    { id: "diaboromon", hp: 3.2, atk: 1.4, adds: 3, addCount: 2 },
+    { id: "alphamon", hp: 3.6, atk: 1.5, adds: 3, addCount: 3 },
+  ] as BossSpec[],
+};
+
+export function vsRoundKind(round: number): VsRound {
+  if (round <= 2) return "pve";
+  if (round % (VS.stageLength * 2) === 0) return "boss";
+  if (round % VS.stageLength === 0) return "pve";
+  return "pvp";
+}
+
+export const isArsenalRound = (round: number) => round % VS.stageLength === 3;
+
+export function vsStageDamage(round: number): number {
+  const stage = Math.ceil(round / VS.stageLength);
+  const t = VS.stageDamage;
+  return stage <= t.length ? t[stage - 1] : t[t.length - 1] + (stage - t.length) * 8;
+}
+
+/** The wild / boss wave of a VS PvE round — identical on both clients. */
+export function makeVsWave(round: number, prefix = "W"): Fighter[] {
+  const hpScale = round <= 2 ? 0.75 + round * 0.05 : 1 + (round - 1) * WAVES.hpRamp;
+  if (vsRoundKind(round) === "boss") {
+    const tier = Math.min(VS.bosses.length - 1, round / (VS.stageLength * 2) - 1);
+    return buildWave(round, hpScale, VS.bosses[tier], [0, 0, 0], prefix);
+  }
+  const keys = Object.keys(VS.wild).map(Number).sort((a, b) => a - b);
+  const key = [...keys].reverse().find((k) => k <= round) ?? keys[0];
+  return buildWave(round, hpScale, null, VS.wild[key], prefix);
 }

@@ -12,6 +12,7 @@ import { Hotkeys } from "./ui/Hotkeys";
 import { DamageMeter } from "./ui/DamageMeter";
 import { NextWave } from "./ui/NextWave";
 import { Onboarding } from "./ui/Onboarding";
+import { ArsenalChoice } from "./ui/ArsenalChoice";
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
       <UnitPanel />
       <EvoBanner />
       <EvolutionChoice />
+      <ArsenalChoice />
       <LoadingScreen />
       <AudioDirector />
       <Hotkeys />

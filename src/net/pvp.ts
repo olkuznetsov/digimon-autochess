@@ -1,4 +1,4 @@
-import { useGame, type PvpBoardUnit } from "../game/store";
+import { useGame, wireBoard, type PvpBoardUnit } from "../game/store";
 import { net } from "./bus";
 
 /** WebSocket client for VS-friend matches (MatchRoom Durable Object relay).
@@ -90,6 +90,9 @@ function open() {
           m.round as number | undefined,
         );
         break;
+      case "board":
+        g.pvpOppBoard((m.board as PvpBoardUnit[]) ?? []);
+        break;
       case "surrender":
         g.pvpSurrendered(m.side as "A" | "B");
         break;
@@ -173,6 +176,21 @@ export function pvpClose() {
   }
   ws = null;
 }
+
+// Live scouting: while planning, our arrangement goes to the opponent (debounced).
+let boardTimer: ReturnType<typeof setTimeout> | null = null;
+let lastSent = "";
+useGame.subscribe((s, prev) => {
+  if (!s.pvp || s.phase !== "prep" || s.pvp.myReady || s.units === prev.units) return;
+  if (boardTimer) clearTimeout(boardTimer);
+  boardTimer = setTimeout(() => {
+    const board = wireBoard(useGame.getState().units);
+    const key = JSON.stringify(board);
+    if (key === lastSent) return;
+    lastSent = key;
+    net.send?.({ t: "board", board });
+  }, 400);
+});
 
 // dev-only: lets tests simulate a dropped connection (`window.__pvpSocket().close()`)
 if (import.meta.env.DEV && typeof window !== "undefined") {

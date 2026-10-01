@@ -12,6 +12,7 @@ import { useSettings } from "../settings";
 import { newDrive, type UnitDrive } from "./unitDrive";
 import { juice, resetJuice, tickJuice } from "./juice";
 import { SIM_DT } from "../game/battle";
+import { makeEnemyWave, makeVsWave, vsRoundKind } from "../game/tuning";
 import { ITEMS } from "../game/items";
 import { FORMS, ATTR_COLOR } from "../game/creatures";
 import {
@@ -127,6 +128,52 @@ function PrepUnits() {
               dragStart = { x: e.point.x, z: e.point.z };
               setDrag(u.uid, { x: e.point.x, z: e.point.z });
             }}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+/** Who waits on the enemy half during planning: the opponent's live board in a VS
+ *  fight round (scouting), otherwise the round's wild / boss / solo wave. */
+function EnemyPreview() {
+  const round = useGame((s) => s.round);
+  const pvp = useGame((s) => !!s.pvp);
+  const oppBoard = useGame((s) => s.pvp?.oppBoard ?? null);
+  const units = useMemo(() => {
+    if (pvp && vsRoundKind(round) === "pvp") {
+      return (oppBoard ?? []).map((u) => ({
+        key: `o${u.uid}`,
+        formId: u.formId,
+        col: COLS - 1 - u.col,
+        row: ROWS - 1 - u.row,
+        boss: false,
+        items: u.items ?? [],
+      }));
+    }
+    const wave = pvp ? makeVsWave(round) : makeEnemyWave(round);
+    return wave.map((f) => ({ key: f.uid, formId: f.formId, col: f.col, row: f.row, boss: !!f.boss, items: [] as string[] }));
+  }, [round, pvp, oppBoard]);
+
+  return (
+    <>
+      {units.map((u) => {
+        const form = FORMS[u.formId];
+        if (!form) return null;
+        const [x, z] = cellToWorld(u.col, u.row);
+        return (
+          <Creature
+            key={u.key}
+            formId={u.formId}
+            position={[x, 0, z]}
+            color={ATTR_COLOR[form.attribute]}
+            name={form.name}
+            star={form.stage}
+            team="enemy"
+            boss={u.boss}
+            showHealth={false}
+            itemEmojis={u.items.map((id) => ITEMS[id]?.emoji ?? "")}
           />
         );
       })}
@@ -369,6 +416,7 @@ function SceneContents() {
       <Board highlight={!!dragId} hovered={hovered} />
 
       {inPrep && <PrepUnits />}
+      {inPrep && <EnemyPreview />}
       {/* fresh components per fight; sibling keys must stay distinct */}
       {!inPrep && <BattleUnits key={`units-${battleSeq}`} />}
       {phase === "battle" && <BattleRunner key={`runner-${battleSeq}`} />}
