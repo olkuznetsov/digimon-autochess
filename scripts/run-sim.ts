@@ -32,6 +32,11 @@ const DUMP = args.dumpBoards as string | undefined;
 // ---------- tuning experiments: `variant=name` applies one of these before the runs ----------
 const VARIANTS: Record<string, () => void> = {
   current: () => {},
+  // the economy before the roster grew to 24 lines (Oct 2026), for comparison
+  preExpansion: () => {
+    Object.assign(ECONOMY, { startGold: 10, baseIncome: 5, rerollCost: 2 });
+    WAVES.bosses[0] = [{ id: "skullsatamon", hp: 3.4, atk: 1.35, adds: 1 }];
+  },
   // example experiment: the pre-tuning curve (Sept 2026) for comparison
   legacy: () => {
     Object.assign(ECONOMY, { winGold: 0, passiveXp: 1 });
@@ -180,7 +185,8 @@ function rollDown() {
   for (let i = 0; i < 12; i++) {
     const { gold, health } = S();
     const danger = health <= 35;
-    if (gold < 2 || (!danger && gold - 2 < reserve() + 12)) return;
+    const cost = ECONOMY.rerollCost;
+    if (gold < cost || (!danger && gold - cost < reserve() + 12)) return;
     S().reroll();
     buyRound();
   }

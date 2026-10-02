@@ -180,9 +180,12 @@ console.log(`2x rookie beats 1x champion: ${pct(w2 / rookies.length)} (want: <50
 
 // ---------- 4. per-form scrims ----------
 console.log("\n=== 4. FORM WIN RATES (random 4v4 scrims with synergies) ===");
-const SCRIMS = 2500;
+// ~1100 appearances per form whatever the roster size (each scrim fields 8): about ±1.5%
+const SCRIMS_PER_FORM = 140;
+const SHOW_ALL = process.argv.includes("all");
 for (const stage of [1, 2, 3] as const) {
   const pool = ALL_FORM_IDS.filter((id) => FORMS[id].stage === stage);
+  const SCRIMS = Math.max(2500, pool.length * SCRIMS_PER_FORM);
   const games = new Map<string, number>();
   const wins = new Map<string, number>();
   let totalTicks = 0;
@@ -210,6 +213,7 @@ for (const stage of [1, 2, 3] as const) {
   console.log(`\n-- stage ${stage} (${pool.length} forms, ${SCRIMS} battles, mean ${meanSec}s, draws ${draws}) --`);
   const fmt = (r: { id: string; wr: number }) =>
     `${FORMS[r.id].name.padEnd(17)}${pct(r.wr)} (${FORMS[r.id].role}/${FORMS[r.id].attribute})`;
+  if (SHOW_ALL) for (const r of rows) console.log("        " + fmt(r));
   console.log("top:    " + rows.slice(0, 4).map(fmt).join("  |  "));
   console.log("bottom: " + rows.slice(-4).map(fmt).join("  |  "));
   const outliers = rows.filter((r) => r.wr > 0.58 || r.wr < 0.42);

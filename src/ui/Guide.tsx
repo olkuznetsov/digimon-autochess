@@ -93,8 +93,13 @@ function Basics() {
         <h3>Gold and levels</h3>
         <ul>
           <li>
-            💰 Every round: <b>{ECONOMY.baseIncome} gold</b> + interest (1 per 10 banked, up to 5) + a streak bonus
-            (2+ wins or losses in a row: +1 to +3) + <b>{ECONOMY.winGold}</b> for a win.
+            💰 You start with <b>{ECONOMY.startGold} gold</b>. Every round: <b>{ECONOMY.baseIncome} gold</b> + interest (1
+            per 10 banked, up to 5) + a streak bonus (2+ wins or losses in a row: +1 to +3) + <b>{ECONOMY.winGold}</b>{" "}
+            for a win.
+          </li>
+          <li>
+            ⟳ <b>Reroll</b> the shop for <b>{ECONOMY.rerollCost} gold</b>. With {ROOKIE_IDS.length} lines on offer, rerolling
+            is how you find the copies you're collecting — and the lock (🔒) keeps a good shop for next round.
           </li>
           <li>
             ▲ <b>Buy XP</b>: {ECONOMY.xpCost} gold for {ECONOMY.xpPerBuy} XP; you also get {ECONOMY.passiveXp} XP every round.
@@ -238,7 +243,13 @@ function Digimon() {
         .map((rookie) => {
           const champions = FORMS[rookie].evolvesTo ?? [];
           const megas = [...new Set(champions.flatMap((c) => FORMS[c].evolvesTo ?? []))];
-          return { rookie, champions, megas };
+          // champion branches that lead to different megas: say which mega comes from which
+          const from: Record<string, string> = {};
+          for (const m of megas) {
+            const sources = champions.filter((c) => FORMS[c].evolvesTo?.includes(m));
+            if (sources.length < champions.length) from[m] = sources.map((c) => FORMS[c].name).join(" / ");
+          }
+          return { rookie, champions, megas, from };
         }),
     [],
   );
@@ -280,7 +291,11 @@ function Digimon() {
                   <span className="dex-stage-name">{STAGE_NAME[si + 1]}</span>
                   {stage.map((id, i) => (
                     <div key={id}>
-                      {i > 0 && <span className="dex-or">or</span>}
+                      {l.from[id] && si === 2 ? (
+                        <span className="dex-or">from {l.from[id]}</span>
+                      ) : (
+                        i > 0 && <span className="dex-or">or</span>
+                      )}
                       <FormCard id={id} />
                     </div>
                   ))}

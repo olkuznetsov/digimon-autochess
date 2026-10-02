@@ -18,7 +18,7 @@ const f = (
 
 export const FORMS: Record<string, Form> = {
   // ============ Agumon — Dragon's Roar (branch at Ultimate) ============
-  agumon: f("agumon", "Agumon", 1, "Vaccine", "Dragon's Roar", "bruiser", { cost: 1, evolvesTo: ["greymon"] }),
+  agumon: f("agumon", "Agumon", 1, "Vaccine", "Dragon's Roar", "bruiser", { cost: 1, evolvesTo: ["greymon", "geogreymon"] }),
   greymon: f("greymon", "Greymon", 2, "Vaccine", "Dragon's Roar", "bruiser", { evolvesTo: ["wargreymon", "blitzgreymon"] }),
   wargreymon: f("wargreymon", "WarGreymon", 3, "Vaccine", "Dragon's Roar", "bruiser"),
   blitzgreymon: f("blitzgreymon", "BlitzGreymon", 3, "Virus", "Dragon's Roar", "ranged"),
@@ -96,6 +96,67 @@ export const FORMS: Record<string, Form> = {
   aldamon: f("aldamon", "Aldamon", 2, "Data", "Dragon's Roar", "caster", { evolvesTo: ["susanoomon"] }),
   susanoomon: f("susanoomon", "Susanoomon", 3, "Data", "Dragon's Roar", "bruiser"),
 
+  // ---- set 4: straight from Digimon Story Cyber Sleuth's files (scripts/dscs_convert.py);
+  // attributes as the game has them, except where the triangle needed it: the Frontier hybrids
+  // (none there) and the Falcomon line, RizeGreymon (Virus); Crowmon, MegaKabuterimon — the red
+  // AtlurKabuterimon of the wider canon — (Data). Otherwise a Vaccine-heavy roster favours Data.
+
+  // ============ Agumon's second branch — Dragon's Roar (Data Squad) ============
+  geogreymon: f("geogreymon", "GeoGreymon", 2, "Vaccine", "Dragon's Roar", "bruiser", { evolvesTo: ["rizegreymon", "shinegreymon"] }),
+  rizegreymon: f("rizegreymon", "RizeGreymon", 3, "Virus", "Dragon's Roar", "ranged"),
+  shinegreymon: f("shinegreymon", "ShineGreymon", 3, "Vaccine", "Dragon's Roar", "bruiser"),
+
+  // ============ Tentomon — Wind Guardians (branch at Ultimate) ============
+  tentomon: f("tentomon", "Tentomon", 1, "Vaccine", "Wind Guardians", "ranged", { cost: 1, evolvesTo: ["kabuterimon"] }),
+  kabuterimon: f("kabuterimon", "Kabuterimon", 2, "Vaccine", "Wind Guardians", "ranged", { evolvesTo: ["megakabuterimon", "herculeskabuterimon"] }),
+  megakabuterimon: f("megakabuterimon", "MegaKabuterimon", 3, "Data", "Wind Guardians", "tank"),
+  herculeskabuterimon: f("herculeskabuterimon", "HerculesKabuterimon", 3, "Vaccine", "Wind Guardians", "caster"),
+
+  // ============ Biyomon — Wind Guardians (branch at Ultimate) ============
+  biyomon: f("biyomon", "Biyomon", 1, "Vaccine", "Wind Guardians", "caster", { cost: 1, evolvesTo: ["birdramon"] }),
+  birdramon: f("birdramon", "Birdramon", 2, "Vaccine", "Wind Guardians", "ranged", { evolvesTo: ["garudamon", "hououmon"] }),
+  garudamon: f("garudamon", "Garudamon", 3, "Vaccine", "Wind Guardians", "bruiser"),
+  hououmon: f("hououmon", "Hououmon", 3, "Vaccine", "Wind Guardians", "caster"),
+
+  // ============ Terriermon — Deep Savers (branch at Ultimate) ============
+  terriermon: f("terriermon", "Terriermon", 1, "Vaccine", "Deep Savers", "ranged", { cost: 1, evolvesTo: ["gargomon"] }),
+  gargomon: f("gargomon", "Gargomon", 2, "Vaccine", "Deep Savers", "ranged", { evolvesTo: ["rapidmon", "megagargomon"] }),
+  rapidmon: f("rapidmon", "Rapidmon", 3, "Vaccine", "Deep Savers", "ranged"),
+  megagargomon: f("megagargomon", "MegaGargomon", 3, "Vaccine", "Deep Savers", "tank"),
+
+  // ============ Gaomon — Deep Savers (branch at Ultimate) ============
+  gaomon: f("gaomon", "Gaomon", 1, "Data", "Deep Savers", "bruiser", { cost: 2, evolvesTo: ["gaogamon"] }),
+  gaogamon: f("gaogamon", "GaoGamon", 2, "Data", "Deep Savers", "bruiser", { evolvesTo: ["machgaogamon", "miragegaogamon"] }),
+  machgaogamon: f("machgaogamon", "MachGaogamon", 3, "Data", "Deep Savers", "bruiser"),
+  miragegaogamon: f("miragegaogamon", "MirageGaogamon", 3, "Data", "Deep Savers", "ranged"),
+
+  // ============ Falcomon — Nightmare Soldiers (branch at Ultimate) ============
+  falcomon: f("falcomon", "Falcomon", 1, "Virus", "Nightmare Soldiers", "assassin", { cost: 2, evolvesTo: ["peckmon"] }),
+  peckmon: f("peckmon", "Peckmon", 2, "Virus", "Nightmare Soldiers", "assassin", { evolvesTo: ["crowmon", "ravemon"] }),
+  crowmon: f("crowmon", "Crowmon", 3, "Data", "Nightmare Soldiers", "caster"),
+  ravemon: f("ravemon", "Ravemon", 3, "Virus", "Nightmare Soldiers", "assassin"),
+
+  // ============ Herissmon — Nightmare Soldiers (Digimon ReArise) ============
+  herissmon: f("herissmon", "Herissmon", 1, "Data", "Nightmare Soldiers", "assassin", { cost: 2, evolvesTo: ["filmon"] }),
+  filmon: f("filmon", "Filmon", 2, "Data", "Nightmare Soldiers", "assassin", { evolvesTo: ["rasenmon"] }),
+  rasenmon: f("rasenmon", "Rasenmon", 3, "Data", "Nightmare Soldiers", "bruiser"),
+
+  // ============ Renamon — Nature Spirits (branch at Ultimate) ============
+  renamon: f("renamon", "Renamon", 1, "Data", "Nature Spirits", "assassin", { cost: 3, evolvesTo: ["kyubimon"] }),
+  kyubimon: f("kyubimon", "Kyubimon", 2, "Data", "Nature Spirits", "caster", { evolvesTo: ["taomon", "sakuyamon"] }),
+  taomon: f("taomon", "Taomon", 3, "Data", "Nature Spirits", "caster"),
+  sakuyamon: f("sakuyamon", "Sakuyamon", 3, "Data", "Nature Spirits", "assassin"),
+
+  // ============ Agunimon — Dragon's Roar (Frontier's warrior of flame) ============
+  agunimon: f("agunimon", "Agunimon", 1, "Virus", "Dragon's Roar", "bruiser", { cost: 4, evolvesTo: ["burninggreymon"] }),
+  burninggreymon: f("burninggreymon", "BurningGreymon", 2, "Virus", "Dragon's Roar", "ranged", { evolvesTo: ["kaisergreymon"] }),
+  kaisergreymon: f("kaisergreymon", "KaiserGreymon", 3, "Virus", "Dragon's Roar", "bruiser"),
+
+  // ============ Lobomon — Nature Spirits (Frontier's warrior of light) ============
+  lobomon: f("lobomon", "Lobomon", 1, "Virus", "Nature Spirits", "assassin", { cost: 4, evolvesTo: ["kendogarurumon"] }),
+  kendogarurumon: f("kendogarurumon", "KendoGarurumon", 2, "Virus", "Nature Spirits", "assassin", { evolvesTo: ["magnagarurumon"] }),
+  magnagarurumon: f("magnagarurumon", "MagnaGarurumon", 3, "Virus", "Nature Spirits", "ranged"),
+
   // ============ bosses only ============
   zeed: f("zeed", "ZeedMillenniummon", 3, "Virus", "Nightmare Soldiers", "tank", { bossOnly: true }),
   gracenovamon: f("gracenovamon", "Gracenovamon", 3, "Data", "Dragon's Roar", "bruiser", { bossOnly: true }),
@@ -104,11 +165,8 @@ export const FORMS: Record<string, Form> = {
 
   // ============ wild Digimon (set 3): met in PvE waves, never recruited ============
   coronamon: f("coronamon", "Coronamon", 1, "Vaccine", "Nature Spirits", "ranged", { wild: true }),
-  herissmon: f("herissmon", "Herissmon", 1, "Data", "Nature Spirits", "assassin", { wild: true }),
   tapirmon: f("tapirmon", "Tapirmon", 1, "Vaccine", "Nightmare Soldiers", "caster", { wild: true }),
-  filmon: f("filmon", "Filmon", 2, "Data", "Nature Spirits", "assassin", { wild: true }),
   piximon: f("piximon", "Piximon", 2, "Data", "Wind Guardians", "caster", { wild: true }),
-  rasenmon: f("rasenmon", "Rasenmon", 3, "Data", "Nature Spirits", "bruiser", { wild: true }),
 };
 
 /** Display names of the three stages (the game's top tier is called Mega throughout). */

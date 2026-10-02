@@ -77,7 +77,7 @@ def convert(n: int, form_id: str):
         out = os.path.join(ROOT, "models-src", form_id + ".glb")
         r = subprocess.run([PYTHON, os.path.join(ROOT, "scripts", "dscs_to_glb.py"), stage, chr_id, out], capture_output=True, text=True)
         for line in r.stdout.splitlines():
-            if line.startswith(("export:", "warning:")):
+            if line.startswith(("export:", "warning:", "skipped")):
                 print("  " + line, flush=True)
         if r.returncode or not os.path.exists(out):
             sys.exit(f"{chr_id}: conversion failed\n{r.stderr[-2000:]}")

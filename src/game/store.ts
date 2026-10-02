@@ -23,11 +23,9 @@ import { BENCH_SLOTS, COLS, ROWS } from "./board";
 import { net } from "../net/bus";
 import { submitScore } from "../net/leaderboard";
 
-const REROLL_COST = 2;
 const SHOP_SIZE = 5;
 
 const START_LEVEL = 3;
-const START_GOLD = 10;
 const START_HEALTH = 100;
 
 
@@ -348,7 +346,7 @@ export const pvpName = (pvp: PvpState | null, seat: number | null | undefined) =
 /** Run state for a fresh VS match — both players start equal. */
 function freshMatchRun() {
   return {
-    gold: START_GOLD,
+    gold: ECONOMY.startGold,
     level: START_LEVEL,
     xp: 0,
     health: START_HEALTH,
@@ -386,7 +384,7 @@ const newRunSeed = () => 1 + Math.floor(Math.random() * (2 ** 31 - 2));
 
 function initialState() {
   return {
-    gold: START_GOLD,
+    gold: ECONOMY.startGold,
     level: START_LEVEL,
     xp: 0,
     health: START_HEALTH,
@@ -464,10 +462,10 @@ export const useGame = create<GameState>((set, get) => ({
 
   reroll: () => {
     const { gold, freeRerolls } = get();
-    if (freeRerolls <= 0 && gold < REROLL_COST) return;
+    if (freeRerolls <= 0 && gold < ECONOMY.rerollCost) return;
     sfx.reroll();
     set({
-      ...(freeRerolls > 0 ? { freeRerolls: freeRerolls - 1 } : { gold: gold - REROLL_COST }),
+      ...(freeRerolls > 0 ? { freeRerolls: freeRerolls - 1 } : { gold: gold - ECONOMY.rerollCost }),
       shop: rollShop(get().level, shopPool(get())),
     });
   },

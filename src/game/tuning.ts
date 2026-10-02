@@ -7,14 +7,21 @@ import { COLS } from "./board";
  * Solo-run difficulty and economy knobs in one place. Tuned with the full-run bot
  * simulator (`npm run runsim`), which plays complete runs through the real store.
  */
+/** Since the roster grew to 24 lines (Oct 2026) the copies of any one line turn up about
+ *  half as often; more gold and 1-gold rerolls keep evolutions coming (600-run sims:
+ *  each boss beaten by about half the runs, as before) and let fans dig for favourites. */
 export const ECONOMY = {
-  baseIncome: 5,
+  /** gold at the start of a run or match */
+  startGold: 15,
+  baseIncome: 6,
   /** extra gold for winning a round */
   winGold: 1,
   /** free XP every round */
   passiveXp: 2,
   xpCost: 4,
   xpPerBuy: 4,
+  /** a fresh shop */
+  rerollCost: 1,
 };
 
 /** Shop odds by player level: chance of each rookie cost tier (1–4), like TFT's
@@ -57,14 +64,14 @@ export const WAVES = {
    *  one candidate per round, picked by its seed. Candidates are tuned to the same pass
    *  rate on the same 600 bot boards (`npm run runsim` prints "boss candidates"). */
   bosses: [
-    [{ id: "skullsatamon", hp: 3.4, atk: 1.35, adds: 1 }],
+    [{ id: "skullsatamon", hp: 3.0, atk: 1.25, adds: 1 }],
     [
       { id: "machinedramon", hp: 2.4, atk: 1.2, adds: 2 },
       { id: "mitamamon", hp: 2.0, atk: 0.86, adds: 2 },
     ],
     [
       { id: "diaboromon", hp: 2.5, atk: 1.25, adds: 2 },
-      { id: "apollomon", hp: 2.4, atk: 0.95, adds: 2 },
+      { id: "apollomon", hp: 2.8, atk: 0.95, adds: 2 },
     ],
   ] as Omit<BossSpec, "addCount">[][],
   /** endless mode: every 5th round the next of these, all with the same multipliers */
@@ -165,21 +172,22 @@ export const VS = {
   /** wild-Digimon rounds: [rookies, champions, megas]; later stages repeat the last.
    *  Tuned on 600 bot runs' boards (`npm run runsim -- dumpBoards=…`): a typical board wins
    *  ~90% — loot rounds, but a weak board can trip. */
-  wild: { 1: [2, 0, 0], 2: [3, 0, 0], 5: [3, 1, 0], 15: [1, 5, 0], 25: [0, 4, 2], 35: [0, 3, 4] } as Record<number, Mix>,
+  wild: { 1: [2, 0, 0], 2: [3, 0, 0], 5: [2, 1, 0], 15: [1, 5, 0], 25: [0, 4, 2], 35: [0, 4, 3] } as Record<number, Mix>,
   /** bosses of rounds 10, 20, 30, 40+ — a real check, getting harder: a typical board
-   *  beats them ~67% / 60% / 57% / 52% of the time (600 bot boards, Oct 2026). A match
-   *  meets one candidate per round, picked by the room's variant; candidates match. */
+   *  beats them ~68% / 61% / 57% / 52% of the time (600 bot boards of the 24-line roster,
+   *  Oct 2026). A match meets one candidate per round, picked by the room's variant;
+   *  candidates match. */
   bosses: [
-    [{ id: "skullsatamon", hp: 4.8, atk: 1.8, adds: 2, addCount: 2 }],
+    [{ id: "skullsatamon", hp: 4.2, atk: 1.8, adds: 2, addCount: 2 }],
     [
-      { id: "machinedramon", hp: 2.6, atk: 1.45, adds: 3, addCount: 2 },
-      { id: "mitamamon", hp: 2.4, atk: 1.1, adds: 3, addCount: 2 },
+      { id: "machinedramon", hp: 3.6, atk: 1.6, adds: 3, addCount: 2 },
+      { id: "mitamamon", hp: 3.2, atk: 1.1, adds: 3, addCount: 2 },
     ],
     [
-      { id: "zeed", hp: 3.1, atk: 1.3, adds: 3, addCount: 2 },
-      { id: "apollomon", hp: 3.4, atk: 1.3, adds: 3, addCount: 2 },
+      { id: "zeed", hp: 3.5, atk: 1.45, adds: 3, addCount: 2 },
+      { id: "apollomon", hp: 4.2, atk: 1.45, adds: 3, addCount: 2 },
     ],
-    [{ id: "gracenovamon", hp: 3.2, atk: 1.45, adds: 3, addCount: 3 }],
+    [{ id: "gracenovamon", hp: 2.9, atk: 1.45, adds: 3, addCount: 3 }],
   ] as BossSpec[][],
 };
 

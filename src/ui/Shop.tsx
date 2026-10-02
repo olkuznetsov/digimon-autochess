@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useGame, pvpMe } from "../game/store";
 import { FORMS, ATTR_COLOR, LINE_ROOT, sellValue } from "../game/creatures";
+import { ECONOMY } from "../game/tuning";
 import { Portrait } from "./Portrait";
 import { FormTooltip } from "./FormTooltip";
 
@@ -28,17 +29,22 @@ export function Shop() {
     <div className={`shop${dragged ? " sell-zone" : ""}`}>
       {dragged && <div className="sell-hint">Drop here to sell for ⛂ {sellValue(dragged.formId)}</div>}
       <div className="shop-econ">
-        <button className="econ-btn xp" onClick={buyXp} disabled={gold < 4 || level >= 8} title="Buy 4 XP (F)">
-          ▲ <span className="econ-word">Buy XP </span><span className="cost">4</span>
+        <button
+          className="econ-btn xp"
+          onClick={buyXp}
+          disabled={gold < ECONOMY.xpCost || level >= 8}
+          title={`Buy ${ECONOMY.xpPerBuy} XP (F)`}
+        >
+          ▲ <span className="econ-word">Buy XP </span><span className="cost">{ECONOMY.xpCost}</span>
         </button>
         <button
           className="econ-btn reroll"
           onClick={reroll}
-          disabled={gold < 2 && freeRerolls === 0}
+          disabled={gold < ECONOMY.rerollCost && freeRerolls === 0}
           title={freeRerolls > 0 ? "Free reroll (Lucky Roll) (D)" : "Reroll the shop (D)"}
         >
           ⟳ <span className="econ-word">Reroll </span>
-          <span className="cost">{freeRerolls > 0 ? "free" : 2}</span>
+          <span className="cost">{freeRerolls > 0 ? "free" : ECONOMY.rerollCost}</span>
         </button>
       </div>
       <div className="shop-slots">

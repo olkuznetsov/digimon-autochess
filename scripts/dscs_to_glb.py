@@ -12,7 +12,9 @@ which maps onto glTF almost one to one:
     are relative to that bind pose (final = bind local × clip TRS — what the Blender
     importer does by building its bones from these matrices), baked into the keys
   - meshes with up to 4 bone weights per vertex; the base texture from ColorSampler,
-    alpha-tested materials as MASK; the cel-outline shells (MTR_line*) are left out
+    alpha-tested materials as MASK; left out: the cel-outline shells (MTR_line*) and the
+    effect meshes (EFF_* / ef_* materials on eff_* textures: jet glows, sword light) —
+    the game draws both with its own shaders, here they'd be grey hulls and opaque cards
   - a clip per .anim file, keyed sparsely like the game (time = frame / playback rate).
 Both use Y up, so nothing is rotated.
 """
@@ -158,9 +160,16 @@ def convert(src_dir: str, chr_id: str, out: str):
 
     # ---- materials
     mat_of = {}
+    def is_effect(m) -> bool:
+        if m.name.lower().startswith(("mtr_line", "eff_", "ef_")):
+            return True
+        tex = m.shader_uniforms.get("ColorSampler")
+        return tex is not None and model.textures[int(tex[0])].name.lower().startswith("eff_")
+
     for i, m in enumerate(model.materials):
-        if m.name.startswith("MTR_line"):
-            continue  # cel-outline shells: the game draws them with its own shader
+        if is_effect(m):
+            print(f"skipped {m.name}")
+            continue
         gm = {"name": m.name, "pbrMetallicRoughness": {"metallicFactor": 0.0, "roughnessFactor": 1.0}}
         if "ColorSampler" in m.shader_uniforms:
             gm["pbrMetallicRoughness"]["baseColorTexture"] = {"index": texture(int(m.shader_uniforms["ColorSampler"][0]))}
