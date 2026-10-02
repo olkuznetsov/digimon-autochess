@@ -284,7 +284,8 @@ export function Hud() {
 
       {pvp?.selfOffline && !pvp.connLost && <div className="net-banner">📡 Connection dropped — reconnecting…</div>}
 
-      {pvp?.connLost && (
+      {/* (an update while in the lobby shows in the lobby window instead) */}
+      {pvp?.connLost && !(pvp.outdated && pvp.snap.stage === "lobby") && (
         <div className="gameover">
           <div className="go-title draw">{pvp.outdated ? "🔄 GAME UPDATED" : "📡 CONNECTION LOST"}</div>
           <div className="go-sub">

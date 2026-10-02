@@ -50,7 +50,10 @@ Design choices worth a look:
 - **A lobby with no game server.** In VS, every client simulates *every* fight of the round from the same boards
   and reports the outcomes; the room (`server/src/lobby.ts`) applies the first report and compares the rest.
   Pairings, ghosts, places and rating are pure rules in `src/game/lobby.ts`, shared by the worker and the
-  clients; `npm run lobbycheck` plays thousands of random lobbies through them.
+  clients; `npm run lobbycheck` plays thousands of random lobbies through them. Every build is stamped with a hash
+  of `src/game/` (`scripts/rules-version.mjs`, run by the site build and by the worker's build), and the worker
+  lets a client into VS only on its own rules — a tab left open across an update reloads instead of simulating
+  other fights, while a match already running when an update lands finishes on the rules it started with.
 - **Cosmetics never touch the sim.** Hit-stop, slow motion and 2× speed only change *when* fixed steps run in
   real time (`src/three/juice.ts`), so replays and PvP results stay identical.
 - **No per-tick React renders for units.** Each unit reads its fighter state in `useFrame` through a small mutable
