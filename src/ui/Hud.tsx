@@ -10,6 +10,7 @@ import { isMuted, setMuted, isMusicOn, setMusicOn, sfx } from "../audio/sfx";
 import { LobbyModal } from "./LobbyModal";
 import { LeaderboardModal } from "./LeaderboardModal";
 import { SettingsModal } from "./SettingsModal";
+import { Guide } from "./Guide";
 import { lobbyClose, lobbyLeave } from "../net/lobby";
 
 /** VS result screens move on by themselves — the other tamers are already planning. */
@@ -123,7 +124,7 @@ export function Hud() {
           <button className="icon-btn" title="Settings" onClick={() => setShowSettings(true)}>
             ⚙
           </button>
-          <button className="icon-btn" title="How to play" onClick={() => setShowHelp(true)}>
+          <button className="icon-btn" title="Tamer's Guide — how to play, every Digimon, items, VS" onClick={() => setShowHelp(true)}>
             ❓
           </button>
           {!pvp && (
@@ -370,32 +371,7 @@ export function Hud() {
       {showLb && <LeaderboardModal onClose={() => setShowLb(false)} />}
 
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
-      {showHelp && (
-        <div className="help-overlay" onClick={() => setShowHelp(false)}>
-          <div className="help-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="help-title">How to play</div>
-            <ul className="help-list">
-              <li>🛒 <b>Buy Digimon</b> from the shop — they appear on your bench.</li>
-              <li>🖱 <b>Drag them</b> onto the blue half of the board to fight.</li>
-              <li>🧬 <b>3 copies of the same Digimon digivolve</b> — sometimes you choose the evolution path!</li>
-              <li>🧩 <b>Synergies</b> (left panel): matching Attributes &amp; Families buff your team.</li>
-              <li>⚔ Battles run themselves. Units gain <b>mana</b> and cast role abilities when full.</li>
-              <li>🎒 Win rounds to earn <b>items</b> — click an item, then a Digimon to equip it.</li>
-              <li>⚗ <b>Fuse two items</b> into a stronger one: select an item, then click a glowing partner (12 recipes).</li>
-              <li>🔍 <b>Click any Digimon</b> to see its stats, ability and items — or drag it onto the shop to sell it.</li>
-              <li>🔒 <b>Lock the shop</b> to keep it for next round; ⏩ speeds battles up 2×.</li>
-              <li>⌨ <b>Keys</b>: D reroll · F buy XP · 1–5 buy · L lock · E sell selected · Space start / continue · S speed.</li>
-              <li>☠ Every <b>5th round is a BOSS</b> — beat it for a guaranteed item + bonus gold.</li>
-              <li>⚔ <b>VS</b>: create a lobby and send the 4-letter code — 2 to 8 tamers. Each round your board fights another player's (odd one out fights a ghost copy), wild Digimon on rounds 1–2 and every 5th, a boss every 10th. Every stage opens with a 🎠 <b>carousel</b>: one shared set of items, lowest HP picks first; rounds 4, 9 and 14 offer ✨ <b>augments</b> (pick 1 of 3). Rookies come from a <b>shared pool</b> — what others collect, you can't. Last tamer standing wins; your place moves your rating. 🌐 <b>Find a match</b> plays strangers. 🏳️ to surrender.</li>
-              <li>🏆 <b>Leaderboard</b>: finish a run to post your best round — and <b>fight other players' saved boards</b> as risk-free ghost battles.</li>
-              <li>🏆 Survive <b>round {VICTORY_ROUND}</b> to complete the run. Losing costs ♥ — at 0 it's game over.</li>
-            </ul>
-            <button className="action" onClick={() => setShowHelp(false)}>
-              Got it
-            </button>
-          </div>
-        </div>
-      )}
+      {showHelp && <Guide onClose={() => setShowHelp(false)} />}
     </>
   );
 }
