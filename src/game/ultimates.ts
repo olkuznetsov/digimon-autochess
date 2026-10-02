@@ -159,7 +159,7 @@ export const ULTIMATES: Record<string, Ultimate> = {
   magnaangemon: u("Gate of Destiny", "⚔️", "Banishes a weakened foe — 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
   // Nature Spirits — Dracomon line
   coredramon: u("Blue Flare Breath", "🔥", "A dragon-fire blast for 255%.", bolt(2.55)),
-  breakdramon: u("Giga Drill", "🩸", "Braces behind an 8% team shield.", bulwark(0.08, true)),
+  breakdramon: u("Giga Drill", "🩸", "Braces behind a 7% team shield.", bulwark(0.07, true)),
   // Deep Savers — Keramon line
   infermon: u("Cable Crusher", "🕸️", "Three savage strikes (120% each).", barrage(3, 1.2)),
   diaboromon: u("Web Wrecker", "🕷️", "A viral nova (150%) around the target.", nova(1.5, 1.7)),
@@ -171,7 +171,7 @@ export const ULTIMATES: Record<string, Ultimate> = {
   rosemon: u("Thorn Whip", "🌹", "Five lashes that heal her (75% each, 20% lifesteal).", siphon(5, 0.75, 0.2)),
   rosemonbm: u("Danger Thorn", "🥀", "A toxic bloom detonates — AoE 185%.", nova(1.85, 1.8)),
   // Deep Savers — Gomamon line
-  ikkakumon: u("Harpoon Torpedo", "🐚", "Braces behind a 21% shield.", bulwark(0.21)),
+  ikkakumon: u("Harpoon Torpedo", "🐚", "Braces behind a 17% shield.", bulwark(0.17)),
   vikemon: u("Arctic Blizzard", "🧊", "A polar storm: AoE 110% and freezes for 1s.", freeze(1.1, 1.8, 1.0)),
   // Wind Guardians — Veemon line
   exveemon: u("Vee-Laser", "⚡", "An X-shaped beam for 250%.", bolt(2.5)),
@@ -238,6 +238,15 @@ export const ULTIMATES: Record<string, Ultimate> = {
   // Nature Spirits — Lobomon line
   kendogarurumon: u("Lightspeed Jamming", "💫", "Light-blade dashes: three strikes (120% each).", barrage(3, 1.2)),
   magnagarurumon: u("Magna Missile", "🚀", "Every missile in its armour at the 3 nearest (150%).", volley(3, 1.5)),
+  // Nightmare Soldiers — DemiDevimon's Devimon branch
+  devimon: u("Touch of Evil", "🖐️", "A cursed touch seizes minds around the target: AoE 135%, frozen for 0.9s.", freeze(1.35, 1.6, 0.9)),
+  myotismon: u("Grisly Wing", "🦇", "A swarm of bats drains the target: five bites (80% each, 25% lifesteal).", siphon(5, 0.8, 0.25)),
+  ladydevimon: u("Darkness Wave", "🌑", "A wave of bats at the 3 nearest (140%).", volley(3, 1.4)),
+  // Wind Guardians — Salamon line
+  gatomon: u("Lightning Paw", "🐾", "A flurry of claw strikes: three hits (120% each).", barrage(3, 1.2)),
+  angewomon: u("Celestial Arrow", "🏹", "An arrow of holy light for 400% attack.", bolt(4.0)),
+  ophanimon: u("Eden's Javelin", "✨", "Javelins of light rain around the target — AoE 185%.", nova(1.85, 1.8)),
+  silphymon: u("Static Force", "🌀", "A sphere of energy (290%) that bursts on nearby foes (100%).", smite(2.9, 1.0, 1.6)),
   // Support rally on a couple of casters keeps team comps interesting
   candlemon: u("Ember Rally", "🕯️", "Ignites allies: +30% attack for the battle.", rally(0.3)),
   // rookies whose family synergies fit them badly (or too well) get their own moves

@@ -11,8 +11,8 @@ for model sources.*
 
 ## What's in it
 
-- **85 forms in 24 evolution lines**, plus 3 wild Digimon that roam the enemy waves and 4 boss-only villains —
-  every one an animated 3D model — with branching digivolutions and 75 named signature ultimates (Terra Force,
+- **93 forms in 25 evolution lines**, plus 3 wild Digimon that roam the enemy waves and 4 boss-only villains —
+  every one an animated 3D model — with branching digivolutions and 82 named signature ultimates (Terra Force,
   Cocytus Breath, Positron Laser…). Boss rounds draw from candidates, so runs and matches differ.
 - **Synergies** (three attributes in a counter triangle, five families with two tiers each), **items** that
   fuse in pairs into 12 stronger ones, boss rounds, a 15-round run plus endless mode.

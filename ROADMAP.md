@@ -183,14 +183,21 @@
 ## 4. Беклог
 - Друзі: постійні коди + запрошення (потрібні присутність/сповіщення на воркері).
 - Бот для `runsim`, що вміє зливати предмети.
-- Більше Дигімонів: файли Cyber Sleuth — 368 моделей, 79 уже в нас (`scripts/dscs_convert.py --list`); наступні
-  кандидати — Gatomon/Salamon, Devimon/Myotismon, Tyrannomon, Woodmon (MODELS_CHECKLIST). Поріг: 24 лінії вже
+- Більше Дигімонів: файли Cyber Sleuth — 368 моделей, 87 уже в нас (`scripts/dscs_convert.py --list`); наступні
+  кандидати — Tyrannomon, Woodmon, Impmon (MODELS_CHECKLIST). Поріг: 24 лінії вже
   вимагали економіки; ще більше — подумати про пороги синергій і розмір пулу VS.
 - Режими складності; рейтингова ghost-драбина; більше босів з унікальними механіками.
 - Code-splitting (модалки мультиплеєра/лідерборду), розбиття `store.ts` на слайси.
 
 ## 5. Журнал
 <!-- новіші записи зверху -->
+- **2026-10-03** — Set 5 із файлів Cyber Sleuth: лінія Salamon → Gatomon → [Angewomon | Ophanimon | Silphymon]
+  (Wind Guardians, вартість 3; перша потрійна гілка) і друга гілка DemiDevimon — Devimon → [Myotismon | LadyDevimon]
+  (канон: DemiDevimon → Devimon і в Cyber Sleuth, і в V-pet). Devimon — гілка, а не нова лінія: магазин не
+  розбавляється (25 ліній, 93 форми, 100 моделей). Атрибути: Silphymon (D, канон) тримає трикутник на стадії 3
+  (14/13/13); решта як у грі. 7 нових ульт. Баланс: усі форми 43–58% (Ikkakumon 21→17% щита, Breakdramon 8→7%
+  командного щита — танки піднялись від нових кастерів; Devimon 110→135%). Соло з 25 лініями — боси 43/41/38% →
+  HP босів −6% → 48/46/42%.
 - **2026-10-02** — Set 4: 9 нових ліній із файлів Cyber Sleuth (Tentomon, Biyomon, Terriermon, Gaomon, Falcomon,
   Renamon, Agunimon, Lobomon + Herissmon стала грабельною) і друга гілка Agumon (GeoGreymon → RizeGreymon/ShineGreymon):
   24 лінії, 85 форм, 92 моделі (46 МБ). Атрибути з таблиці гри, шість змінено для трикутника (8/8/8, 9/9/8, 12/12/11);

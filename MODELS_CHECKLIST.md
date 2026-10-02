@@ -1,4 +1,4 @@
-# Roster — 85 forms in 24 lines + 3 wild + 4 bosses, 100% real animated models
+# Roster — 93 forms in 25 lines + 3 wild + 4 bosses, 100% real animated models
 
 Every form has an animated model: source `models-src/<formId>.glb`, shipped (optimized by `npm run optimize-models`) as `public/models/<formId>.glb` (idle/move/attack01… clips
 drive the combat state machine). The roster is deliberately shaped around sourceable models.
@@ -14,7 +14,7 @@ Legend: (V)accine (D)ata (Vi)rus · **[a | b]** = player chooses a branch.
 | Biyomon (1) | `biyomon`(V) | `birdramon`(V) | **[`garudamon`(V) \| `hououmon`(V)]** | Wind Guardians |
 | Terriermon (1) | `terriermon`(V) | `gargomon`(V) | **[`rapidmon`(V) \| `megagargomon`(V)]** | Deep Savers |
 | Gabumon (1) | `gabumon`(D) | `garurumon`(D) | **[`metalgarurumon`(D) \| `cresgarurumon`(V)]** | Nature Spirits |
-| DemiDevimon (1) | `demidevimon`(Vi) | `skullsatamon`(Vi) | `belzemon`(Vi) | Nightmare Soldiers |
+| DemiDevimon (1) | `demidevimon`(Vi) | **[`skullsatamon`(Vi) \| `devimon`(Vi)]** | `skullsatamon` → `belzemon`(Vi), `devimon` → **[`myotismon`(Vi) \| `ladydevimon`(Vi)]** | Nightmare Soldiers |
 | Hagurumon (2) | `hagurumon`(Vi) | `guardromon`(Vi) | `machinedramon`(Vi) | Nightmare Soldiers |
 | Patamon (2) | `patamon`(V) | `angemon`(V) | `magnaangemon`(V) | Wind Guardians |
 | Dracomon (2) | `dracomon`(D) | `coredramon`(D) | `breakdramon`(D) | Nature Spirits |
@@ -28,15 +28,17 @@ Legend: (V)accine (D)ata (Vi)rus · **[a | b]** = player chooses a branch.
 | Herissmon (2) | `herissmon`(D) | `filmon`(D) | `rasenmon`(D) | Nightmare Soldiers |
 | Wormmon (3) | `wormmon`(V) | `stingmon`(V) | `banchostingmon`(V) | Wind Guardians |
 | Renamon (3) | `renamon`(D) | `kyubimon`(D) | **[`taomon`(D) \| `sakuyamon`(D)]** | Nature Spirits |
+| Salamon (3) | `salamon`(V) | `gatomon`(V) | **[`angewomon`(V) \| `ophanimon`(V) \| `silphymon`(D)]** | Wind Guardians |
 | Flamemon (3) | `flamemon`(D) | `aldamon`(D) | `susanoomon`(D) | Dragon's Roar |
 | Guilmon (4) | `guilmon`(Vi) | `growlmon`(Vi) | `gallantmon`(Vi) | Dragon's Roar |
 | Dorumon (4) | `dorumon`(D) | `dorugamon`(D) | `alphamon`(D) | Dragon's Roar |
 | Agunimon (4) | `agunimon`(Vi) | `burninggreymon`(Vi) | `kaisergreymon`(Vi) | Dragon's Roar |
 | Lobomon (4) | `lobomon`(Vi) | `kendogarurumon`(Vi) | `magnagarurumon`(Vi) | Nature Spirits |
 
-Removed (no animated rips exist anywhere): GeoGreymon/RizeGreymon, Tyrannomon/MetalTyrannomon,
+Removed early on (no animated rips existed then): GeoGreymon/RizeGreymon, Tyrannomon/MetalTyrannomon,
 Gaogamon/MachGaogamon, WereGarurumon, Devimon/IceDevimon/Myotismon, Pegasusmon,
-Woodmon/Cherrymon, Dolphmon. They can return later via Meshy/AI generation.
+Woodmon/Cherrymon, Dolphmon. Cyber Sleuth's files have them all: GeoGreymon/RizeGreymon, Gaogamon/MachGaogamon
+and Devimon/Myotismon are back since sets 4–5.
 
 Boss-only (`bossOnly`: never in the shop, wild waves or scrims) — boss rounds draw from candidates:
 | Form | Attr / family | Where |
@@ -51,7 +53,7 @@ Wild Digimon (`wild`: met in PvE waves, never recruited): `coronamon`(V), `tapir
 DigiChess is now used up; its Herissmon → Filmon → Rasenmon (a real line from Digimon ReArise) is recruitable since set 4.
 
 **The big source is ready: Digimon Story Cyber Sleuth's own files** (see models-src/README.md). 368 models,
-46 of them already in the roster; `python3 scripts/dscs_convert.py --list` prints the catalog. Complete lines
+87 of them in the roster now; `python3 scripts/dscs_convert.py --list` prints the catalog. Complete lines
 we don't have yet include Tentomon → Kabuterimon → MegaKabuterimon/HerculesKabuterimon, Biyomon → Birdramon →
 Garudamon/Hououmon, Renamon → Kyubimon → Taomon/Sakuyamon, Terriermon → Gargomon → Rapidmon/MegaGargomon,
 Gaomon → GaoGamon → MachGaogamon/MirageGaogamon, Lunamon → Lekismon → Crescemon/Dianamon, Falcomon → Peckmon →

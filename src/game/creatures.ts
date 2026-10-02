@@ -29,8 +29,8 @@ export const FORMS: Record<string, Form> = {
   metalgarurumon: f("metalgarurumon", "MetalGarurumon", 3, "Data", "Nature Spirits", "ranged"),
   cresgarurumon: f("cresgarurumon", "CresGarurumon", 3, "Vaccine", "Nature Spirits", "bruiser"),
 
-  // ============ DemiDevimon — Nightmare Soldiers ============
-  demidevimon: f("demidevimon", "DemiDevimon", 1, "Virus", "Nightmare Soldiers", "caster", { cost: 1, evolvesTo: ["skullsatamon"] }),
+  // ============ DemiDevimon — Nightmare Soldiers (branch at Champion) ============
+  demidevimon: f("demidevimon", "DemiDevimon", 1, "Virus", "Nightmare Soldiers", "caster", { cost: 1, evolvesTo: ["skullsatamon", "devimon"] }),
   skullsatamon: f("skullsatamon", "SkullSatamon", 2, "Virus", "Nightmare Soldiers", "assassin", { evolvesTo: ["belzemon"] }),
   belzemon: f("belzemon", "Beelzemon", 3, "Virus", "Nightmare Soldiers", "ranged"),
 
@@ -156,6 +156,18 @@ export const FORMS: Record<string, Form> = {
   lobomon: f("lobomon", "Lobomon", 1, "Virus", "Nature Spirits", "assassin", { cost: 4, evolvesTo: ["kendogarurumon"] }),
   kendogarurumon: f("kendogarurumon", "KendoGarurumon", 2, "Virus", "Nature Spirits", "assassin", { evolvesTo: ["magnagarurumon"] }),
   magnagarurumon: f("magnagarurumon", "MagnaGarurumon", 3, "Virus", "Nature Spirits", "ranged"),
+
+  // ============ DemiDevimon's second branch — Nightmare Soldiers (Adventure's Devimon) ============
+  devimon: f("devimon", "Devimon", 2, "Virus", "Nightmare Soldiers", "caster", { evolvesTo: ["myotismon", "ladydevimon"] }),
+  myotismon: f("myotismon", "Myotismon", 3, "Virus", "Nightmare Soldiers", "caster"),
+  ladydevimon: f("ladydevimon", "LadyDevimon", 3, "Virus", "Nightmare Soldiers", "assassin"),
+
+  // ============ Salamon — Wind Guardians (three-way branch at Ultimate) ============
+  salamon: f("salamon", "Salamon", 1, "Vaccine", "Wind Guardians", "caster", { cost: 3, evolvesTo: ["gatomon"] }),
+  gatomon: f("gatomon", "Gatomon", 2, "Vaccine", "Wind Guardians", "assassin", { evolvesTo: ["angewomon", "ophanimon", "silphymon"] }),
+  angewomon: f("angewomon", "Angewomon", 3, "Vaccine", "Wind Guardians", "ranged"),
+  ophanimon: f("ophanimon", "Ophanimon", 3, "Vaccine", "Wind Guardians", "caster"),
+  silphymon: f("silphymon", "Silphymon", 3, "Data", "Wind Guardians", "bruiser"),
 
   // ============ bosses only ============
   zeed: f("zeed", "ZeedMillenniummon", 3, "Virus", "Nightmare Soldiers", "tank", { bossOnly: true }),
