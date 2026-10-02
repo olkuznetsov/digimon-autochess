@@ -23,7 +23,7 @@ import {
   type Standing,
 } from "../../src/game/lobby";
 import { isCarouselRound } from "../../src/game/tuning";
-import { FORMS } from "../../src/game/creatures";
+import { formOf, isPlayable } from "../../src/game/creatures";
 import { AUGMENTS, MAX_AUGMENTS } from "../../src/game/augments";
 
 /**
@@ -61,6 +61,8 @@ interface Room {
   creator: number;
   match: number;
   seed: number;
+  /** picks the match's bosses; sent to clients (unlike the seed, which foretells pairings) */
+  variant: number;
   round: number;
   fighting: boolean;
   plan: RoundPlan | null;
@@ -102,6 +104,7 @@ const newRoom = (): Room => ({
   creator: 0,
   match: 0,
   seed: 0,
+  variant: 0,
   round: 0,
   fighting: false,
   plan: null,
@@ -177,6 +180,7 @@ export class Lobby extends DurableObject<Env> {
       carousel: room.carousel,
       public: room.public,
       expect: room.auto?.expect ?? 0,
+      variant: room.variant,
       seats: room.seats.map((s) => ({
         seat: s.seat,
         name: s.name,
@@ -340,6 +344,7 @@ export class Lobby extends DurableObject<Env> {
     room.stage = "match";
     room.match++;
     room.seed = Math.floor(Math.random() * 2 ** 31);
+    room.variant = 1 + Math.floor(Math.random() * (2 ** 31 - 2));
     room.round = 1;
     room.fighting = false;
     room.history = [];
@@ -397,6 +402,7 @@ export class Lobby extends DurableObject<Env> {
       plan: room.plan ?? { round: room.round, pairs: [], ghost: null },
       boards,
       augments: Object.fromEntries(alive.map((s) => [s.seat, room.augments[s.seat] ?? []])),
+      variant: room.variant,
     };
     room.fighting = true;
     for (const s of room.seats) s.ready = false;
@@ -524,8 +530,8 @@ export class Lobby extends DurableObject<Env> {
     if (room.stage !== "match" || !me.inMatch || !me.alive || !m.counts || typeof m.counts !== "object") return;
     const counts: Record<string, number> = {};
     for (const [id, n] of Object.entries(m.counts as Record<string, unknown>)) {
-      const form = FORMS[id];
-      const max = form && form.stage === 1 ? (POOL_COPIES[form.cost ?? 1] ?? 18) : 0;
+      const form = formOf(id);
+      const max = isPlayable(form) && form.stage === 1 ? (POOL_COPIES[form.cost ?? 1] ?? 18) : 0;
       const v = Math.floor(Number(n));
       if (max && v > 0) counts[id] = Math.min(max, v);
     }

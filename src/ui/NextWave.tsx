@@ -11,12 +11,18 @@ export function NextWave() {
   const phase = useGame((s) => s.phase);
   const round = useGame((s) => s.round);
   const pvp = useGame((s) => s.pvp);
+  const runSeed = useGame((s) => s.runSeed);
   const vs = !!pvp && pvp.snap.stage !== "lobby";
+  const variant = pvp?.snap.variant ?? 0;
   const kind = vs ? vsRoundKind(round) : isBossRound(round) ? "boss" : "pve";
   const wave = useMemo(
     () =>
-      (vs ? makeVsWave(round) : makeEnemyWave(round)).map((f) => ({ id: f.uid, formId: f.formId, boss: !!f.boss })),
-    [round, vs],
+      (vs ? makeVsWave(round, "W", variant) : makeEnemyWave(round, runSeed)).map((f) => ({
+        id: f.uid,
+        formId: f.formId,
+        boss: !!f.boss,
+      })),
+    [round, vs, variant, runSeed],
   );
   if (phase !== "prep" || (pvp && !vs)) return null;
   // the carousel panel takes this spot while it runs

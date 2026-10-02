@@ -79,9 +79,9 @@ export function ghostFighters(
   return round % 2 === 1 ? [...h, ...g] : [...g, ...h];
 }
 
-/** A player against the round's wild / boss wave. */
-export function pveFighters(board: WireUnit[], round: number, seat: number, augments: string[] = []): Fighter[] {
-  return [...side(board, `${seat}_`, "player", augments), ...makeVsWave(round)];
+/** A player against the round's wild / boss wave (`variant`: the room's, picks the boss). */
+export function pveFighters(board: WireUnit[], round: number, seat: number, augments: string[] = [], variant = 0): Fighter[] {
+  return [...side(board, `${seat}_`, "player", augments), ...makeVsWave(round, "W", variant)];
 }
 
 /** Run a fight to the end without rendering. */
@@ -112,13 +112,14 @@ export function roundOutcomes(
   boards: Record<number, WireUnit[]>,
   alive: number[],
   augs: Augs = {},
+  variant = 0,
 ): Outcome[] {
   const stage = vsStageDamage(round);
   const out = new Map<number, Outcome>();
   const board = (seat: number) => boards[seat] ?? [];
   if (vsRoundKind(round) !== "pvp") {
     for (const seat of alive) {
-      const r = runFight(pveFighters(board(seat), round, seat, augs[seat]));
+      const r = runFight(pveFighters(board(seat), round, seat, augs[seat], variant));
       const won = r.winner === "home";
       out.set(seat, { seat, won, damage: won ? 0 : stage + r.enemies });
     }

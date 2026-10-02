@@ -143,6 +143,7 @@ const NO_BOARD: PvpBoardUnit[] = [];
 function EnemyPreview() {
   const round = useGame((s) => s.round);
   const vs = useGame((s) => !!s.pvp && s.pvp.snap.stage !== "lobby");
+  const seed = useGame((s) => (s.pvp ? (s.pvp.snap.variant ?? 0) : s.runSeed));
   const scouting = useGame((s) => s.pvp?.scout != null);
   const shown = useGame((s) => {
     const p = s.pvp;
@@ -160,9 +161,9 @@ function EnemyPreview() {
         items: u.items ?? [],
       }));
     }
-    const wave = vs ? makeVsWave(round) : makeEnemyWave(round);
+    const wave = vs ? makeVsWave(round, "W", seed) : makeEnemyWave(round, seed);
     return wave.map((f) => ({ key: f.uid, formId: f.formId, col: f.col, row: f.row, boss: !!f.boss, items: [] as string[] }));
-  }, [round, vs, scouting, shown]);
+  }, [round, vs, seed, scouting, shown]);
 
   return (
     <>

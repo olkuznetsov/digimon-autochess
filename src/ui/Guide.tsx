@@ -1,11 +1,23 @@
 import { useMemo, useState } from "react";
-import { FORMS, ROOKIE_IDS, PLAYABLE_IDS, ATTR_COLOR, FAMILY_COLOR, STAGE_NAME, statsFor, attributeMultiplier } from "../game/creatures";
+import {
+  FORMS,
+  ALL_FORM_IDS,
+  ROOKIE_IDS,
+  PLAYABLE_IDS,
+  WILD_IDS,
+  ATTR_COLOR,
+  FAMILY_COLOR,
+  STAGE_NAME,
+  isPlayable,
+  statsFor,
+  attributeMultiplier,
+} from "../game/creatures";
 import { ultimateFor } from "../game/ultimates";
 import { HP_SCALE } from "../game/battle";
 import { TRAITS } from "../game/synergies";
 import { ITEMS, BASE_ITEM_IDS, FUSED_ITEM_IDS, fuseResult } from "../game/items";
 import { AUGMENTS, AUGMENT_IDS, AUGMENT_ROUNDS } from "../game/augments";
-import { ECONOMY, SHOP_ODDS, VS } from "../game/tuning";
+import { ECONOMY, SHOP_ODDS, VS, WAVES } from "../game/tuning";
 import { POOL_COPIES, ratingDelta } from "../game/lobby";
 import type { Family, Role } from "../game/types";
 import { Portrait } from "./Portrait";
@@ -154,6 +166,68 @@ function FormCard({ id }: { id: string }) {
   );
 }
 
+const BOSS_IDS = ALL_FORM_IDS.filter((id) => FORMS[id].bossOnly);
+
+/** Where a boss-only form turns up, read off the boss tables. */
+function bossRounds(id: string): string {
+  const at: string[] = [];
+  WAVES.bosses.forEach((tier, i) => {
+    if (tier.some((b) => b.id === id)) at.push(`solo R${(i + 1) * 5}`);
+  });
+  VS.bosses.forEach((tier, i) => {
+    if (tier.some((b) => b.id === id)) at.push(`VS R${(i + 1) * 10}${i === VS.bosses.length - 1 ? "+" : ""}`);
+  });
+  if (WAVES.endlessBosses.includes(id)) at.push("endless");
+  return at.join(" · ");
+}
+
+/** The Digimon you meet but can't recruit: wild ones in the waves, and the bosses. */
+function Bestiary({ family }: { family: Family | null }) {
+  const of = (ids: string[]) => ids.filter((id) => !family || FORMS[id].family === family);
+  const wild = of(WILD_IDS);
+  const bosses = of(BOSS_IDS);
+  return (
+    <>
+      {wild.length > 0 && (
+        <section className="dex-line">
+          <div className="dex-line-head">
+            <b>Wild Digimon</b>
+            <span className="dex-note">in enemy waves and VS wild rounds — they can't be recruited</span>
+          </div>
+          <div className="dex-tree">
+            {([1, 2, 3] as const).map((stage) => (
+              <div key={stage} className="dex-stage">
+                <span className="dex-stage-name">{STAGE_NAME[stage]}</span>
+                {wild
+                  .filter((id) => FORMS[id].stage === stage)
+                  .map((id) => (
+                    <FormCard key={id} id={id} />
+                  ))}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      {bosses.length > 0 && (
+        <section className="dex-line">
+          <div className="dex-line-head">
+            <b>Bosses</b>
+            <span className="dex-note">met only as bosses; a run or match draws one candidate per boss round</span>
+          </div>
+          <div className="dex-tree">
+            {bosses.map((id) => (
+              <div key={id} className="dex-stage">
+                <span className="dex-stage-name">{bossRounds(id)}</span>
+                <FormCard id={id} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+    </>
+  );
+}
+
 function Digimon() {
   const [family, setFamily] = useState<Family | null>(null);
   // lines by cost, then name: rookie → its champions → their megas
@@ -171,8 +245,9 @@ function Digimon() {
   return (
     <>
       <p className="guide-intro">
-        {lines.length} lines, {PLAYABLE_IDS.length} forms. Stats are per role and stage; what sets a Digimon apart is
-        its attribute, family and ultimate.
+        {lines.length} lines, {PLAYABLE_IDS.length} forms to collect — plus {WILD_IDS.length} wild Digimon and{" "}
+        {BOSS_IDS.length} bosses you can only fight. Stats are per role and stage; what sets a Digimon apart is its
+        attribute, family and ultimate.
       </p>
       <div className="guide-chips">
         <button className={`guide-chip${family === null ? " on" : ""}`} onClick={() => setFamily(null)}>
@@ -214,6 +289,7 @@ function Digimon() {
             </div>
           </section>
         ))}
+      <Bestiary family={family} />
     </>
   );
 }
@@ -239,7 +315,7 @@ function Synergies() {
         <div className="syn-grid">
           {TRAITS.map((t) => {
             const members = Object.values(FORMS)
-              .filter((f) => f.stage === 1 && (f.attribute === t.key || f.family === t.key))
+              .filter((f) => isPlayable(f) && f.stage === 1 && (f.attribute === t.key || f.family === t.key))
               .map((f) => f.id);
             return (
               <div key={t.key} className="syn-card" style={{ borderColor: t.color }}>

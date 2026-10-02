@@ -23,9 +23,9 @@ import {
   type RoundPlan,
   type Standing,
 } from "../src/game/lobby";
-import { isCarouselRound, vsRoundKind, vsStageDamage } from "../src/game/tuning";
+import { VS, isCarouselRound, makeVsWave, vsRoundKind, vsStageDamage } from "../src/game/tuning";
 import { ITEMS } from "../src/game/items";
-import { FORMS } from "../src/game/creatures";
+import { FORMS, PLAYABLE_IDS } from "../src/game/creatures";
 import { AUGMENT_IDS, augmentOffer } from "../src/game/augments";
 import { roundOutcomes } from "../src/game/vsFights";
 
@@ -133,8 +133,8 @@ for (const [n, s] of Object.entries(stats)) {
   );
 }
 // shared pool bookkeeping: a Champion holds 3 copies of its line's rookie, a Mega 9
-const champ = Object.keys(FORMS).find((id) => FORMS[id].stage === 2)!;
-const mega = Object.keys(FORMS).find((id) => FORMS[id].stage === 3)!;
+const champ = PLAYABLE_IDS.find((id) => FORMS[id].stage === 2)!;
+const mega = PLAYABLE_IDS.find((id) => FORMS[id].stage === 3)!;
 const held = heldCopies(["agumon", "agumon", champ, mega]);
 if (Object.values(held).reduce((a, b) => a + b, 0) !== 2 + 3 + 9) fail(`heldCopies ${JSON.stringify(held)}`);
 const full = fullPool();
@@ -159,6 +159,24 @@ const withAugs = roundOutcomes(3, duelPlan, duelBoards, [0, 1], boosted);
 if (JSON.stringify(withAugs) !== JSON.stringify(roundOutcomes(3, duelPlan, duelBoards, [0, 1], boosted))) fail("augmented fight not deterministic");
 if (!plain[0].won || !withAugs[1].won) fail(`3 combat augments should flip a mirror fight: plain ${JSON.stringify(plain)}, boosted ${JSON.stringify(withAugs)}`);
 console.log("augments: a mirror duel the home side wins flips to the away side with 3 combat augments");
+
+// the room's variant picks each boss round's boss: the same on every client, every
+// candidate in play, variant 0 (rooms from before) the classic one
+const bossOf = (round: number, variant: number) => makeVsWave(round, "W", variant).find((f) => f.boss)?.formId;
+const met: string[] = [];
+VS.bosses.forEach((candidates, tier) => {
+  const round = (tier + 1) * 10;
+  const seen = new Set<string>();
+  for (let v = 1; v <= 200; v++) {
+    const id = bossOf(round, v);
+    if (!id || id !== bossOf(round, v)) fail(`R${round} variant ${v}: boss not deterministic`);
+    seen.add(id!);
+  }
+  if (seen.size !== candidates.length) fail(`R${round}: ${seen.size} of ${candidates.length} candidates ever drawn`);
+  if (bossOf(round, 0) !== candidates[0].id) fail(`R${round}: variant 0 should keep ${candidates[0].id}`);
+  met.push(`R${round} ${[...seen].join("/")}`);
+});
+console.log(`bosses by variant: ${met.join("  ")}`);
 
 const sums = [2, 3, 4, 5, 6, 7, 8].map((n) => Array.from({ length: n }, (_, i) => ratingDelta(n, i + 1)));
 console.log(`\nrating by place: ${sums.map((r) => `${r.length}p [${r.join(" ")}]`).join("  ")}`);

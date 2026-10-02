@@ -342,6 +342,8 @@ export interface LobbySnapshot {
   public: boolean;
   /** public match: the players it waits for before starting */
   expect: number;
+  /** a random number per match that picks its bosses (0 from a room saved before) */
+  variant: number;
 }
 
 /** A round's fight as broadcast when every player is locked in. */
@@ -352,4 +354,6 @@ export interface LobbyFight {
   boards: Record<number, WireUnit[]>;
   /** every player's augments at the start of the fight (combat ones change it) */
   augments?: Record<number, string[]>;
+  /** the match's variant (picks the boss of a boss round) */
+  variant?: number;
 }

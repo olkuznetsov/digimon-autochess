@@ -21,7 +21,7 @@ import { SIM_DT } from "../src/game/battle";
 import { traitCounts, TRAITS } from "../src/game/synergies";
 import { COLS, BENCH_SLOTS } from "../src/game/board";
 import type { Unit, Placement } from "../src/game/types";
-import { ECONOMY, WAVES, vsRoundKind } from "../src/game/tuning";
+import { ECONOMY, WAVES, isBossRound, makeEnemyWave, vsRoundKind } from "../src/game/tuning";
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.split("=")));
 const RUNS = Number(args.runs ?? 300);
@@ -41,8 +41,8 @@ const VARIANTS: Record<string, () => void> = {
       11: [0, 5, 1], 12: [0, 4, 2], 13: [0, 3, 3], 14: [0, 3, 4],
       16: [0, 0, 7], 17: [0, 0, 7], 18: [0, 0, 7], 19: [0, 0, 7],
     });
-    WAVES.boss[1] = { hp: 3.6, atk: 1.45, adds: 2 };
-    WAVES.boss[2] = { hp: 4.2, atk: 1.6, adds: 3 };
+    WAVES.bosses[1] = [{ id: "machinedramon", hp: 3.6, atk: 1.45, adds: 2 }];
+    WAVES.bosses[2] = [{ id: "diaboromon", hp: 4.2, atk: 1.6, adds: 3 }];
   },
 };
 const variant = String(args.variant ?? "current");
@@ -248,6 +248,24 @@ interface RoundLog {
   vs?: boolean;
   /** VS wild/boss rounds, dump mode only */
   board?: PvpBoardUnit[];
+  /** solo boss rounds with several candidates: which of them this board beats */
+  bosses?: Record<string, boolean>;
+}
+
+/** Solo boss rounds offer one of several bosses per run: fight every candidate with the
+ *  same board, so they can be tuned to the same pass rate (a paired comparison). */
+function bossProbe(board: PvpBoardUnit[], round: number): Record<string, boolean> | undefined {
+  const candidates = round <= 15 && isBossRound(round) ? WAVES.bosses[round / 5 - 1] : [];
+  if (candidates.length < 2) return undefined;
+  const out: Record<string, boolean> = {};
+  for (const boss of candidates) {
+    WAVES.bosses[round / 5 - 1] = [boss];
+    // the player side exactly as a fight builds it (synergies included)
+    const mine = pveFighters(board, round, 0).filter((f) => f.team === "player");
+    out[boss.id] = simulate([...mine, ...makeEnemyWave(round)]).win;
+  }
+  WAVES.bosses[round / 5 - 1] = candidates;
+  return out;
 }
 
 function playRun(): RoundLog[] {
@@ -266,6 +284,7 @@ function playRun(): RoundLog[] {
     // VS probe: how would this board fare against the VS wave of the same round?
     const wired = vsRoundKind(S().round) === "pvp" ? undefined : wireBoard(board);
     const vs = wired && simulate(pveFighters(wired, S().round, 0)).win;
+    const bosses = bossProbe(wireBoard(board), S().round);
     const stages: [number, number, number] = [0, 0, 0];
     for (const u of board) stages[FORMS[u.formId].stage - 1]++;
     S().startBattle();
@@ -284,6 +303,7 @@ function playRun(): RoundLog[] {
       stages,
       vs,
       board: DUMP ? wired : undefined,
+      bosses,
     });
     if (DUMP) g.setState({ health: 100, gameOver: false }); // every run reaches every round
     else if (st.gameOver) break;
@@ -312,6 +332,14 @@ console.log(`death round: p10 ${pct(0.1)}  p25 ${pct(0.25)}  median ${pct(0.5)} 
 const beat = (round: number) => runs.filter((r) => r.some((x) => x.round === round && x.win)).length / RUNS;
 console.log(`survived R5 ${(cleared(5) * 100).toFixed(0)}%  R10 ${(cleared(10) * 100).toFixed(0)}%  R15 ${(cleared(15) * 100).toFixed(0)}%  R20 ${(cleared(20) * 100).toFixed(0)}%`);
 console.log(`beat the boss: R5 ${(beat(5) * 100).toFixed(0)}%  R10 ${(beat(10) * 100).toFixed(0)}%  R15 ${(beat(15) * 100).toFixed(0)}% (= run won)`);
+// each candidate against the same boards: tune them to the same rate
+const probed = [5, 10, 15].flatMap((round) => {
+  const rows = runs.map((r) => r.find((x) => x.round === round)?.bosses).filter(Boolean) as Record<string, boolean>[];
+  if (!rows.length) return [];
+  const ids = Object.keys(rows[0]);
+  return [`R${round} ` + ids.map((id) => `${id} ${((rows.filter((b) => b[id]).length / rows.length) * 100).toFixed(0)}%`).join(" · ") + ` (n=${rows.length})`];
+});
+if (probed.length) console.log(`boss candidates (same boards): ${probed.join("  |  ")}`);
 
 // VS rounds use their own waves (tuning.ts `VS`); solo boards are a fair proxy for a
 // VS player's board at the same round (same economy, shop and levels). Only rounds most

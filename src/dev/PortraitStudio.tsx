@@ -72,7 +72,7 @@ function Studio({ onLog }: { onLog: (s: string) => void }) {
         const center = box.getCenter(new THREE.Vector3());
         const fov = THREE.MathUtils.degToRad(camera.fov);
         const span = Math.max(size.y, size.x * 0.9) * 0.5;
-        const dist = (span / Math.tan(fov / 2)) * 1.12 + size.z * 0.5;
+        const dist = ((span / Math.tan(fov / 2)) * 1.12 + size.z * 0.5) / (PORTRAIT_ZOOM[formId] ?? 1);
         // 3/4 view from the front-left, slightly above
         const dir = new THREE.Vector3(-0.42, 0.22, 1).normalize();
         camera.position.copy(center).addScaledVector(dir, dist);
@@ -102,6 +102,9 @@ function Studio({ onLog }: { onLog: (s: string) => void }) {
     </Suspense>
   );
 }
+
+/** Forms whose wings dwarf the body in a full-size frame: the portrait moves in closer. */
+const PORTRAIT_ZOOM: Record<string, number> = { piximon: 2 };
 
 export function PortraitStudio() {
   const [log, setLog] = useState<string[]>([]);

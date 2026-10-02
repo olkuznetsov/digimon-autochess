@@ -30,6 +30,8 @@ export interface Form {
   evolvesTo?: string[];
   /** appears only as a boss: never in the shop, wild waves or scrims */
   bossOnly?: boolean;
+  /** a wild Digimon: met in PvE waves, never in the shop, a player's board or scrims */
+  wild?: boolean;
 }
 
 /** A unit instance the player owns (on bench or board). */

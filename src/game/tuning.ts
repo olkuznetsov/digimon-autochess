@@ -1,5 +1,5 @@
 import type { Fighter } from "./types";
-import { FORMS, PLAYABLE_IDS } from "./creatures";
+import { FORMS, PLAYABLE_IDS, WILD_IDS } from "./creatures";
 import { makeFighter } from "./battle";
 import { COLS } from "./board";
 
@@ -53,36 +53,59 @@ export const WAVES = {
     19: [0, 1, 6],
   } as Record<number, [number, number, number]>,
   endless: [0, 0, 7] as [number, number, number],
-  /** boss multipliers by tier (rounds 5, 10, 15, endless) and the stage of its adds */
-  boss: [
-    { hp: 3.4, atk: 1.35, adds: 1 },
-    { hp: 2.4, atk: 1.2, adds: 2 },
-    { hp: 2.5, atk: 1.25, adds: 2 },
-    { hp: 4.2, atk: 1.6, adds: 3 },
-  ] as { hp: number; atk: number; adds: 1 | 2 | 3 }[],
+  /** bosses of rounds 5, 10 and 15 (multipliers and the stage of the adds): a run meets
+   *  one candidate per round, picked by its seed. Candidates are tuned to the same pass
+   *  rate on the same 600 bot boards (`npm run runsim` prints "boss candidates"). */
+  bosses: [
+    [{ id: "skullsatamon", hp: 3.4, atk: 1.35, adds: 1 }],
+    [
+      { id: "machinedramon", hp: 2.4, atk: 1.2, adds: 2 },
+      { id: "mitamamon", hp: 2.0, atk: 0.86, adds: 2 },
+    ],
+    [
+      { id: "diaboromon", hp: 2.5, atk: 1.25, adds: 2 },
+      { id: "apollomon", hp: 2.4, atk: 0.95, adds: 2 },
+    ],
+  ] as Omit<BossSpec, "addCount">[][],
+  /** endless mode: every 5th round the next of these, all with the same multipliers */
+  endlessBosses: ["gankoomon", "zeed", "apollomon", "imperialdramon", "gracenovamon", "mitamamon", "alphamon", "machinedramon", "diaboromon"],
+  endlessBoss: { hp: 4.2, atk: 1.6, adds: 3 } as { hp: number; atk: number; adds: 1 | 2 | 3 },
 };
-
-// Every 5th round is a BOSS: one oversized villain with big HP (+2 adds) and a
-// guaranteed item reward.
-const BOSS_IDS: Record<number, string> = { 5: "skullsatamon", 10: "machinedramon", 15: "diaboromon" };
-const ENDLESS_BOSSES = ["gankoomon", "zeed", "imperialdramon", "gracenovamon", "alphamon", "machinedramon", "diaboromon"];
 
 export const isBossRound = (round: number) => round % 5 === 0;
 
-function bossIdFor(round: number): string {
-  return BOSS_IDS[round] ?? ENDLESS_BOSSES[(round / 5) % ENDLESS_BOSSES.length];
-}
-
 type Mix = [number, number, number];
 type BossSpec = { id: string; hp: number; atk: number; adds: 1 | 2 | 3; addCount: number };
+
+/** One of a boss round's candidates: the first for seed 0 (saves and rooms from before
+ *  there was a choice), otherwise spread by the seed — per round, so a run's bosses vary
+ *  independently. */
+function pickBoss<T>(candidates: T[], seed: number, round: number): T {
+  if (!seed || candidates.length === 1) return candidates[0];
+  let h = (seed ^ Math.imul(round, 0x9e3779b1)) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b) >>> 0;
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35) >>> 0;
+  return candidates[((h ^ (h >>> 16)) >>> 0) % candidates.length];
+}
+
+const byStage = (ids: string[]) => ([1, 2, 3] as const).map((stage) => ids.filter((id) => FORMS[id].stage === stage));
+/** Bosses bring their minions from the roster. */
+const ROSTER = byStage(PLAYABLE_IDS);
+/** Waves draw from the roster plus the wild Digimon — twice, so they turn up often
+ *  (a wild pack can bring two of a kind). */
+const WAVE_POOL = ROSTER.map((roster, i) => [...roster, ...byStage(WILD_IDS)[i], ...byStage(WILD_IDS)[i]]);
+/** the stride between a wave's picks: coprime with the pool, so a wave doesn't repeat
+ *  the same few forms */
+const WAVE_STEP = WAVE_POOL.map((pool) => [5, 7, 11, 13].find((k) => pool.length % k !== 0) ?? 1);
 
 /** Deterministic wave from a round number: the same round always fields the same
  *  forms in the same cells (both VS clients rely on this). `prefix` keeps uids apart. */
 function buildWave(round: number, hpScale: number, boss: BossSpec | null, mix: Mix, prefix = "e"): Fighter[] {
   const pick = (stage: 1 | 2 | 3, i: number) => {
-    const pool = PLAYABLE_IDS.filter((id) => FORMS[id].stage === stage);
-    return pool[(round * 3 + i * 5) % pool.length];
+    const pool = WAVE_POOL[stage - 1];
+    return pool[(round * 3 + i * WAVE_STEP[stage - 1]) % pool.length];
   };
+  const minion = (stage: 1 | 2 | 3, i: number) => ROSTER[stage - 1][(round * 3 + i * 5) % ROSTER[stage - 1].length];
   const at = (i: number) => ({ col: i % COLS, row: 5 - Math.floor(i / COLS) });
 
   if (boss) {
@@ -94,7 +117,7 @@ function buildWave(round: number, hpScale: number, boss: BossSpec | null, mix: M
     b.boss = true;
     const adds = Array.from({ length: boss.addCount }, (_, i) => {
       const p = at(i * 2 + 1); // flank the boss
-      return makeFighter(pick(boss.adds, i), `${prefix}${i}`, "enemy", p.col, p.row, hpScale * 0.9);
+      return makeFighter(minion(boss.adds, i), `${prefix}${i}`, "enemy", p.col, p.row, hpScale * 0.9);
     });
     return [b, ...adds];
   }
@@ -112,11 +135,15 @@ function buildWave(round: number, hpScale: number, boss: BossSpec | null, mix: M
   });
 }
 
-export function makeEnemyWave(round: number): Fighter[] {
+/** A solo round's enemies. `seed` is the run's: it picks the bosses (0 = the classic ones). */
+export function makeEnemyWave(round: number, seed = 0): Fighter[] {
   const hpScale = 1 + (round - 1) * WAVES.hpRamp + (round > 15 ? (round - 15) * WAVES.endlessRamp : 0);
   if (isBossRound(round)) {
-    const b = WAVES.boss[round <= 5 ? 0 : round <= 10 ? 1 : round <= 15 ? 2 : 3];
-    return buildWave(round, hpScale, { id: bossIdFor(round), ...b, addCount: round > 15 ? 3 : 2 }, [0, 0, 0]);
+    const boss =
+      round <= 15
+        ? { ...pickBoss(WAVES.bosses[round / 5 - 1], seed, round), addCount: 2 }
+        : { id: WAVES.endlessBosses[(round / 5) % WAVES.endlessBosses.length], ...WAVES.endlessBoss, addCount: 3 };
+    return buildWave(round, hpScale, boss, [0, 0, 0]);
   }
   return buildWave(round, hpScale, null, WAVES.table[round] ?? WAVES.endless);
 }
@@ -140,13 +167,20 @@ export const VS = {
    *  ~90% — loot rounds, but a weak board can trip. */
   wild: { 1: [2, 0, 0], 2: [3, 0, 0], 5: [3, 1, 0], 15: [1, 5, 0], 25: [0, 4, 2], 35: [0, 3, 4] } as Record<number, Mix>,
   /** bosses of rounds 10, 20, 30, 40+ — a real check, getting harder: a typical board
-   *  beats them ~68% / 63% / 57% / 52% of the time (same tuning run) */
+   *  beats them ~67% / 60% / 57% / 52% of the time (600 bot boards, Oct 2026). A match
+   *  meets one candidate per round, picked by the room's variant; candidates match. */
   bosses: [
-    { id: "skullsatamon", hp: 4.4, atk: 1.8, adds: 2, addCount: 2 },
-    { id: "machinedramon", hp: 2.6, atk: 1.45, adds: 3, addCount: 2 },
-    { id: "zeed", hp: 2.9, atk: 1.3, adds: 3, addCount: 2 },
-    { id: "gracenovamon", hp: 3.2, atk: 1.45, adds: 3, addCount: 3 },
-  ] as BossSpec[],
+    [{ id: "skullsatamon", hp: 4.8, atk: 1.8, adds: 2, addCount: 2 }],
+    [
+      { id: "machinedramon", hp: 2.6, atk: 1.45, adds: 3, addCount: 2 },
+      { id: "mitamamon", hp: 2.4, atk: 1.1, adds: 3, addCount: 2 },
+    ],
+    [
+      { id: "zeed", hp: 3.1, atk: 1.3, adds: 3, addCount: 2 },
+      { id: "apollomon", hp: 3.4, atk: 1.3, adds: 3, addCount: 2 },
+    ],
+    [{ id: "gracenovamon", hp: 3.2, atk: 1.45, adds: 3, addCount: 3 }],
+  ] as BossSpec[][],
 };
 
 export function vsRoundKind(round: number): VsRound {
@@ -165,12 +199,13 @@ export function vsStageDamage(round: number): number {
   return stage <= t.length ? t[stage - 1] : t[t.length - 1] + (stage - t.length) * 8;
 }
 
-/** The wild / boss wave of a VS PvE round — identical on both clients. */
-export function makeVsWave(round: number, prefix = "W"): Fighter[] {
+/** The wild / boss wave of a VS PvE round — identical on every client. `variant` is the
+ *  room's per-match number: it picks the bosses (0 = the classic ones). */
+export function makeVsWave(round: number, prefix = "W", variant = 0): Fighter[] {
   const hpScale = round <= 2 ? 0.75 + round * 0.05 : 1 + (round - 1) * WAVES.hpRamp;
   if (vsRoundKind(round) === "boss") {
     const tier = Math.min(VS.bosses.length - 1, round / (VS.stageLength * 2) - 1);
-    return buildWave(round, hpScale, VS.bosses[tier], [0, 0, 0], prefix);
+    return buildWave(round, hpScale, pickBoss(VS.bosses[tier], variant, round), [0, 0, 0], prefix);
   }
   const keys = Object.keys(VS.wild).map(Number).sort((a, b) => a - b);
   const key = [...keys].reverse().find((k) => k <= round) ?? keys[0];

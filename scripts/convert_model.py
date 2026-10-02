@@ -4,7 +4,7 @@
 - runs assimp export
 - strips COLOR_0 vertex colors (some rips bake black -> model renders as silhouette)
 - resets 3ds Max's default grey diffuse on textured materials (renders ~40% too dark)
-- copies referenced external textures next to the glb
+- copies referenced external textures next to the glb (form id prefix on a name clash)
 - reports animation clip count
 
 Usage: python3 scripts/convert_model.py <source-file> <form-id>
@@ -74,19 +74,27 @@ def convert(src, form_id):
                 del prim["attributes"]["COLOR_0"]
                 stripped += 1
     whitened = whiten_max_grey(j)
-    if stripped or dropped_dups or whitened:
-        save_glb(out, j, rest)
-    anims = len(j.get("animations", []))
+    # textures land next to every other model's: a different file under the same
+    # name (two rips' "eye.png") gets the form id as a prefix instead of overwriting
     src_dir = os.path.dirname(src)
-    copied = []
+    copied, renamed = [], 0
     for img in j.get("images", []):
         uri = img.get("uri")
         if not uri:
             continue
         cand = os.path.join(src_dir, uri)
-        if os.path.exists(cand):
-            shutil.copy(cand, os.path.join(OUT_DIR, uri))
-            copied.append(uri)
+        if not os.path.exists(cand):
+            continue
+        dest = uri
+        taken = os.path.join(OUT_DIR, dest)
+        if os.path.exists(taken) and open(taken, "rb").read() != open(cand, "rb").read():
+            dest = f"{form_id}_{uri}"
+            img["uri"] = dest
+            renamed += 1
+        shutil.copy(cand, os.path.join(OUT_DIR, dest))
+        copied.append(dest)
+    if stripped or dropped_dups or whitened or renamed:
+        save_glb(out, j, rest)
     size_kb = os.path.getsize(out) // 1024
     anim_count = len(j.get("animations", []))
     print(f"{form_id}: anims={anim_count} dropped_dups={dropped_dups} stripped_colors={stripped} whitened={whitened} textures={copied} size={size_kb}KB")

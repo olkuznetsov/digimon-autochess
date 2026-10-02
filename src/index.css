@@ -2681,6 +2681,11 @@ html, body {
   color: var(--gold);
   font-size: 12px;
 }
+.dex-note {
+  color: var(--text-dim);
+  font-family: var(--font-body);
+  font-size: 12px;
+}
 .dex-tree {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

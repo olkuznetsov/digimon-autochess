@@ -193,6 +193,15 @@ export const ULTIMATES: Record<string, Ultimate> = {
   // bosses
   zeed: u("Time Unlimited", "⏳", "Stops time around the target: AoE 130%, frozen for 1.3s.", freeze(1.3, 2.2, 1.3)),
   gracenovamon: u("Grace Nova", "🌟", "A blade of every Royal Knight — AoE 200%.", nova(2.0, 2.2)),
+  apollomon: u("Solblaster", "☀️", "Hurls the blazing sun from its back — AoE 180%.", nova(1.8, 2.0)),
+  mitamamon: u("Kaijinraidou", "⚡", "Lightning from its eye that never misses — the 3 nearest (165%).", volley(3, 1.65)),
+  // wild Digimon (set 3)
+  coronamon: u("Corona Flame", "🔥", "A ball of fire for 260% attack.", bolt(2.6)),
+  herissmon: u("Lightning Fur", "⚡", "Lightning-coated quills at the 3 nearest (120%).", volley(3, 1.2)),
+  tapirmon: u("Nightmare Syndrome", "💤", "Releases its captured nightmares — AoE 140%.", nova(1.4, 1.6)),
+  filmon: u("Crimson Slash", "🩸", "Claws that don't stop: three slashes (120% each).", barrage(3, 1.2)),
+  piximon: u("Bit Bomb", "💣", "A bat-shaped virus bomb bursts on the target — AoE 150%.", nova(1.5, 1.6)),
+  rasenmon: u("Spiral Vanish", "🌀", "Spines fuse into a giant drill (300%) that tears through nearby foes (100%).", smite(3.0, 1.0, 1.6)),
   // Support rally on a couple of casters keeps team comps interesting
   candlemon: u("Ember Rally", "🕯️", "Ignites allies: +22% attack for the battle.", rally(0.22)),
   // rookies whose family synergies fit them badly (or too well) get their own moves

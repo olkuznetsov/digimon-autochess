@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types";
-import { FORMS, ROOKIE_IDS, sellValue } from "./creatures";
+import { FORMS, PLAYABLE_IDS, ROOKIE_IDS, sellValue } from "./creatures";
 import { makeFighter, stepCombat, SIM_DT, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
 import { BASE_ITEM_IDS, FUSED_ITEM_IDS, fuseResult } from "./items";
@@ -205,6 +205,8 @@ interface GameState {
   xp: number;
   health: number;
   round: number;
+  /** the solo run's seed: picks which boss each boss round brings (0 = the classic ones) */
+  runSeed: number;
   streak: number;
   gameOver: boolean;
 
@@ -318,7 +320,7 @@ const planDeadline = () => Date.now() + (touchDevice() ? VS.planSecondsTouch : V
 
 const randomOf = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const FUSED_IDS = FUSED_ITEM_IDS;
-const CHAMPION_IDS = Object.keys(FORMS).filter((id) => FORMS[id].stage === 2);
+const CHAMPION_IDS = PLAYABLE_IDS.filter((id) => FORMS[id].stage === 2);
 /** after the carousel, at least this long to equip the new item */
 const AFTER_CAROUSEL_MS = 20_000;
 
@@ -376,6 +378,8 @@ function readSpeed(): number {
   }
 }
 
+const newRunSeed = () => 1 + Math.floor(Math.random() * (2 ** 31 - 2));
+
 function initialState() {
   return {
     gold: START_GOLD,
@@ -383,6 +387,7 @@ function initialState() {
     xp: 0,
     health: START_HEALTH,
     round: 1,
+    runSeed: newRunSeed(),
     streak: 0,
     gameOver: false,
     shop: rollShop(START_LEVEL),
@@ -602,7 +607,7 @@ export const useGame = create<GameState>((set, get) => ({
   setDrag: (uid, pos) => set({ dragId: uid, dragPos: pos }),
 
   startBattle: () => {
-    const { units, round, pendingEvolution } = get();
+    const { units, round, runSeed, pendingEvolution } = get();
     if (pendingEvolution) return;
     const onBoard = units.filter((u) => u.placement.kind === "board");
     if (onBoard.length === 0) return;
@@ -623,7 +628,7 @@ export const useGame = create<GameState>((set, get) => ({
       result: null,
       viewFlip: false,
       boardSnapshot: units,
-      fighters: [...playerFighters, ...makeEnemyWave(round)],
+      fighters: [...playerFighters, ...makeEnemyWave(round, runSeed)],
       corpses: [],
       fx: [],
       battleTime: 0,
@@ -952,7 +957,7 @@ export const useGame = create<GameState>((set, get) => ({
     // every fight of the round, simulated here exactly as on every other client
     const seats = Object.keys(fight.boards).map(Number);
     const augs = fight.augments ?? {};
-    const outcomes = roundOutcomes(fight.round, fight.plan, fight.boards, seats, augs);
+    const outcomes = roundOutcomes(fight.round, fight.plan, fight.boards, seats, augs, fight.variant ?? 0);
     net.send?.({ t: "report", match: fight.match, round: fight.round, results: outcomes, hash: outcomesHash(outcomes) });
 
     const boards = { ...pvp.boards, ...fight.boards };
@@ -968,7 +973,7 @@ export const useGame = create<GameState>((set, get) => ({
     if (get().augmentOffer) get().pickAugment(get().augmentOffer![0]);
     const oppBoard = opp ? (fight.boards[opp.seat] ?? []) : [];
     const fighters = !opp
-      ? pveFighters(myBoard, fight.round, pvp.seat, augs[pvp.seat])
+      ? pveFighters(myBoard, fight.round, pvp.seat, augs[pvp.seat], fight.variant ?? 0)
       : opp.ghost
         ? ghostFighters(fight.round, pvp.seat, myBoard, opp.seat, oppBoard, augs)
         : opp.home
@@ -1150,7 +1155,7 @@ function saveRun() {
     localStorage.setItem(
       SAVE_KEY,
       JSON.stringify({
-        gold: s.gold, level: s.level, xp: s.xp, health: s.health, round: s.round,
+        gold: s.gold, level: s.level, xp: s.xp, health: s.health, round: s.round, runSeed: s.runSeed,
         streak: s.streak, units: s.units, inventory: s.inventory, shop: s.shop,
         shopLocked: s.shopLocked, uidCounter,
       }),
@@ -1175,6 +1180,8 @@ function savedRun(): Partial<GameState> {
     uidCounter = Math.max(uidCounter, Number(d.uidCounter) || 0, 1000);
     return {
       gold: d.gold, level: d.level, xp: d.xp, health: d.health, round: d.round,
+      // a run saved before bosses varied keeps the classic ones
+      runSeed: Number(d.runSeed) || 0,
       streak: d.streak, units: d.units, inventory: d.inventory ?? [], shop: d.shop,
       shopLocked: !!d.shopLocked, phase: "prep",
     };
@@ -1256,7 +1263,7 @@ function catchUp(snap: LobbySnapshot, lastFight?: LobbyFight) {
     const seat = g().pvp!.seat;
     const seats = Object.keys(lastFight.boards).map(Number);
     const mine = seats.includes(seat)
-      ? roundOutcomes(lastFight.round, lastFight.plan, lastFight.boards, seats, lastFight.augments ?? {}).find(
+      ? roundOutcomes(lastFight.round, lastFight.plan, lastFight.boards, seats, lastFight.augments ?? {}, lastFight.variant ?? 0).find(
           (o) => o.seat === seat,
         )
       : undefined;

@@ -40,11 +40,14 @@ export function tweakFor(formId: string): ModelTweak | undefined {
 for (const id of ROOKIE_IDS) useGLTF.preload(MODEL_PATHS[id]!);
 
 let restQueued = false;
-/** Queue Champions, then Megas, a few at a time while the browser is idle. */
+/** Queue everything else by stage — wild rookies (they open the first waves), then
+ *  Champions, then Megas — a few at a time while the browser is idle. */
 export function preloadRemainingModels() {
   if (restQueued) return;
   restQueued = true;
-  const queue = [2, 3].flatMap((stage) => ALL_FORM_IDS.filter((id) => FORMS[id].stage === stage));
+  const queue = [1, 2, 3].flatMap((stage) =>
+    ALL_FORM_IDS.filter((id) => FORMS[id].stage === stage && !ROOKIE_IDS.includes(id)),
+  );
   const idle =
     (window as unknown as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback ??
     ((cb: () => void) => setTimeout(cb, 200));

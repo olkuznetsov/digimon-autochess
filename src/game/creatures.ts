@@ -13,7 +13,7 @@ const f = (
   attribute: Attribute,
   family: Family,
   role: Role,
-  extra: { cost?: number; evolvesTo?: string[]; bossOnly?: boolean } = {},
+  extra: { cost?: number; evolvesTo?: string[]; bossOnly?: boolean; wild?: boolean } = {},
 ): Form => ({ id, name, stage, attribute, family, role, ...extra });
 
 export const FORMS: Record<string, Form> = {
@@ -99,15 +99,33 @@ export const FORMS: Record<string, Form> = {
   // ============ bosses only ============
   zeed: f("zeed", "ZeedMillenniummon", 3, "Virus", "Nightmare Soldiers", "tank", { bossOnly: true }),
   gracenovamon: f("gracenovamon", "Gracenovamon", 3, "Data", "Dragon's Roar", "bruiser", { bossOnly: true }),
+  apollomon: f("apollomon", "Apollomon", 3, "Vaccine", "Dragon's Roar", "caster", { bossOnly: true }),
+  mitamamon: f("mitamamon", "Mitamamon", 3, "Vaccine", "Wind Guardians", "ranged", { bossOnly: true }),
+
+  // ============ wild Digimon (set 3): met in PvE waves, never recruited ============
+  coronamon: f("coronamon", "Coronamon", 1, "Vaccine", "Nature Spirits", "ranged", { wild: true }),
+  herissmon: f("herissmon", "Herissmon", 1, "Data", "Nature Spirits", "assassin", { wild: true }),
+  tapirmon: f("tapirmon", "Tapirmon", 1, "Vaccine", "Nightmare Soldiers", "caster", { wild: true }),
+  filmon: f("filmon", "Filmon", 2, "Data", "Nature Spirits", "assassin", { wild: true }),
+  piximon: f("piximon", "Piximon", 2, "Data", "Wind Guardians", "caster", { wild: true }),
+  rasenmon: f("rasenmon", "Rasenmon", 3, "Data", "Nature Spirits", "bruiser", { wild: true }),
 };
 
 /** Display names of the three stages (the game's top tier is called Mega throughout). */
 export const STAGE_NAME = ["", "Rookie", "Champion", "Mega"] as const;
 
 export const ALL_FORM_IDS = Object.keys(FORMS);
-export const ROOKIE_IDS = ALL_FORM_IDS.filter((id) => FORMS[id].stage === 1);
-/** forms a player can field (everything but the boss-only ones) */
-export const PLAYABLE_IDS = ALL_FORM_IDS.filter((id) => !FORMS[id].bossOnly);
+/** The form with this id, for ids from outside (a received board): own keys only, so
+ *  "constructor" or "__proto__" aren't mistaken for forms. */
+export const formOf = (id: string): Form | undefined =>
+  Object.prototype.hasOwnProperty.call(FORMS, id) ? FORMS[id] : undefined;
+/** a form a player can own and field (not a boss, not a wild Digimon) */
+export const isPlayable = (form: Form | undefined): form is Form => !!form && !form.bossOnly && !form.wild;
+export const PLAYABLE_IDS = ALL_FORM_IDS.filter((id) => isPlayable(FORMS[id]));
+/** the rookies the shop sells */
+export const ROOKIE_IDS = PLAYABLE_IDS.filter((id) => FORMS[id].stage === 1);
+/** wild Digimon, met only in PvE waves */
+export const WILD_IDS = ALL_FORM_IDS.filter((id) => FORMS[id].wild);
 
 /** Rookie cost of the line each form belongs to (for sell value). */
 export const LINE_COST: Record<string, number> = {};
