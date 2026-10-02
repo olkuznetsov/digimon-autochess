@@ -18,6 +18,13 @@ All Digimon models are ripped from Bandai games (primarily *Digimon Story: Cyber
   Rasenmon) — obtained via the open-source
   [PiSuGames/DigiChess](https://github.com/PiSuGames/DigiChess) Unity project
   (assets credited there to asoliddev's Auto Chess template collection).
+- **Set 4** (GeoGreymon, RizeGreymon, ShineGreymon, Tentomon, Kabuterimon, MegaKabuterimon,
+  HerculesKabuterimon, Biyomon, Birdramon, Garudamon, Hououmon, Terriermon, Gargomon, Rapidmon,
+  MegaGargomon, Gaomon, GaoGamon, MachGaogamon, MirageGaogamon, Falcomon, Peckmon, Crowmon, Ravemon,
+  Renamon, Kyubimon, Taomon, Sakuyamon, Agunimon, BurningGreymon, KaiserGreymon, Lobomon,
+  KendoGarurumon, MagnaGarurumon) — converted from a purchased copy of *Digimon Story Cyber Sleuth:
+  Complete Edition* (Bandai Namco) with MVGLTools by SydMontague and the file readers of Pherakki's
+  Blender-Tools-for-DSCS (`scripts/dscs_convert.py`).
 - **ExVeemon** — obtained via the open-source
   [elondogemoon/letsgoDigimon](https://github.com/elondogemoon/letsgoDigimon) Unity project.
 
