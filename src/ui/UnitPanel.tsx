@@ -89,7 +89,7 @@ export function UnitPanel() {
       </div>
       {phase === "prep" && unit && (
         <button className="up-sell" onClick={() => sellUnit(unit.uid)}>
-          Sell for {sellValue(formId)} ⛂
+          Sell for {sellValue(unit)} ⛂
         </button>
       )}
     </div>

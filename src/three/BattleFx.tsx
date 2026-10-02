@@ -530,14 +530,14 @@ function CastFxImpl({ fx }: { fx: Fx }) {
   const [tx, tz] = fx.toCol != null && fx.toRow != null ? cellToWorld(fx.toCol, fx.toRow) : [cx, cz];
   const c = ATTR_COLOR[fx.attr];
   const b = useBorn();
-  const mega = (fx.stage ?? 1) >= 3;
+  const mega = (fx.stage ?? 3) >= 5;
 
   useEffect(() => {
     // Megas get a cinematic beat: slow-mo + flash + a heavy shake (rationed)
     if (mega) {
       if (slowMo(0.6, 0.3, 2.2)) screenFlash(0.32, c);
       addTrauma(0.3);
-    } else if (fx.stage === 2) {
+    } else if (fx.stage === 4) {
       addTrauma(0.12);
     }
     spawnSparks(tx, 0.7, tz, c, mega ? 22 : 10, mega ? 1.5 : 1.1);
@@ -686,12 +686,12 @@ function UltCallouts({ host }: { host: HTMLDivElement }) {
     for (const f of fx) {
       if (f.kind !== "cast" || seen.current.has(f.id)) continue;
       seen.current.add(f.id);
-      const stage = f.stage ?? 1;
+      const stage = f.stage ?? 3;
       const color = ATTR_COLOR[f.attr];
       const formName = (f.form && FORMS[f.form]?.name) || "";
       // late game fields several Megas: one banner at a time, the rest get a tag
       const now = performance.now() / 1000;
-      if (stage >= 3 && banner.current && now - lastBanner.current > 2.5) {
+      if (stage >= 5 && banner.current && now - lastBanner.current > 2.5) {
         lastBanner.current = now;
         const { root, who, name } = banner.current;
         who.textContent = f.mine === false ? `Enemy ${formName}` : formName;
@@ -700,7 +700,7 @@ function UltCallouts({ host }: { host: HTMLDivElement }) {
         root.className = `ult-banner ${f.mine === false ? "foe" : "mine"}`;
         void root.offsetWidth; // restart the CSS animation
         root.className += " go";
-      } else if (stage >= 2) {
+      } else if (stage >= 4) {
         const slot = pool.current.find((c) => !c.alive) ?? pool.current.reduce((a, b) => (a.born < b.born ? a : b));
         if (!slot) continue;
         const [x, z] = cellToWorld(f.col, f.row);

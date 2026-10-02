@@ -7,6 +7,14 @@ to `src/game/creatures.ts` — the model registry picks it up by convention.
 
 Legend: (V)accine (D)ata (Vi)rus · **[a | b]** = player chooses a branch.
 
+V3 (branch `v3`, M10): **babies** below Rookie, straight from Cyber Sleuth's evolution table — no attribute, no
+family. Fresh (⛂1): `botamon` → [`koromon` | `wanyamon`], `kuramon` → `tsumemon`, `pabumon` → [`motimon` | `yokomon` |
+`tanemon`], `poyomon` → [`bukamon` | `tokomon`], `punimon` → [`nyaromon` | `tsunomon`]. In-Training (⛂2): `koromon` →
+[`agumon` | `guilmon` | `dracomon`], `wanyamon` → [`dorumon` | `gaomon`], `tsumemon` → [`keramon` | `demidevimon`],
+`motimon` → [`hagurumon` | `tentomon`], `yokomon` → [`biyomon` | `wormmon`], `tanemon` → [`palmon` | `renamon`],
+`bukamon` → `gomamon`, `tokomon` → [`patamon` | `falcomon`], `nyaromon` → [`terriermon` | `salamon`], `tsunomon` →
+[`gabumon` | `veemon`]. Candlemon, Flamemon, Herissmon, Agunimon and Lobomon start at Rookie (no babies in the game).
+
 | Line (cost) | Rookie | Champion | Ultimate | Family |
 |---|---|---|---|---|
 | Agumon (1) | `agumon`(V) | **[`greymon`(V) \| `geogreymon`(V)]** | `greymon` → **[`wargreymon`(V) \| `blitzgreymon`(Vi)]**, `geogreymon` → **[`rizegreymon`(Vi) \| `shinegreymon`(V)]** | Dragon's Roar |

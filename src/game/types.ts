@@ -1,32 +1,38 @@
 // Core game types. Renderer-agnostic on purpose: when Colyseus takes over,
 // this is roughly the schema the server would own.
 
-export type Attribute = "Vaccine" | "Data" | "Virus";
+/** Free = no attribute (the babies): outside the counter triangle, no synergy. */
+export type Attribute = "Vaccine" | "Data" | "Virus" | "Free";
 
 export type Family =
   | "Dragon's Roar"
   | "Nature Spirits"
   | "Wind Guardians"
   | "Nightmare Soldiers"
-  | "Deep Savers";
+  | "Deep Savers"
+  /** Fresh and In-Training forms: no family synergy */
+  | "Baby";
+
+/** Evolution stage — also the shop tier and the price: 1 Fresh, 2 In-Training,
+ *  3 Rookie, 4 Champion, 5 Mega (Ultimates live here too). */
+export type Stage = 1 | 2 | 3 | 4 | 5;
 
 /** Combat archetype — drives stats via a (role, stage) table. */
 export type Role = "tank" | "bruiser" | "assassin" | "ranged" | "caster";
 
 /**
- * A single Digimon form (a node in the digivolution graph).
- * stage: 1 = Rookie, 2 = Champion, 3 = Ultimate.
- * Rookies have a `cost` (sold in the shop); higher stages are reached by evolving.
+ * A single Digimon form (a node in the digivolution graph). Its stage is its price:
+ * Fresh, In-Training and Rookies are always in the shop; a Champion or Mega shows up
+ * there once the player has raised it this game (discovery).
  * `evolvesTo` lists the next-stage branches — >1 means the player chooses.
  */
 export interface Form {
   id: string;
   name: string;
-  stage: 1 | 2 | 3;
+  stage: Stage;
   attribute: Attribute;
   family: Family;
   role: Role;
-  cost?: number;
   evolvesTo?: string[];
   /** appears only as a boss: never in the shop, wild waves or scrims */
   bossOnly?: boolean;
@@ -41,6 +47,8 @@ export interface Unit {
   placement: Placement;
   /** equipped item ids (max 2), persist through digivolution */
   items: string[];
+  /** gold paid for it, merged copies included — what selling it returns */
+  paid?: number;
 }
 
 export type Placement =

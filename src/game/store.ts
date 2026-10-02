@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types";
-import { FORMS, PLAYABLE_IDS, ROOKIE_IDS, sellValue } from "./creatures";
+import { FORMS, PLAYABLE_IDS, ROOKIE_IDS, costOf, sellValue } from "./creatures";
 import { makeFighter, stepCombat, SIM_DT, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
 import { BASE_ITEM_IDS, FUSED_ITEM_IDS, fuseResult } from "./items";
@@ -25,7 +25,7 @@ import { submitScore } from "../net/leaderboard";
 
 const SHOP_SIZE = 5;
 
-const START_LEVEL = 3;
+const START_LEVEL = 2;
 const START_HEALTH = 100;
 
 
@@ -82,15 +82,18 @@ let fxCounter = 0;
 const FX_TTL = 1.0; // seconds an effect stays in the list
 
 /**
- * Five rookies for the shop: a cost tier by the player's level, then a rookie of
- * that tier. In a VS lobby the shared pool weighs the draw — every copy left is a
- * ticket, and a line that has run out can't show up (a tier with nothing left is
- * skipped).
+ * Five offers for the shop: a tier — the stage, Fresh 1 … Mega 5 — by the player's
+ * level, then a form of that tier. Fresh, In-Training and Rookies are always on offer;
+ * a Champion or Mega only once raised this game (`discovered`). In a VS lobby the
+ * shared pool weighs the draw — every copy left is a ticket, and a form that has run
+ * out can't show up (a tier with nothing on offer is skipped).
  */
-function rollShop(level: number, pool?: Record<string, number>): string[] {
-  const odds = SHOP_ODDS[Math.max(3, Math.min(8, level))];
+function rollShop(level: number, discovered: string[], pool?: Record<string, number>): string[] {
+  const odds = SHOP_ODDS[Math.max(1, Math.min(MAX_LEVEL, level))];
   const left = (id: string) => (pool ? (pool[id] ?? 0) : 1);
-  const inTier = (tier: number) => ROOKIE_IDS.filter((id) => (FORMS[id].cost ?? 2) === tier && left(id) > 0);
+  const open = new Set(discovered);
+  const inTier = (tier: number) =>
+    PLAYABLE_IDS.filter((id) => FORMS[id].stage === tier && (tier <= 3 || open.has(id)) && left(id) > 0);
   const weights = odds.map((w, t) => (inTier(t + 1).length > 0 ? w : 0));
   const total = weights.reduce((a, b) => a + b, 0);
   return Array.from({ length: SHOP_SIZE }, () => {
@@ -112,6 +115,13 @@ function rollShop(level: number, pool?: Record<string, number>): string[] {
     }
     return cands[cands.length - 1];
   });
+}
+
+/** Champions and Megas the player now has join the discovered list: from now on they
+ *  can show up in the shop (Fresh, In-Training and Rookies always can). */
+function discover(discovered: string[], units: Unit[]): string[] {
+  const add = [...new Set(units.map((u) => u.formId))].filter((id) => FORMS[id].stage >= 4 && !discovered.includes(id));
+  return add.length ? [...discovered, ...add] : discovered;
 }
 
 /** The shared pool shops roll from — only during a VS match. */
@@ -173,9 +183,10 @@ function resolveEvolutions(units: Unit[]): {
         const consumed = new Set(others.map((u) => u.uid));
         const items = [...(keep.items ?? []), ...others.flatMap((u) => u.items ?? [])];
         spill.push(...items.slice(2));
+        const paid = [keep, ...others].reduce((a, u) => a + sellValue(u), 0);
         current = current
           .filter((u) => !consumed.has(u.uid))
-          .map((u) => (u.uid === keep.uid ? { ...u, formId: form.evolvesTo![0], items: items.slice(0, 2) } : u));
+          .map((u) => (u.uid === keep.uid ? { ...u, formId: form.evolvesTo![0], items: items.slice(0, 2), paid } : u));
         evolved.push({ from: formId, to: form.evolvesTo![0], uid: keep.uid });
         acted = true;
         break; // re-scan from the top
@@ -211,6 +222,8 @@ interface GameState {
   gameOver: boolean;
 
   shop: string[];
+  /** Champions and Megas raised this game: the shop's tiers 4–5 offer only these */
+  discovered: string[];
   units: Unit[];
   inventory: string[];
   selectedItem: string | null;
@@ -322,7 +335,7 @@ const planDeadline = () => Date.now() + (touchDevice() ? VS.planSecondsTouch : V
 
 const randomOf = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
 const FUSED_IDS = FUSED_ITEM_IDS;
-const CHAMPION_IDS = PLAYABLE_IDS.filter((id) => FORMS[id].stage === 2);
+const CHAMPION_IDS = PLAYABLE_IDS.filter((id) => FORMS[id].stage === 4);
 /** after the carousel, at least this long to equip the new item */
 const AFTER_CAROUSEL_MS = 20_000;
 
@@ -355,7 +368,8 @@ function freshMatchRun() {
     gameOver: false,
     units: [] as Unit[],
     inventory: [] as string[],
-    shop: rollShop(START_LEVEL, fullPool()),
+    discovered: [] as string[],
+    shop: rollShop(START_LEVEL, [], fullPool()),
     shopLocked: false,
     phase: "prep" as Phase,
     result: null,
@@ -392,7 +406,8 @@ function initialState() {
     runSeed: newRunSeed(),
     streak: 0,
     gameOver: false,
-    shop: rollShop(START_LEVEL),
+    shop: rollShop(START_LEVEL, []),
+    discovered: [] as string[],
     units: [] as Unit[],
     inventory: [] as string[],
     selectedItem: null as string | null,
@@ -466,7 +481,7 @@ export const useGame = create<GameState>((set, get) => ({
     sfx.reroll();
     set({
       ...(freeRerolls > 0 ? { freeRerolls: freeRerolls - 1 } : { gold: gold - ECONOMY.rerollCost }),
-      shop: rollShop(get().level, shopPool(get())),
+      shop: rollShop(get().level, get().discovered, shopPool(get())),
     });
   },
 
@@ -475,8 +490,8 @@ export const useGame = create<GameState>((set, get) => ({
     if (pendingEvolution) return;
     const formId = shop[shopIndex];
     if (!formId) return;
-    const form = FORMS[formId];
-    if (gold < (form.cost ?? 99)) return;
+    const cost = costOf(formId);
+    if (gold < cost) return;
     const slot = firstEmptyBench(units);
     // a full bench still allows buying the 3rd copy of something you own twice —
     // the digivolve merge consumes the copies, so space frees up immediately
@@ -484,7 +499,7 @@ export const useGame = create<GameState>((set, get) => ({
     if (slot === null && copies < 2) return; // bench truly full
     const placement: Placement =
       slot !== null ? { kind: "bench", slot } : { kind: "bench", slot: 98 }; // temp; consumed by the merge
-    const newUnit: Unit = { uid: nextUid(), formId, placement, items: [] };
+    const newUnit: Unit = { uid: nextUid(), formId, placement, items: [], paid: cost };
     const newShop = [...shop];
     newShop[shopIndex] = "";
     const resolved = resolveEvolutions([...units, newUnit]);
@@ -492,9 +507,10 @@ export const useGame = create<GameState>((set, get) => ({
     const last = resolved.evolved[resolved.evolved.length - 1];
     if (last) sfx.evolve();
     set({
-      gold: gold - (form.cost ?? 0),
+      gold: gold - cost,
       shop: newShop,
       units: resolved.units,
+      discovered: discover(get().discovered, resolved.units),
       pendingEvolution: resolved.pending,
       ...(resolved.spill.length ? { inventory: [...inventory, ...resolved.spill] } : {}),
       ...(last ? { evoFlash: { ...last, key: Date.now() } } : {}),
@@ -515,13 +531,15 @@ export const useGame = create<GameState>((set, get) => ({
     const pooled = units.filter((u) => consumed.has(u.uid)).flatMap((u) => u.items ?? []);
     const remaining = units.filter((u) => !consumed.has(u.uid));
     const evolvedUid = nextUid();
-    remaining.push({ uid: evolvedUid, formId, placement: pendingEvolution.placement, items: pooled.slice(0, 2) });
+    const paid = units.filter((u) => consumed.has(u.uid)).reduce((a, u) => a + sellValue(u), 0);
+    remaining.push({ uid: evolvedUid, formId, placement: pendingEvolution.placement, items: pooled.slice(0, 2), paid });
     const resolved = resolveEvolutions(remaining);
     sfx.evolve();
     const last = resolved.evolved[resolved.evolved.length - 1];
     const flash = last ?? { from: pendingEvolution.fromFormId, to: formId, uid: evolvedUid };
     set({
       units: resolved.units,
+      discovered: discover(get().discovered, resolved.units),
       pendingEvolution: resolved.pending,
       inventory: [...inventory, ...pooled.slice(2), ...resolved.spill],
       evoFlash: { ...flash, key: Date.now() },
@@ -554,7 +572,7 @@ export const useGame = create<GameState>((set, get) => ({
     sfx.sell();
     set({
       units: units.filter((x) => x.uid !== uid),
-      gold: gold + sellValue(u.formId),
+      gold: gold + sellValue(u),
       inventory: [...inventory, ...(u.items ?? [])],
       inspected: null,
     });
@@ -821,7 +839,7 @@ export const useGame = create<GameState>((set, get) => ({
       round: state.round + 1,
       level: leveled.level,
       xp: leveled.xp,
-      shop: state.shopLocked ? state.shop : rollShop(leveled.level, shopPool(state)),
+      shop: state.shopLocked ? state.shop : rollShop(leveled.level, state.discovered, shopPool(state)),
       viewFlip: false,
       loot: null,
       freeRerolls: has("freeroll") ? 1 : 0,
@@ -1029,8 +1047,8 @@ export const useGame = create<GameState>((set, get) => ({
     if (id === "championegg") grantUnits([randomOf(CHAMPION_IDS)]);
     if (id === "rookierush") {
       const pool = shopPool(get());
-      const cheap = ROOKIE_IDS.filter((r) => (FORMS[r].cost ?? 1) === 1 && (!pool || (pool[r] ?? 0) > 0));
-      grantUnits([0, 1, 2].map(() => randomOf(cheap.length ? cheap : ROOKIE_IDS)));
+      const left = ROOKIE_IDS.filter((r) => !pool || (pool[r] ?? 0) > 0);
+      grantUnits([0, 1, 2].map(() => randomOf(left.length ? left : ROOKIE_IDS)));
     }
     if (s.pvp) net.send?.({ t: "augment", id });
   },
@@ -1165,7 +1183,7 @@ function saveRun() {
       JSON.stringify({
         gold: s.gold, level: s.level, xp: s.xp, health: s.health, round: s.round, runSeed: s.runSeed,
         streak: s.streak, units: s.units, inventory: s.inventory, shop: s.shop,
-        shopLocked: s.shopLocked, uidCounter,
+        discovered: s.discovered, shopLocked: s.shopLocked, uidCounter,
       }),
     );
   } catch { /* ignore */ }
@@ -1191,6 +1209,8 @@ function savedRun(): Partial<GameState> {
       // a run saved before bosses varied keeps the classic ones
       runSeed: Number(d.runSeed) || 0,
       streak: d.streak, units: d.units, inventory: d.inventory ?? [], shop: d.shop,
+      // a run saved before discovery: what it holds counts as discovered
+      discovered: Array.isArray(d.discovered) ? d.discovered : discover([], d.units),
       shopLocked: !!d.shopLocked, phase: "prep",
     };
   } catch {
@@ -1208,13 +1228,15 @@ function grantUnits(formIds: string[]) {
     const s = useGame.getState();
     const slot = firstEmptyBench(s.units);
     if (slot === null) {
-      useGame.setState({ gold: s.gold + sellValue(formId) });
+      useGame.setState({ gold: s.gold + costOf(formId) });
       continue;
     }
-    const resolved = resolveEvolutions([...s.units, { uid: nextUid(), formId, placement: { kind: "bench", slot }, items: [] }]);
+    const granted: Unit = { uid: nextUid(), formId, placement: { kind: "bench", slot }, items: [], paid: costOf(formId) };
+    const resolved = resolveEvolutions([...s.units, granted]);
     const last = resolved.evolved[resolved.evolved.length - 1];
     useGame.setState({
       units: resolved.units,
+      discovered: discover(s.discovered, resolved.units),
       pendingEvolution: resolved.pending,
       inventory: [...s.inventory, ...resolved.spill],
       ...(last ? { evoFlash: { ...last, key: Date.now() } } : {}),

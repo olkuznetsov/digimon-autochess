@@ -36,7 +36,7 @@ const TABS: [Tab, string][] = [
   ["vs", "VS"],
 ];
 const ROLE_ICON: Record<Role, string> = { tank: "🛡️", bruiser: "💪", assassin: "🗡️", ranged: "🏹", caster: "✨" };
-const FAMILIES = Object.keys(FAMILY_COLOR) as Family[];
+const FAMILIES = (Object.keys(FAMILY_COLOR) as Family[]).filter((f) => f !== "Baby");
 
 export function Guide({ onClose, initial = "basics" }: { onClose: () => void; initial?: Tab }) {
   const [tab, setTab] = useState<Tab>(initial);
@@ -83,7 +83,8 @@ function Basics() {
       <section className="guide-sec">
         <h3>Digivolve</h3>
         <ul>
-          <li>🧬 <b>3 copies</b> of the same Digimon merge into the next stage: Rookie → Champion → Mega.</li>
+          <li>🧬 <b>3 copies</b> of the same Digimon merge into the next stage: Fresh → In-Training → Rookie → Champion → Mega.</li>
+          <li>💎 A Digimon's <b>stage is its price</b> (⛂1 Fresh … ⛂5 Mega). Fresh, In-Training and Rookies are always in the shop; a <b>Champion or Mega</b> shows up there only after you've raised it yourself this game.</li>
           <li>🔀 Some lines <b>branch</b> — you pick the evolution, and with it the attribute and family.</li>
           <li>🎒 Items carry over: two stay on the new form, the rest go back to your tray.</li>
           <li>✨ The shop highlights what you're collecting: <b>×1 owned</b>, <b>⬆ Digivolve</b> (third copy), <b>★ line</b>.</li>
@@ -103,17 +104,18 @@ function Basics() {
           </li>
           <li>
             ▲ <b>Buy XP</b>: {ECONOMY.xpCost} gold for {ECONOMY.xpPerBuy} XP; you also get {ECONOMY.passiveXp} XP every round.
-            Higher levels field more units and see pricier rookies:
+            Your level is how many Digimon fit on the board, and it sets the shop's odds (tiers 4–5 offer only what you've raised):
           </li>
         </ul>
         <table className="guide-table">
           <thead>
             <tr>
               <th>Level</th>
-              <th>⛂1</th>
-              <th>⛂2</th>
-              <th>⛂3</th>
-              <th>⛂4</th>
+              <th>⛂1 Fresh</th>
+              <th>⛂2 In-Tr.</th>
+              <th>⛂3 Rookie</th>
+              <th>⛂4 Champ.</th>
+              <th>⛂5 Mega</th>
             </tr>
           </thead>
           <tbody>
@@ -200,7 +202,7 @@ function Bestiary({ family }: { family: Family | null }) {
             <span className="dex-note">in enemy waves and VS wild rounds — they can't be recruited</span>
           </div>
           <div className="dex-tree">
-            {([1, 2, 3] as const).map((stage) => (
+            {([3, 4, 5] as const).map((stage) => (
               <div key={stage} className="dex-stage">
                 <span className="dex-stage-name">{STAGE_NAME[stage]}</span>
                 {wild
@@ -235,11 +237,11 @@ function Bestiary({ family }: { family: Family | null }) {
 
 function Digimon() {
   const [family, setFamily] = useState<Family | null>(null);
-  // lines by cost, then name: rookie → its champions → their megas
+  // lines by name: rookie → its champions → their megas
   const lines = useMemo(
     () =>
       [...ROOKIE_IDS]
-        .sort((a, b) => (FORMS[a].cost ?? 1) - (FORMS[b].cost ?? 1) || FORMS[a].name.localeCompare(FORMS[b].name))
+        .sort((a, b) => FORMS[a].name.localeCompare(FORMS[b].name))
         .map((rookie) => {
           const champions = FORMS[rookie].evolvesTo ?? [];
           const megas = [...new Set(champions.flatMap((c) => FORMS[c].evolvesTo ?? []))];
@@ -281,14 +283,13 @@ function Digimon() {
           <section key={l.rookie} className="dex-line">
             <div className="dex-line-head">
               <b>{FORMS[l.rookie].name} line</b>
-              <span>⛂ {FORMS[l.rookie].cost ?? 1}</span>
               <span style={{ color: FAMILY_COLOR[FORMS[l.rookie].family] }}>{FORMS[l.rookie].family}</span>
               {(l.champions.length > 1 || l.megas.length > 1) && <span className="dex-branch">🔀 branches</span>}
             </div>
             <div className="dex-tree">
               {[[l.rookie], l.champions, l.megas].map((stage, si) => (
                 <div key={si} className="dex-stage">
-                  <span className="dex-stage-name">{STAGE_NAME[si + 1]}</span>
+                  <span className="dex-stage-name">{STAGE_NAME[si + 3]}</span>
                   {stage.map((id, i) => (
                     <div key={id}>
                       {l.from[id] && si === 2 ? (
@@ -330,7 +331,7 @@ function Synergies() {
         <div className="syn-grid">
           {TRAITS.map((t) => {
             const members = Object.values(FORMS)
-              .filter((f) => isPlayable(f) && f.stage === 1 && (f.attribute === t.key || f.family === t.key))
+              .filter((f) => isPlayable(f) && f.stage === 3 && (f.attribute === t.key || f.family === t.key))
               .map((f) => f.id);
             return (
               <div key={t.key} className="syn-card" style={{ borderColor: t.color }}>
@@ -434,8 +435,8 @@ function Versus() {
           <li>🎠 The 3rd round of each stage opens with the <b>carousel</b>: one shared set of items, lowest HP picks first.</li>
           <li>✨ Rounds {AUGMENT_ROUNDS.join(", ")}: pick an <b>augment</b> (1 of 3, one reroll). Everyone sees your picks.</li>
           <li>
-            🧪 <b>Shared pool</b>: each rookie exists in {POOL_COPIES[1]} / {POOL_COPIES[2]} / {POOL_COPIES[3]} / {POOL_COPIES[4]}{" "}
-            copies (cost 1–4) for the whole lobby — what others collect, you can't. A Mega takes 9.
+            🧪 <b>Shared pool</b>: each Digimon exists in {POOL_COPIES[1]} / {POOL_COPIES[2]} / {POOL_COPIES[3]} /{" "}
+            {POOL_COPIES[4]} / {POOL_COPIES[5]} copies (tiers 1–5) for the whole lobby — what others collect, you can't.
           </li>
           <li>⏱ {VS.planSeconds} s to plan ({VS.planSecondsTouch} on phones), then you're locked in automatically.</li>
         </ul>

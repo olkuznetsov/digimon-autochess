@@ -555,13 +555,13 @@ export class Lobby extends DurableObject<Env> {
     this.broadcast({ t: "roster", snap: this.snapshot(room) });
   }
 
-  /** Shared pool: the rookie copies a player holds (bench and board). */
+  /** Shared pool: the copies a player holds (bench and board). */
   private async hold(room: Room, me: Seat, m: Record<string, unknown>) {
     if (room.stage !== "match" || !me.inMatch || !me.alive || !m.counts || typeof m.counts !== "object") return;
     const counts: Record<string, number> = {};
     for (const [id, n] of Object.entries(m.counts as Record<string, unknown>)) {
       const form = formOf(id);
-      const max = isPlayable(form) && form.stage === 1 ? (POOL_COPIES[form.cost ?? 1] ?? 18) : 0;
+      const max = isPlayable(form) ? (POOL_COPIES[form.stage] ?? 0) : 0;
       const v = Math.floor(Number(n));
       if (max && v > 0) counts[id] = Math.min(max, v);
     }

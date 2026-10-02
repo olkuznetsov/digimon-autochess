@@ -115,7 +115,7 @@ function PrepUnits() {
             position={pos}
             color={ATTR_COLOR[form.attribute]}
             name={form.name}
-            star={form.stage}
+            stage={form.stage}
             showHealth={false}
             evolveKey={evo && evo.uid === u.uid ? evo.key : undefined}
             dragging={u.uid === dragId}
@@ -178,7 +178,7 @@ function EnemyPreview() {
             position={[x, 0, z]}
             color={ATTR_COLOR[form.attribute]}
             name={form.name}
-            star={form.stage}
+            stage={form.stage}
             team="enemy"
             boss={u.boss}
             showHealth={false}
@@ -260,7 +260,7 @@ function BattleUnit({ uid }: { uid: string }) {
       drive={drive}
       color={ATTR_COLOR[f0.attribute]}
       name={form.name}
-      star={form.stage}
+      stage={form.stage}
       team={team}
       boss={f0.boss}
       spawn

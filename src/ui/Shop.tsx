@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useGame, pvpMe } from "../game/store";
-import { FORMS, ATTR_COLOR, LINE_ROOT, sellValue } from "../game/creatures";
+import { FORMS, ATTR_COLOR, DESCENDANTS, costOf, sellValue } from "../game/creatures";
 import { ECONOMY } from "../game/tuning";
 import { Portrait } from "./Portrait";
 import { FormTooltip } from "./FormTooltip";
+import { MAX_LEVEL } from "../game/xpView";
 
 export function Shop() {
   const phase = useGame((s) => s.phase);
@@ -27,12 +28,12 @@ export function Shop() {
 
   return (
     <div className={`shop${dragged ? " sell-zone" : ""}`}>
-      {dragged && <div className="sell-hint">Drop here to sell for ⛂ {sellValue(dragged.formId)}</div>}
+      {dragged && <div className="sell-hint">Drop here to sell for ⛂ {sellValue(dragged)}</div>}
       <div className="shop-econ">
         <button
           className="econ-btn xp"
           onClick={buyXp}
-          disabled={gold < ECONOMY.xpCost || level >= 8}
+          disabled={gold < ECONOMY.xpCost || level >= MAX_LEVEL}
           title={`Buy ${ECONOMY.xpPerBuy} XP (F)`}
         >
           ▲ <span className="econ-word">Buy XP </span><span className="cost">{ECONOMY.xpCost}</span>
@@ -51,11 +52,11 @@ export function Shop() {
         {shop.map((formId, i) => {
           if (!formId) return <div key={i} className="shop-card empty" />;
           const form = FORMS[formId];
-          const cost = form.cost ?? 0;
+          const cost = costOf(formId);
           const color = ATTR_COLOR[form.attribute];
           // what you're already collecting: copies owned, and whether this one digivolves them
           const copies = units.filter((u) => u.formId === formId).length;
-          const line = copies === 0 && units.some((u) => LINE_ROOT[u.formId] === formId);
+          const line = copies === 0 && units.some((u) => DESCENDANTS[formId]?.has(u.formId));
           const mark = copies >= 2 ? " upgrade" : copies === 1 ? " owned" : line ? " line" : "";
           return (
             <button
@@ -71,7 +72,7 @@ export function Shop() {
               {copies >= 2 && <span className="card-badge up">⬆ Digivolve</span>}
               {copies === 1 && <span className="card-badge">×1 owned</span>}
               {line && (
-                <span className="card-badge line" title="You have this line's Champion / Mega">
+                <span className="card-badge line" title="It digivolves into a Digimon you have">
                   ★ line
                 </span>
               )}

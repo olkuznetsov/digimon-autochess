@@ -1,4 +1,4 @@
-import type { Fighter } from "./types";
+import type { Fighter, Stage } from "./types";
 import { FORMS, PLAYABLE_IDS, WILD_IDS } from "./creatures";
 import { makeFighter } from "./battle";
 import { COLS } from "./board";
@@ -12,7 +12,7 @@ import { COLS } from "./board";
  *  each boss beaten by about half the runs, as before) and let fans dig for favourites. */
 export const ECONOMY = {
   /** gold at the start of a run or match */
-  startGold: 15,
+  startGold: 8,
   baseIncome: 6,
   /** extra gold for winning a round */
   winGold: 1,
@@ -24,65 +24,73 @@ export const ECONOMY = {
   rerollCost: 1,
 };
 
-/** Shop odds by player level: chance of each rookie cost tier (1–4), like TFT's
- *  level-based odds — low levels see cheap rookies, high levels the expensive lines. */
-export const SHOP_ODDS: Record<number, [number, number, number, number]> = {
-  3: [45, 40, 13, 2],
-  4: [38, 40, 18, 4],
-  5: [30, 40, 24, 6],
-  6: [24, 36, 30, 10],
-  7: [18, 32, 34, 16],
-  8: [14, 28, 36, 22],
+/** Shop odds by player level: the chance of each tier — the stage, Fresh 1 … Mega 5 —
+ *  like TFT's level-based odds. Tiers 4 and 5 only ever offer what the player has
+ *  raised this game (discovery); with nothing discovered there, the slot rolls again. */
+export const SHOP_ODDS: Record<number, [number, number, number, number, number]> = {
+  1: [100, 0, 0, 0, 0],
+  2: [70, 30, 0, 0, 0],
+  3: [45, 40, 15, 0, 0],
+  4: [30, 40, 30, 0, 0],
+  5: [20, 35, 45, 0, 0],
+  6: [10, 30, 52, 8, 0],
+  7: [5, 25, 52, 17, 1],
+  8: [0, 20, 50, 25, 5],
+  9: [0, 15, 45, 30, 10],
+  10: [0, 10, 40, 32, 18],
 };
 
 export const WAVES = {
   /** enemy HP +x per round (rounds 1..15), then +endlessRamp per round beyond 15 */
   hpRamp: 0.02,
   endlessRamp: 0.06,
-  /** non-boss rounds: [rookies, champions, megas] — mixes follow what a player can
-   *  field on the economy (Megas take 9 rookies), endless ramps into all-Mega waves */
+  /** non-boss rounds: how many of each stage [Fresh, In-Training, Rookie, Champion, Mega]
+   *  — mixes follow what a player can field on the economy, endless ramps into all-Mega
+   *  waves */
   table: {
-    1: [3, 0, 0],
-    2: [3, 0, 0],
-    3: [4, 0, 0],
-    4: [4, 0, 0],
-    6: [2, 2, 0],
-    7: [2, 3, 0],
-    8: [1, 4, 0],
-    9: [1, 4, 0],
-    11: [1, 5, 0],
-    12: [0, 6, 0],
-    13: [0, 6, 0],
-    14: [0, 5, 1],
-    16: [0, 4, 3],
-    17: [0, 3, 4],
-    18: [0, 2, 5],
-    19: [0, 1, 6],
-  } as Record<number, [number, number, number]>,
-  endless: [0, 0, 7] as [number, number, number],
+    1: [2, 0, 0, 0, 0],
+    2: [1, 2, 0, 0, 0],
+    3: [0, 3, 1, 0, 0],
+    4: [0, 2, 2, 0, 0],
+    6: [0, 1, 3, 0, 0],
+    7: [0, 0, 4, 1, 0],
+    8: [0, 0, 3, 2, 0],
+    9: [0, 0, 3, 3, 0],
+    11: [0, 0, 2, 4, 0],
+    12: [0, 0, 1, 5, 0],
+    13: [0, 0, 1, 6, 0],
+    14: [0, 0, 0, 6, 1],
+    16: [0, 0, 0, 5, 3],
+    17: [0, 0, 0, 4, 4],
+    18: [0, 0, 0, 3, 5],
+    19: [0, 0, 0, 2, 6],
+  } as Record<number, Mix>,
+  endless: [0, 0, 0, 0, 7] as Mix,
   /** bosses of rounds 5, 10 and 15 (multipliers and the stage of the adds): a run meets
    *  one candidate per round, picked by its seed. Candidates are tuned to the same pass
    *  rate on the same 600 bot boards (`npm run runsim` prints "boss candidates"). */
   bosses: [
-    [{ id: "skullsatamon", hp: 2.85, atk: 1.25, adds: 1 }],
+    [{ id: "skullsatamon", hp: 2.85, atk: 1.25, adds: 3 }],
     [
-      { id: "machinedramon", hp: 2.25, atk: 1.2, adds: 2 },
-      { id: "mitamamon", hp: 1.88, atk: 0.86, adds: 2 },
+      { id: "machinedramon", hp: 2.25, atk: 1.2, adds: 4 },
+      { id: "mitamamon", hp: 1.88, atk: 0.86, adds: 4 },
     ],
     [
-      { id: "diaboromon", hp: 2.35, atk: 1.25, adds: 2 },
-      { id: "apollomon", hp: 2.63, atk: 0.95, adds: 2 },
+      { id: "diaboromon", hp: 2.35, atk: 1.25, adds: 4 },
+      { id: "apollomon", hp: 2.63, atk: 0.95, adds: 4 },
     ],
   ] as Omit<BossSpec, "addCount">[][],
   /** endless mode: every 5th round the next of these, all with the same multipliers */
   endlessBosses: ["gankoomon", "zeed", "apollomon", "imperialdramon", "gracenovamon", "mitamamon", "alphamon", "machinedramon", "diaboromon"],
-  endlessBoss: { hp: 4.2, atk: 1.6, adds: 3 } as { hp: number; atk: number; adds: 1 | 2 | 3 },
+  endlessBoss: { hp: 4.2, atk: 1.6, adds: 5 } as { hp: number; atk: number; adds: Stage },
 };
 
 export const isBossRound = (round: number) => round % 5 === 0;
 
-type Mix = [number, number, number];
-type BossSpec = { id: string; hp: number; atk: number; adds: 1 | 2 | 3; addCount: number };
+/** how many of each stage a wave fields: [Fresh, In-Training, Rookie, Champion, Mega] */
+type Mix = [number, number, number, number, number];
+/** `adds`: the stage of the minions flanking the boss */
+type BossSpec = { id: string; hp: number; atk: number; adds: Stage; addCount: number };
 
 /** One of a boss round's candidates: the first for seed 0 (saves and rooms from before
  *  there was a choice), otherwise spread by the seed — per round, so a run's bosses vary
@@ -95,7 +103,8 @@ function pickBoss<T>(candidates: T[], seed: number, round: number): T {
   return candidates[((h ^ (h >>> 16)) >>> 0) % candidates.length];
 }
 
-const byStage = (ids: string[]) => ([1, 2, 3] as const).map((stage) => ids.filter((id) => FORMS[id].stage === stage));
+const STAGES = [1, 2, 3, 4, 5] as const;
+const byStage = (ids: string[]) => STAGES.map((stage) => ids.filter((id) => FORMS[id].stage === stage));
 /** Bosses bring their minions from the roster. */
 const ROSTER = byStage(PLAYABLE_IDS);
 /** Waves draw from the roster plus the wild Digimon — twice, so they turn up often
@@ -108,11 +117,11 @@ const WAVE_STEP = WAVE_POOL.map((pool) => [5, 7, 11, 13].find((k) => pool.length
 /** Deterministic wave from a round number: the same round always fields the same
  *  forms in the same cells (both VS clients rely on this). `prefix` keeps uids apart. */
 function buildWave(round: number, hpScale: number, boss: BossSpec | null, mix: Mix, prefix = "e"): Fighter[] {
-  const pick = (stage: 1 | 2 | 3, i: number) => {
+  const pick = (stage: Stage, i: number) => {
     const pool = WAVE_POOL[stage - 1];
     return pool[(round * 3 + i * WAVE_STEP[stage - 1]) % pool.length];
   };
-  const minion = (stage: 1 | 2 | 3, i: number) => ROSTER[stage - 1][(round * 3 + i * 5) % ROSTER[stage - 1].length];
+  const minion = (stage: Stage, i: number) => ROSTER[stage - 1][(round * 3 + i * 5) % ROSTER[stage - 1].length];
   const at = (i: number) => ({ col: i % COLS, row: 5 - Math.floor(i / COLS) });
 
   if (boss) {
@@ -129,13 +138,8 @@ function buildWave(round: number, hpScale: number, boss: BossSpec | null, mix: M
     return [b, ...adds];
   }
 
-  const [rookies, champs, megas] = mix;
-  // megas first (front-left), then champions, then rookies
-  const stages: (1 | 2 | 3)[] = [
-    ...Array<3>(megas).fill(3),
-    ...Array<2>(champs).fill(2),
-    ...Array<1>(rookies).fill(1),
-  ];
+  // megas first (front-left), then champions, rookies and the babies
+  const stages = [...STAGES].reverse().flatMap((stage) => Array<Stage>(mix[stage - 1]).fill(stage));
   return stages.map((stage, i) => {
     const p = at(i);
     return makeFighter(pick(stage, i), `${prefix}${i}`, "enemy", p.col, p.row, hpScale);
@@ -150,7 +154,7 @@ export function makeEnemyWave(round: number, seed = 0): Fighter[] {
       round <= 15
         ? { ...pickBoss(WAVES.bosses[round / 5 - 1], seed, round), addCount: 2 }
         : { id: WAVES.endlessBosses[(round / 5) % WAVES.endlessBosses.length], ...WAVES.endlessBoss, addCount: 3 };
-    return buildWave(round, hpScale, boss, [0, 0, 0]);
+    return buildWave(round, hpScale, boss, [0, 0, 0, 0, 0]);
   }
   return buildWave(round, hpScale, null, WAVES.table[round] ?? WAVES.endless);
 }
@@ -169,25 +173,32 @@ export const VS = {
   /** planning time before an automatic ready */
   planSeconds: 40,
   planSecondsTouch: 50,
-  /** wild-Digimon rounds: [rookies, champions, megas]; later stages repeat the last.
+  /** wild-Digimon rounds: [Fresh, In-Training, Rookie, Champion, Mega]; later stages repeat the last.
    *  Tuned on 600 bot runs' boards (`npm run runsim -- dumpBoards=…`): a typical board wins
    *  ~90% — loot rounds, but a weak board can trip. */
-  wild: { 1: [2, 0, 0], 2: [3, 0, 0], 5: [2, 1, 0], 15: [1, 5, 0], 25: [0, 4, 2], 35: [0, 4, 3] } as Record<number, Mix>,
+  wild: {
+    1: [2, 0, 0, 0, 0],
+    2: [1, 2, 0, 0, 0],
+    5: [0, 1, 2, 0, 0],
+    15: [0, 0, 1, 5, 0],
+    25: [0, 0, 0, 4, 2],
+    35: [0, 0, 0, 4, 3],
+  } as Record<number, Mix>,
   /** bosses of rounds 10, 20, 30, 40+ — a real check, getting harder: a typical board
    *  beats them ~68% / 61% / 57% / 52% of the time (600 bot boards of the 24-line roster,
    *  Oct 2026). A match meets one candidate per round, picked by the room's variant;
    *  candidates match. */
   bosses: [
-    [{ id: "skullsatamon", hp: 4.2, atk: 1.8, adds: 2, addCount: 2 }],
+    [{ id: "skullsatamon", hp: 4.2, atk: 1.8, adds: 4, addCount: 2 }],
     [
-      { id: "machinedramon", hp: 3.6, atk: 1.6, adds: 3, addCount: 2 },
-      { id: "mitamamon", hp: 3.2, atk: 1.1, adds: 3, addCount: 2 },
+      { id: "machinedramon", hp: 3.6, atk: 1.6, adds: 5, addCount: 2 },
+      { id: "mitamamon", hp: 3.2, atk: 1.1, adds: 5, addCount: 2 },
     ],
     [
-      { id: "zeed", hp: 3.5, atk: 1.45, adds: 3, addCount: 2 },
-      { id: "apollomon", hp: 4.2, atk: 1.45, adds: 3, addCount: 2 },
+      { id: "zeed", hp: 3.5, atk: 1.45, adds: 5, addCount: 2 },
+      { id: "apollomon", hp: 4.2, atk: 1.45, adds: 5, addCount: 2 },
     ],
-    [{ id: "gracenovamon", hp: 2.9, atk: 1.45, adds: 3, addCount: 3 }],
+    [{ id: "gracenovamon", hp: 2.9, atk: 1.45, adds: 5, addCount: 3 }],
   ] as BossSpec[][],
 };
 
@@ -213,7 +224,7 @@ export function makeVsWave(round: number, prefix = "W", variant = 0): Fighter[] 
   const hpScale = round <= 2 ? 0.75 + round * 0.05 : 1 + (round - 1) * WAVES.hpRamp;
   if (vsRoundKind(round) === "boss") {
     const tier = Math.min(VS.bosses.length - 1, round / (VS.stageLength * 2) - 1);
-    return buildWave(round, hpScale, pickBoss(VS.bosses[tier], variant, round), [0, 0, 0], prefix);
+    return buildWave(round, hpScale, pickBoss(VS.bosses[tier], variant, round), [0, 0, 0, 0, 0], prefix);
   }
   const keys = Object.keys(VS.wild).map(Number).sort((a, b) => a - b);
   const key = [...keys].reverse().find((k) => k <= round) ?? keys[0];

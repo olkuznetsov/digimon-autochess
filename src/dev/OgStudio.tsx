@@ -154,7 +154,7 @@ function Shoot({ mode, onLog }: { mode: "og" | "icon"; onLog: (s: string) => voi
         formId="agumon"
         color={ATTR_COLOR[FORMS.agumon.attribute]}
         name=""
-        star={1}
+        stage={3}
         position={[0, 0, 0]}
         showHealth={false}
       />
@@ -174,7 +174,7 @@ function Shoot({ mode, onLog }: { mode: "og" | "icon"; onLog: (s: string) => voi
             formId={id}
             color={ATTR_COLOR[FORMS[id].attribute]}
             name=""
-            star={3}
+            stage={5}
             position={[x, 0, z]}
             showHealth={false}
           />

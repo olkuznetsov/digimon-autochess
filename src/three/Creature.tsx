@@ -6,12 +6,16 @@ import { ProceduralCreature } from "./ProceduralCreature";
 import { CreatureModel } from "./CreatureModel";
 import { modelFor, tweakFor } from "./models";
 import { angleDelta, newDrive, type UnitDrive } from "./unitDrive";
+import type { Stage } from "../game/types";
+
+/** model size by stage: the babies are small, a Mega towers */
+const STAGE_SCALE = [0.5, 0.6, 0.75, 1.02, 1.29];
 
 interface CreatureProps {
   formId: string;
   color: string;
   name: string;
-  star: 1 | 2 | 3;
+  stage: Stage;
   team?: "player" | "enemy";
   /** prep: where the unit stands (it faces the camera). Battle units pass `drive` instead. */
   position?: [number, number, number];
@@ -67,7 +71,7 @@ export function Creature({
   formId,
   color,
   name,
-  star,
+  stage,
   team = "player",
   position,
   drive: external,
@@ -80,8 +84,9 @@ export function Creature({
   maxHp,
   onPointerDown,
 }: CreatureProps) {
-  // visible digivolution growth: Rookie 0.75 -> Champion 1.02 -> Mega 1.29
-  const scale = (0.75 + (star - 1) * 0.27) * (boss ? 1.5 : 1);
+  // visible digivolution growth: Fresh 0.5 -> In-Training 0.6 -> Rookie 0.75 -> Champion 1.02 -> Mega 1.29
+  const scale = STAGE_SCALE[stage - 1] * (boss ? 1.5 : 1);
+  const pipCount = Math.max(0, stage - 2);
   const url = modelFor(formId);
 
   // prep units own a drive fed from props
@@ -256,8 +261,8 @@ export function Creature({
 
       {/* star pips */}
       <group ref={pips}>
-        {Array.from({ length: star }).map((_, i) => (
-          <mesh key={i} position={[(i - (star - 1) / 2) * 0.18, 1.2, 0]}>
+        {Array.from({ length: pipCount }).map((_, i) => (
+          <mesh key={i} position={[(i - (pipCount - 1) / 2) * 0.18, 1.2, 0]}>
             <octahedronGeometry args={[0.07]} />
             <meshStandardMaterial color="#ffd34d" emissive="#ffd34d" emissiveIntensity={2} />
           </mesh>

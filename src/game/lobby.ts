@@ -1,5 +1,5 @@
 import { VS, vsRoundKind } from "./tuning";
-import { FORMS, LINE_ROOT, ROOKIE_IDS } from "./creatures";
+import { FORMS, PLAYABLE_IDS } from "./creatures";
 import { BASE_ITEM_IDS, FUSED_ITEM_IDS } from "./items";
 
 /**
@@ -188,26 +188,22 @@ export function ratingDelta(players: number, placement: number): number {
 }
 
 // ---------- shared unit pool ----------
-// Teamfight Tactics' shared pool: every rookie exists in a limited number of copies
-// for the whole lobby, so what one player collects the others can't. A Mega takes
-// 9 copies; at cost 1 three players can finish the same line, at cost 4 only one.
+// Teamfight Tactics' shared pool: every form exists in a limited number of copies for
+// the whole lobby, so what one player collects the others can't — fewer the higher the
+// tier. (V3: the copies inside merged units are counted in M10.5; until then a unit
+// holds one copy of its own form.)
 
-export const POOL_COPIES: Record<number, number> = { 1: 27, 2: 22, 3: 18, 4: 12 };
+export const POOL_COPIES: Record<number, number> = { 1: 30, 2: 25, 3: 18, 4: 10, 5: 9 };
 
-/** A full pool: copies of every rookie. */
+/** A full pool: copies of every form the shop can offer. */
 export function fullPool(): Record<string, number> {
-  return Object.fromEntries(ROOKIE_IDS.map((id) => [id, POOL_COPIES[FORMS[id].cost ?? 1] ?? 18]));
+  return Object.fromEntries(PLAYABLE_IDS.map((id) => [id, POOL_COPIES[FORMS[id].stage] ?? 9]));
 }
 
-/** Rookie copies held by a set of units (a Champion is 3 copies of its line's
- *  rookie, a Mega 9). */
+/** Copies held by a set of units. */
 export function heldCopies(formIds: string[]): Record<string, number> {
   const out: Record<string, number> = {};
-  for (const id of formIds) {
-    const root = LINE_ROOT[id];
-    if (!root) continue;
-    out[root] = (out[root] ?? 0) + 3 ** (FORMS[id].stage - 1);
-  }
+  for (const id of formIds) if (FORMS[id]) out[id] = (out[id] ?? 0) + 1;
   return out;
 }
 

@@ -4,8 +4,8 @@ import { HP_SCALE } from "../game/battle";
 import type { Attribute } from "../game/types";
 import { Portrait } from "./Portrait";
 
-const BEATS: Record<Attribute, Attribute> = { Vaccine: "Virus", Virus: "Data", Data: "Vaccine" };
-const LOSES: Record<Attribute, Attribute> = { Vaccine: "Data", Virus: "Vaccine", Data: "Virus" };
+const BEATS: Record<Attribute, Attribute | null> = { Vaccine: "Virus", Virus: "Data", Data: "Vaccine", Free: null };
+const LOSES: Record<Attribute, Attribute | null> = { Vaccine: "Data", Virus: "Vaccine", Data: "Virus", Free: null };
 
 /** Everything a player wants to know before buying: matchup, role, stats, ultimate, line. */
 export function FormTooltip({ formId }: { formId: string }) {
@@ -35,8 +35,14 @@ export function FormTooltip({ formId }: { formId: string }) {
         </div>
       </div>
       <div className="tip-matchup">
-        ▲ strong vs <b style={{ color: ATTR_COLOR[BEATS[form.attribute]] }}>{BEATS[form.attribute]}</b> · ▼ weak vs{" "}
-        <b style={{ color: ATTR_COLOR[LOSES[form.attribute]] }}>{LOSES[form.attribute]}</b>
+        {BEATS[form.attribute] && LOSES[form.attribute] ? (
+          <>
+            ▲ strong vs <b style={{ color: ATTR_COLOR[BEATS[form.attribute]!] }}>{BEATS[form.attribute]}</b> · ▼ weak vs{" "}
+            <b style={{ color: ATTR_COLOR[LOSES[form.attribute]!] }}>{LOSES[form.attribute]}</b>
+          </>
+        ) : (
+          <>◇ a baby: no attribute, no family — neutral against everyone</>
+        )}
       </div>
       <div className="tip-stats">
         <span>❤️ {Math.round(s.hp * HP_SCALE)}</span>

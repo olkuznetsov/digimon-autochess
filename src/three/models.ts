@@ -45,7 +45,7 @@ let restQueued = false;
 export function preloadRemainingModels() {
   if (restQueued) return;
   restQueued = true;
-  const queue = [1, 2, 3].flatMap((stage) =>
+  const queue = [1, 2, 3, 4, 5].flatMap((stage) =>
     ALL_FORM_IDS.filter((id) => FORMS[id].stage === stage && !ROOKIE_IDS.includes(id)),
   );
   const idle =
