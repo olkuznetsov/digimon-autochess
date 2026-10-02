@@ -1,4 +1,4 @@
-# Roster — 46 forms, 100% real animated models
+# Roster — 49 forms + 2 bosses, 100% real animated models
 
 Every form has an animated model: source `models-src/<formId>.glb`, shipped (optimized by `npm run optimize-models`) as `public/models/<formId>.glb` (idle/move/attack01… clips
 drive the combat state machine). The roster is deliberately shaped around sourceable models.
@@ -21,6 +21,7 @@ Legend: (V)accine (D)ata (Vi)rus · **[a | b]** = player chooses a branch.
 | Gomamon (3) | `gomamon`(V) | `ikkakumon`(V) | `vikemon`(V) | Deep Savers |
 | Veemon (3) | `veemon`(V) | **[`exveemon`(V) \| `paildramon`(D)]** | `imperialdramon`(V) | Wind Guardians |
 | Wormmon (3) | `wormmon`(V) | `stingmon`(V) | `banchostingmon`(V) | Wind Guardians |
+| Flamemon (3) | `flamemon`(D) | `aldamon`(D) | `susanoomon`(D) | Dragon's Roar |
 | Guilmon (4) | `guilmon`(Vi) | `growlmon`(Vi) | `gallantmon`(Vi) | Dragon's Roar |
 | Dorumon (4) | `dorumon`(D) | `dorugamon`(D) | `alphamon`(D) | Dragon's Roar |
 
@@ -28,5 +29,9 @@ Removed (no animated rips exist anywhere): GeoGreymon/RizeGreymon, Tyrannomon/Me
 Gaogamon/MachGaogamon, WereGarurumon, Devimon/IceDevimon/Myotismon, Pegasusmon,
 Woodmon/Cherrymon, Dolphmon. They can return later via Meshy/AI generation.
 
-Unused animated lines still available in the DigiChess source (future "set 2"):
-Coronamon→Apollomon, Flamemon→Aldamon→Susanoomon, Herrismon, Tapirmon/Piximon, Zeed, Gracenovamon.
+Boss-only (`bossOnly`: never in the shop, wild waves or scrims): `zeed` ZeedMillenniummon (Vi, Nightmare
+Soldiers) and `gracenovamon` Gracenovamon (D, Dragon's Roar) — VS bosses of rounds 30 and 40+, endless bosses.
+
+Still unused in the DigiChess source, none forming a full three-stage line: Coronamon, Apollomon (no Firamon
+between them), Herissmon, Filmon, Rasenmon, Tapirmon, Piximon, Mitamamon. A bigger expansion needs a new source
+(Digimon Story Cyber Sleuth PC + DSCSTools / Blender-Tools-for-DSCS — needs owning the game).

@@ -13,7 +13,8 @@ All Digimon models are ripped from Bandai games (primarily *Digimon Story: Cyber
   Breakdramon, Keramon, Infermon, Diaboromon, Candlemon, Meramon, Gankoomon, Palmon,
   Togemon, Rosemon, Rosemon BM, Gomamon, Ikkakumon, Vikemon, Veemon, Paildramon,
   Imperialdramon, Wormmon, Stingmon, BanchoStingmon, Guilmon, Growlmon, Gallantmon,
-  Dorumon, Dorugamon, Alphamon) — obtained via the open-source
+  Dorumon, Dorugamon, Alphamon, Flamemon, Aldamon, Susanoomon, ZeedMillenniummon,
+  Gracenovamon) — obtained via the open-source
   [PiSuGames/DigiChess](https://github.com/PiSuGames/DigiChess) Unity project
   (assets credited there to asoliddev's Auto Chess template collection).
 - **ExVeemon** — obtained via the open-source

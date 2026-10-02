@@ -11,10 +11,10 @@ for model sources.*
 
 ## What's in it
 
-- **46 forms in 14 evolution lines**, every one an animated 3D model, with branching digivolutions and
-  32 named signature ultimates (Terra Force, Cocytus Breath, Positron Laser…).
-- **Synergies** (three attributes in a counter triangle, five families), **items** that fuse in pairs into
-  12 stronger ones, boss rounds, a 15-round run plus endless mode.
+- **49 forms in 15 evolution lines** plus two boss-only villains, every one an animated 3D model, with
+  branching digivolutions and 41 named signature ultimates (Terra Force, Cocytus Breath, Positron Laser…).
+- **Synergies** (three attributes in a counter triangle, five families with two tiers each), **items** that
+  fuse in pairs into 12 stronger ones, boss rounds, a 15-round run plus endless mode.
 - **VS for 2–8 players** — with friends over a 4-letter room code, or with strangers through a public
   matchmaking queue — in Teamfight Tactics' round rhythm: a round-robin of opponents (a ghost copy of someone's
   board for the odd one out), stages of five rounds with wild-Digimon rounds, a carousel item draft every stage
@@ -27,6 +27,8 @@ for model sources.*
   "data deletion" deaths, a materialize-in at the start of every fight.
 - **Sound with no audio files**: weighty hits, ultimate stingers and a procedural synthwave soundtrack that
   shifts between prep, battle and boss rounds.
+- **Tamer's Guide** (❓): the rules, every line with stats and ultimates, synergies, item recipes and VS —
+  generated from the game data, so it can't drift from the code.
 - Quality-of-life: 2× battle speed, shop lock, hotkeys, drag-to-sell, damage meter, next-wave preview,
   tooltips, first-run tutorial, volume / graphics / reduced-motion settings.
 
@@ -52,14 +54,15 @@ Design choices worth a look:
   real time (`src/three/juice.ts`), so replays and PvP results stay identical.
 - **No per-tick React renders for units.** Each unit reads its fighter state in `useFrame` through a small mutable
   "drive" object; animation events (attack, cast, hit, death) are counters the model reacts to.
-- **Model pipeline.** `npm run optimize-models` turns the source rips (101 MB) into 21 MB of meshopt-compressed,
+- **Model pipeline.** `npm run optimize-models` turns the source rips (137 MB) into 26 MB of meshopt-compressed,
   WebP-textured glTF with pruned animation clips, harmonized scale tracks and content-hashed URLs;
-  `npm run check-models` validates all 46.
+  `npm run check-models` validates all 51. Conversion scripts fix what rips get wrong: baked black vertex colours,
+  3ds Max's default grey diffuse, effect meshes the original game drew with its own shaders.
 - **Rendered assets from the real scene.** Dev-only "studios" (`/?studio`, `/?studio=og`, `/?studio=icon`) render
-  the 46 shop portraits, the link-preview image and the app icons with the game's own lighting.
-- **Balance from data.** `npm run balance` runs thousands of scrims per form; `npm run runsim` has a bot play
-  complete runs through the real store (shop odds, merges, economy, waves, bosses) to tune the difficulty curve —
-  currently about 4 in 10 runs beat the round-15 boss.
+  the 51 portraits, the link-preview image and the app icons with the game's own lighting.
+- **Balance from data.** `npm run balance` runs thousands of scrims per form (every form wins 42–58%);
+  `npm run runsim` has a bot play complete runs through the real store (shop odds, merges, economy, waves,
+  bosses) to tune the difficulty curve — currently about 4 in 10 runs beat the round-15 boss.
 
 ## Run it
 

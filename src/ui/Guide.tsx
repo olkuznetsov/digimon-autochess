@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { FORMS, ROOKIE_IDS, ATTR_COLOR, FAMILY_COLOR, STAGE_NAME, statsFor, attributeMultiplier } from "../game/creatures";
+import { FORMS, ROOKIE_IDS, PLAYABLE_IDS, ATTR_COLOR, FAMILY_COLOR, STAGE_NAME, statsFor, attributeMultiplier } from "../game/creatures";
 import { ultimateFor } from "../game/ultimates";
 import { HP_SCALE } from "../game/battle";
 import { TRAITS } from "../game/synergies";
@@ -171,7 +171,7 @@ function Digimon() {
   return (
     <>
       <p className="guide-intro">
-        {lines.length} lines, {Object.keys(FORMS).length} forms. Stats are per role and stage; what sets a Digimon apart is
+        {lines.length} lines, {PLAYABLE_IDS.length} forms. Stats are per role and stage; what sets a Digimon apart is
         its attribute, family and ultimate.
       </p>
       <div className="guide-chips">
