@@ -1182,7 +1182,9 @@ export const useGame = create<GameState>((set, get) => ({
 }));
 
 // ---------- run persistence (localStorage) ----------
-const SAVE_KEY = "dac-save";
+// V3 rules (tiers by stage) keep their own save: a run saved under the old rules
+// (rookie shop, levels 3–8) doesn't carry over — it stays where it is, untouched.
+const SAVE_KEY = "dac-save-v3";
 
 function saveRun() {
   const s = useGame.getState();
