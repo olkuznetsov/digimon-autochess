@@ -12,6 +12,8 @@ import { BASE_ITEM_IDS, FUSED_ITEM_IDS } from "./items";
 
 export const MAX_PLAYERS = 8;
 export const START_HP = 100;
+/** Close code for a client whose rules differ from the room's (an update went out): reload. */
+export const CLOSE_OUTDATED = 4001;
 
 /** One player's standing in a match. `hp` can drop below 0 in the round a player
  *  is eliminated: whoever fell less deep places higher. */

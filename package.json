@@ -4,7 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "rules-version": "node scripts/rules-version.mjs",
+    "predev": "node scripts/rules-version.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/rules-version.mjs",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",

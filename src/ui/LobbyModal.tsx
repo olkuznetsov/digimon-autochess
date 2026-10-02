@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useGame, pvpName } from "../game/store";
 import { MAX_PLAYERS } from "../game/lobby";
-import { lobbyConnect, lobbyLeave } from "../net/lobby";
+import { lobbyConnect, lobbyLeave, OUTDATED_MESSAGE } from "../net/lobby";
 import { queueJoin, queueLeave, type QueueStatus } from "../net/queue";
 
 const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no ambiguous 0/O/1/I/L
@@ -144,10 +144,39 @@ export function LobbyModal({ onClose }: { onClose: () => void }) {
             </button>
           </div>
           {error && <div className="pvp-error">{error}</div>}
+          {error === OUTDATED_MESSAGE && (
+            <button className="action" onClick={() => location.reload()}>
+              ↻ Reload
+            </button>
+          )}
           <div className="pvp-note">
             Every round your board fights one of the others — wild Digimon on rounds 1–2 and every 5th, a boss every
             10th. Last tamer standing wins.
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (pvp.outdated) {
+    // the room plays by newer rules than this tab: only a reload gets us in
+    return (
+      <div className="help-overlay">
+        <div className="help-modal pvp">
+          <div className="help-title">🔄 Game updated</div>
+          <div className="pvp-waiting">{OUTDATED_MESSAGE}</div>
+          <button className="action" onClick={() => location.reload()}>
+            ↻ Reload
+          </button>
+          <button
+            className="action ghost"
+            onClick={() => {
+              lobbyLeave();
+              onClose();
+            }}
+          >
+            Back to Solo
+          </button>
         </div>
       </div>
     );

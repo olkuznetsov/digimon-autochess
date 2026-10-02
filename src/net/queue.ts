@@ -1,5 +1,8 @@
 /** Public matchmaking: wait in the queue (the Matchmaker Durable Object) until a
  *  public lobby forms, then join it like any other room. */
+import { CLOSE_OUTDATED } from "../game/lobby";
+import { RULES_VERSION } from "../game/rules-version";
+import { OUTDATED_MESSAGE } from "./lobby";
 
 const QUEUE_URL = "wss://digimon-autochess-mp.askuznetsov6996.workers.dev/queue";
 
@@ -19,7 +22,7 @@ export function queueJoin(
   on: { status: (s: QueueStatus) => void; match: (code: string) => void; error: (why: string) => void },
 ) {
   queueLeave();
-  const socket = new WebSocket(`${QUEUE_URL}?name=${encodeURIComponent(name)}`);
+  const socket = new WebSocket(`${QUEUE_URL}?name=${encodeURIComponent(name)}&v=${RULES_VERSION}`);
   const me = { socket, left: false };
   current = me;
   let matched = false;
@@ -30,15 +33,21 @@ export function queueJoin(
     } catch {
       return;
     }
-    if (m.t === "queue") on.status({ waiting: Number(m.waiting), oldestAt: Number(m.oldestAt), gatherMs: Number(m.gatherMs) });
+    if (m.t === "outdated") {
+      // the queue runs other rules than this tab: say so now (the close lags behind)
+      me.left = true;
+      socket.close();
+      on.error(OUTDATED_MESSAGE);
+    } else if (m.t === "queue") on.status({ waiting: Number(m.waiting), oldestAt: Number(m.oldestAt), gatherMs: Number(m.gatherMs) });
     else if (m.t === "match" && typeof m.code === "string") {
       matched = true;
       on.match(m.code);
     }
   };
-  socket.onclose = () => {
+  socket.onclose = (e) => {
     if (current === me) current = null;
-    if (!matched && !me.left) on.error("Lost the matchmaking queue — try again.");
+    if (matched || me.left) return;
+    on.error(e.code === CLOSE_OUTDATED ? OUTDATED_MESSAGE : "Lost the matchmaking queue — try again.");
   };
 }
 

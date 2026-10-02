@@ -1,5 +1,19 @@
 import { formOf, isPlayable } from "../../src/game/creatures";
 import { ITEMS } from "../../src/game/items";
+import { CLOSE_OUTDATED } from "../../src/game/lobby";
+
+/** Turn away a client running other rules. The socket is accepted just to say so: a
+ *  refused handshake reaches the browser without its status, as a bare "closed". It's
+ *  accepted the hibernatable way, like every other socket of the room — no attachment,
+ *  so the room's handlers ignore it (a plain `accept()` socket closed by the room shows
+ *  up as an uncaught "Network connection lost" in the worker). */
+export function outdatedSocket(ctx: DurableObjectState): Response {
+  const [client, server] = Object.values(new WebSocketPair());
+  ctx.acceptWebSocket(server);
+  server.send(JSON.stringify({ t: "outdated" }));
+  server.close(CLOSE_OUTDATED, "outdated");
+  return new Response(null, { status: 101, webSocket: client });
+}
 
 /** Display names: printable, trimmed, collapsed whitespace, max 16. */
 export function cleanName(raw: unknown): string {

@@ -58,6 +58,8 @@ export interface PvpState {
   selfOffline: boolean;
   /** gave up reconnecting */
   connLost: boolean;
+  /** the room runs other rules than this tab (an update went out): reload to play */
+  outdated: boolean;
   /** the fight on screen and our outcome in it — known when it starts, since every
    *  client simulates every fight of the round the same way */
   fight: { round: number; opp: number | null; ghost: boolean; outcome: Outcome } | null;
@@ -303,6 +305,8 @@ interface GameState {
   pvpWatch: () => void;
   pvpSelfOffline: (offline: boolean) => void;
   pvpConnectionLost: () => void;
+  /** the room turned us away: it runs other rules than this tab */
+  pvpOutdated: () => void;
   /** back to the solo run that was paused for the match */
   pvpQuit: () => void;
   /** carousel: take the item at this index (when it's our turn) */
@@ -870,6 +874,7 @@ export const useGame = create<GameState>((set, get) => ({
         prepEndsAt: 0,
         selfOffline: false,
         connLost: false,
+        outdated: false,
         fight: null,
         pending: null,
         watching: false,
@@ -1092,6 +1097,11 @@ export const useGame = create<GameState>((set, get) => ({
   pvpConnectionLost: () => {
     const { pvp } = get();
     if (pvp) set({ pvp: { ...pvp, selfOffline: false, connLost: true } });
+  },
+
+  pvpOutdated: () => {
+    const { pvp } = get();
+    if (pvp) set({ pvp: { ...pvp, selfOffline: false, connLost: true, outdated: true } });
   },
 
   pvpQuit: () => {

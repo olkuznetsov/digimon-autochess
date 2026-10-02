@@ -286,16 +286,25 @@ export function Hud() {
 
       {pvp?.connLost && (
         <div className="gameover">
-          <div className="go-title draw">📡 CONNECTION LOST</div>
-          <div className="go-sub">Couldn't get back into room {pvp.code}</div>
+          <div className="go-title draw">{pvp.outdated ? "🔄 GAME UPDATED" : "📡 CONNECTION LOST"}</div>
+          <div className="go-sub">
+            {pvp.outdated
+              ? "A new version is out — reload to play VS again. Your solo run is saved."
+              : `Couldn't get back into room ${pvp.code}`}
+          </div>
+          {pvp.outdated && (
+            <button className="action" onClick={() => location.reload()}>
+              ↻ Reload
+            </button>
+          )}
           <button
-            className="action"
+            className={pvp.outdated ? "action ghost" : "action"}
             onClick={() => {
               lobbyClose();
               pvpQuit();
             }}
           >
-            ↻ Back to Solo
+            {pvp.outdated ? "Back to Solo" : "↻ Back to Solo"}
           </button>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./index";
-import { cleanName, cleanUnits, type BoardUnit } from "./util";
+import { cleanName, cleanUnits, outdatedSocket, type BoardUnit } from "./util";
+import { RULES_VERSION } from "../../src/game/rules-version";
 import {
   applyOutcomes,
   carouselEnd,
@@ -12,6 +13,7 @@ import {
   ratingDelta,
   surrender,
   CAROUSEL_WAIT_MS,
+  CLOSE_OUTDATED,
   MAX_PLAYERS,
   POOL_COPIES,
   START_HP,
@@ -63,6 +65,8 @@ interface Room {
   seed: number;
   /** picks the match's bosses; sent to clients (unlike the seed, which foretells pairings) */
   variant: number;
+  /** the rules version the match started on ("" = a room from before versions) */
+  version: string;
   round: number;
   fighting: boolean;
   plan: RoundPlan | null;
@@ -90,6 +94,8 @@ interface Room {
 
 interface Attach {
   seat: number;
+  /** the rules version this socket's client runs (src/game/rules-version.ts) */
+  v?: string;
 }
 
 const ROOM_TTL_MS = 3 * 60 * 60 * 1000; // idle rooms are wiped after 3h
@@ -105,6 +111,7 @@ const newRoom = (): Room => ({
   match: 0,
   seed: 0,
   variant: 0,
+  version: "",
   round: 0,
   fighting: false,
   plan: null,
@@ -246,9 +253,15 @@ export class Lobby extends DurableObject<Env> {
     const pid = url.searchParams.get("pid") ?? "";
     const want = Number(url.searchParams.get("seat"));
     const lb = url.searchParams.get("rated") === "1" ? (url.searchParams.get("lb") ?? "").slice(0, 40) || null : null;
+    const v = url.searchParams.get("v") ?? "";
     const online = this.online();
 
     let seat = pid ? room.seats.find((s) => s.seat === want && s.pid === pid) : undefined;
+    // every client must simulate by the same rules. A running match keeps the ones it
+    // started on (an update mid-match doesn't strand its players); anything else takes
+    // this build's — an older tab reloads first
+    const need = seat && room.stage === "match" ? room.version : RULES_VERSION;
+    if (need && v !== need) return outdatedSocket(this.ctx);
     if (seat) {
       // reclaiming a seat after a drop: retire the old socket (phones leave half-dead ones)
       for (const ws of this.ctx.getWebSockets()) {
@@ -278,7 +291,7 @@ export class Lobby extends DurableObject<Env> {
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     this.ctx.acceptWebSocket(server);
-    server.serializeAttachment({ seat: seat.seat } satisfies Attach);
+    server.serializeAttachment({ seat: seat.seat, v } satisfies Attach);
     await this.save(room);
     await this.schedule({ ttl: true });
 
@@ -335,6 +348,22 @@ export class Lobby extends DurableObject<Env> {
   }
 
   private async startMatch(room: Room) {
+    // tabs that finished the last match on the rules from before an update: a new match
+    // is played on this build's, so they're asked to reload instead
+    let retired = false;
+    for (const ws of this.ctx.getWebSockets()) {
+      const a = ws.deserializeAttachment() as Attach | null;
+      if (!a || a.v === RULES_VERSION) continue;
+      ws.serializeAttachment(null);
+      retired = true;
+      try {
+        ws.send(JSON.stringify({ t: "outdated" }));
+        ws.close(CLOSE_OUTDATED, "outdated");
+      } catch {
+        /* already closed */
+      }
+    }
+    if (retired) this.broadcast({ t: "roster", snap: this.snapshot(room) });
     const online = this.online();
     const players = room.seats.filter((s) => online.has(s.seat));
     if (players.length < 2) return;
@@ -345,6 +374,7 @@ export class Lobby extends DurableObject<Env> {
     room.match++;
     room.seed = Math.floor(Math.random() * 2 ** 31);
     room.variant = 1 + Math.floor(Math.random() * (2 ** 31 - 2));
+    room.version = RULES_VERSION;
     room.round = 1;
     room.fighting = false;
     room.history = [];

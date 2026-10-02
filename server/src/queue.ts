@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./index";
-import { cleanName } from "./util";
+import { cleanName, outdatedSocket } from "./util";
+import { RULES_VERSION } from "../../src/game/rules-version";
 import { MAX_PLAYERS } from "../../src/game/lobby";
 
 /**
@@ -24,6 +25,8 @@ export class Matchmaker extends DurableObject<Env> {
       return new Response("expected websocket", { status: 426 });
     }
     const url = new URL(request.url);
+    // a group plays one set of rules: this build's (an older tab reloads first)
+    if (url.searchParams.get("v") !== RULES_VERSION) return outdatedSocket(this.ctx);
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     this.ctx.acceptWebSocket(server);

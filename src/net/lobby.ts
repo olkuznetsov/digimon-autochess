@@ -1,5 +1,6 @@
 import { useGame, wireBoard, pvpMe, type PvpBoardUnit } from "../game/store";
-import { heldCopies, type LobbyFight, type LobbySnapshot } from "../game/lobby";
+import { CLOSE_OUTDATED, heldCopies, type LobbyFight, type LobbySnapshot } from "../game/lobby";
+import { RULES_VERSION } from "../game/rules-version";
 import { net } from "./bus";
 import { playerId } from "./leaderboard";
 
@@ -9,6 +10,8 @@ import { playerId } from "./leaderboard";
  *  catch up with the room instead of leaving the match. */
 
 const WS_BASE = "wss://digimon-autochess-mp.askuznetsov6996.workers.dev/lobby/";
+/** What a tab is told when the server runs other rules than it (an update went out). */
+export const OUTDATED_MESSAGE = "The game was updated — reload the page to play VS.";
 /** how long we keep trying to get back in */
 const SELF_RETRY_MS = 120_000;
 
@@ -39,9 +42,25 @@ function open() {
   const back = pvp && pvp.code === code ? `&seat=${pvp.seat}&pid=${encodeURIComponent(pvp.pid)}` : "";
   const url =
     `${WS_BASE}${code}?name=${encodeURIComponent(name)}&lb=${encodeURIComponent(playerId())}` +
-    `&rated=${rated() ? 1 : 0}${back}`;
+    `&rated=${rated() ? 1 : 0}&v=${RULES_VERSION}${back}`;
   const socket = new WebSocket(url);
   ws = socket;
+  /** The room runs other rules than this tab: retrying can't help, reloading does.
+   *  It says so in a message, then closes (4001) — the message is acted on right
+   *  away, since the closing handshake can take seconds. */
+  const outdated = () => {
+    if (ws !== socket) return;
+    ws = null;
+    session = null;
+    try {
+      socket.close();
+    } catch {
+      /* already closed */
+    }
+    const g = useGame.getState();
+    if (g.pvp) g.pvpOutdated();
+    else onError?.(OUTDATED_MESSAGE);
+  };
   net.send = (o) => {
     if (import.meta.env.DEV) {
       sentLog.push(o);
@@ -89,6 +108,9 @@ function open() {
       case "standings":
         g.pvpSync(m.snap as LobbySnapshot, (m.eliminated as number[]) ?? []);
         break;
+      case "outdated":
+        outdated();
+        break;
       case "requeue":
         // a public match whose group never showed up: back to the menu to search again
         onError?.("Not enough tamers showed up — search again.");
@@ -97,8 +119,9 @@ function open() {
     }
   };
 
-  socket.onclose = () => {
+  socket.onclose = (e) => {
     if (closedByUs || ws !== socket) return;
+    if (e.code === CLOSE_OUTDATED) return outdated();
     const g = useGame.getState();
     if (!g.pvp) {
       onError?.("Couldn't join — check the code; a match may already be running, or the lobby is full.");
