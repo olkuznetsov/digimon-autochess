@@ -1,4 +1,5 @@
 import type { PvpBoardUnit } from "../game/store";
+import { TEST_CHANNEL } from "../channel";
 
 /** Anonymous leaderboard client: device id + chosen name, no accounts. */
 
@@ -40,6 +41,7 @@ export function submitScore(data: { best?: number; winsDelta?: 1; board?: PvpBoa
   // the dev server shares the production leaderboard — keep test runs off it
   // (set localStorage "dac-dev-submit" to test submissions deliberately)
   if (import.meta.env.DEV && !localStorage.getItem("dac-dev-submit")) return;
+  if (TEST_CHANNEL) return;
   try {
     void fetch(`${BASE}/lb/submit`, {
       method: "POST",

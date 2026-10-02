@@ -1605,6 +1605,17 @@ body,
 }
 
 /* ---------- topbar icon buttons ---------- */
+.channel-badge {
+  font-family: "Chakra Petch", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #05060f;
+  background: #ffcf3d;
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
 .brand-wrap {
   display: flex;
   align-items: center;

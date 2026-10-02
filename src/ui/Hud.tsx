@@ -12,6 +12,7 @@ import { LeaderboardModal } from "./LeaderboardModal";
 import { SettingsModal } from "./SettingsModal";
 import { Guide } from "./Guide";
 import { lobbyClose, lobbyLeave } from "../net/lobby";
+import { CHANNEL, TEST_CHANNEL } from "../channel";
 
 /** VS result screens move on by themselves — the other tamers are already planning. */
 const VS_RESULT_SECONDS = 6;
@@ -97,6 +98,11 @@ export function Hud() {
           <div className="brand">
             DIGIMON <span>AUTO&nbsp;CHESS</span>
           </div>
+          {TEST_CHANNEL && (
+            <span className="channel-badge" title="Test build of the next rules — scores aren't posted, VS comes later">
+              TEST {CHANNEL}
+            </span>
+          )}
           <button
             className="icon-btn"
             title={muted ? "Unmute" : "Mute"}
@@ -127,7 +133,7 @@ export function Hud() {
           <button className="icon-btn" title="Tamer's Guide — how to play, every Digimon, items, VS" onClick={() => setShowHelp(true)}>
             ❓
           </button>
-          {!pvp && (
+          {!pvp && !TEST_CHANNEL && (
             <button className="icon-btn vs" title="VS lobby — 2 to 8 tamers" onClick={() => setShowPvp(true)}>
               ⚔ VS
             </button>
