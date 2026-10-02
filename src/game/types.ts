@@ -28,6 +28,8 @@ export interface Form {
   role: Role;
   cost?: number;
   evolvesTo?: string[];
+  /** appears only as a boss: never in the shop, wild waves or scrims */
+  bossOnly?: boolean;
 }
 
 /** A unit instance the player owns (on bench or board). */

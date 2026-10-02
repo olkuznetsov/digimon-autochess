@@ -3,6 +3,7 @@
 
 - runs assimp export
 - strips COLOR_0 vertex colors (some rips bake black -> model renders as silhouette)
+- resets 3ds Max's default grey diffuse on textured materials (renders ~40% too dark)
 - copies referenced external textures next to the glb
 - reports animation clip count
 
@@ -30,6 +31,23 @@ def save_glb(path, j, rest):
     )
 
 
+MAX_GREY = 150 / 255  # 3ds Max's default diffuse; the game drew the texture, not this
+
+
+def whiten_max_grey(j):
+    """assimp turns an FBX DiffuseColor into baseColorFactor. On textured materials
+    exported from 3ds Max that is its default grey (0.588), which darkens the model
+    by ~40% next to the rest of the roster — reset it to white. Returns how many."""
+    n = 0
+    for mat in j.get("materials", []):
+        pbr = mat.get("pbrMetallicRoughness", {})
+        fac = pbr.get("baseColorFactor")
+        if "baseColorTexture" in pbr and fac and all(abs(c - MAX_GREY) < 0.002 for c in fac[:3]):
+            pbr["baseColorFactor"] = [1, 1, 1, fac[3]]
+            n += 1
+    return n
+
+
 def convert(src, form_id):
     out = os.path.join(OUT_DIR, f"{form_id}.glb")
     r = subprocess.run(["assimp", "export", src, out], capture_output=True, text=True)
@@ -55,7 +73,8 @@ def convert(src, form_id):
             if "COLOR_0" in prim.get("attributes", {}):
                 del prim["attributes"]["COLOR_0"]
                 stripped += 1
-    if stripped or dropped_dups:
+    whitened = whiten_max_grey(j)
+    if stripped or dropped_dups or whitened:
         save_glb(out, j, rest)
     anims = len(j.get("animations", []))
     src_dir = os.path.dirname(src)
@@ -70,7 +89,7 @@ def convert(src, form_id):
             copied.append(uri)
     size_kb = os.path.getsize(out) // 1024
     anim_count = len(j.get("animations", []))
-    print(f"{form_id}: anims={anim_count} dropped_dups={dropped_dups} stripped_colors={stripped} textures={copied} size={size_kb}KB")
+    print(f"{form_id}: anims={anim_count} dropped_dups={dropped_dups} stripped_colors={stripped} whitened={whitened} textures={copied} size={size_kb}KB")
     return True
 
 

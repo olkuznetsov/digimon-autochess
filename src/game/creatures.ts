@@ -13,7 +13,7 @@ const f = (
   attribute: Attribute,
   family: Family,
   role: Role,
-  extra: { cost?: number; evolvesTo?: string[] } = {},
+  extra: { cost?: number; evolvesTo?: string[]; bossOnly?: boolean } = {},
 ): Form => ({ id, name, stage, attribute, family, role, ...extra });
 
 export const FORMS: Record<string, Form> = {
@@ -90,6 +90,15 @@ export const FORMS: Record<string, Form> = {
   dorumon: f("dorumon", "Dorumon", 1, "Data", "Dragon's Roar", "bruiser", { cost: 4, evolvesTo: ["dorugamon"] }),
   dorugamon: f("dorugamon", "Dorugamon", 2, "Data", "Dragon's Roar", "bruiser", { evolvesTo: ["alphamon"] }),
   alphamon: f("alphamon", "Alphamon", 3, "Data", "Dragon's Roar", "bruiser"),
+
+  // ============ Flamemon — Dragon's Roar (set 2, Frontier's warrior of flame) ============
+  flamemon: f("flamemon", "Flamemon", 1, "Data", "Dragon's Roar", "bruiser", { cost: 3, evolvesTo: ["aldamon"] }),
+  aldamon: f("aldamon", "Aldamon", 2, "Data", "Dragon's Roar", "caster", { evolvesTo: ["susanoomon"] }),
+  susanoomon: f("susanoomon", "Susanoomon", 3, "Data", "Dragon's Roar", "bruiser"),
+
+  // ============ bosses only ============
+  zeed: f("zeed", "ZeedMillenniummon", 3, "Virus", "Nightmare Soldiers", "tank", { bossOnly: true }),
+  gracenovamon: f("gracenovamon", "Gracenovamon", 3, "Data", "Dragon's Roar", "bruiser", { bossOnly: true }),
 };
 
 /** Display names of the three stages (the game's top tier is called Mega throughout). */
@@ -97,6 +106,8 @@ export const STAGE_NAME = ["", "Rookie", "Champion", "Mega"] as const;
 
 export const ALL_FORM_IDS = Object.keys(FORMS);
 export const ROOKIE_IDS = ALL_FORM_IDS.filter((id) => FORMS[id].stage === 1);
+/** forms a player can field (everything but the boss-only ones) */
+export const PLAYABLE_IDS = ALL_FORM_IDS.filter((id) => !FORMS[id].bossOnly);
 
 /** Rookie cost of the line each form belongs to (for sell value). */
 export const LINE_COST: Record<string, number> = {};

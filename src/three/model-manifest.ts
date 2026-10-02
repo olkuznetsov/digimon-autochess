@@ -2,6 +2,7 @@
 // Content hash per shipped model; used as the ?v= cache-busting query.
 export const MODEL_HASH: Record<string, string> = {
   agumon: "30b1065c62",
+  aldamon: "a5b9a9f01e",
   alphamon: "edc508a949",
   angemon: "9a42fe267e",
   banchostingmon: "18256590c1",
@@ -17,11 +18,13 @@ export const MODEL_HASH: Record<string, string> = {
   dorumon: "eb85031589",
   dracomon: "25a5a11cf2",
   exveemon: "2e5d73ac68",
+  flamemon: "5bd452cfe9",
   gabumon: "d6ca641181",
   gallantmon: "5e8c6a4294",
   gankoomon: "560141eae6",
   garurumon: "2c0f5b2a3c",
   gomamon: "067f549d12",
+  gracenovamon: "2ed0ea0aa2",
   greymon: "8709423f1b",
   growlmon: "79933a564b",
   guardromon: "c574b8493c",
@@ -42,9 +45,11 @@ export const MODEL_HASH: Record<string, string> = {
   rosemonbm: "3fffc369d3",
   skullsatamon: "4d896f0ac1",
   stingmon: "31a275008a",
+  susanoomon: "be69308b53",
   togemon: "723f390136",
   veemon: "317fbac78c",
   vikemon: "8f9b20b893",
   wargreymon: "3ccda25959",
   wormmon: "4dc91bcd2a",
+  zeed: "c4f5062f01",
 };

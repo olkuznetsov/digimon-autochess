@@ -50,7 +50,9 @@ function Studio({ onLog }: { onLog: (s: string) => void }) {
       return box;
     };
     (async () => {
-      for (const formId of ALL_FORM_IDS) {
+      // `?studio&only=a,b` re-renders just those (e.g. after adding a line)
+      const only = new URLSearchParams(location.search).get("only")?.split(",").filter((id) => FORMS[id]);
+      for (const formId of only?.length ? only : ALL_FORM_IDS) {
         if (cancelled) return;
         setId(formId);
         // wait for the model to stream in and fit itself (it stays hidden until then)

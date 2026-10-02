@@ -175,7 +175,7 @@ export const ULTIMATES: Record<string, Ultimate> = {
   vikemon: u("Arctic Blizzard", "🧊", "A polar storm: AoE 110% and freezes for 1s.", freeze(1.1, 1.8, 1.0)),
   // Wind Guardians — Veemon line
   exveemon: u("Vee-Laser", "⚡", "An X-shaped beam for 250%.", bolt(2.5)),
-  paildramon: u("Desperado Blaster", "🔫", "Rapid fire at the 3 nearest (120%).", volley(3, 1.2)),
+  paildramon: u("Desperado Blaster", "🔫", "Rapid fire at the 2 nearest (105%).", volley(2, 1.05)),
   imperialdramon: u("Positron Laser", "🌌", "A galaxy-splitting shot for 400%.", bolt(4.0)),
   // Wind Guardians — Wormmon line
   stingmon: u("Spiking Strike", "🗡️", "Three piercing thrusts (120% each).", barrage(3, 1.2)),
@@ -186,6 +186,13 @@ export const ULTIMATES: Record<string, Ultimate> = {
   // Dragon's Roar — Dorumon line
   dorugamon: u("Power Metal", "⚙️", "Fires an iron sphere for 255%.", bolt(2.55)),
   alphamon: u("Seiken Gradalpha", "👑", "The Royal Knight's blade erupts — AoE 185%.", nova(1.85, 2.0)),
+  // Dragon's Roar — Flamemon line (set 2)
+  flamemon: u("Pyro Punch", "🔥", "A blazing punch for 270% attack.", bolt(2.7)),
+  aldamon: u("Atomic Inferno", "☀️", "Fireballs rain on the target's area — AoE 155%.", nova(1.55, 1.7)),
+  susanoomon: u("Amaterasu", "⚔️", "A sword of light (300%) that sweeps nearby foes (110%).", smite(3.0, 1.1, 1.8)),
+  // bosses
+  zeed: u("Time Unlimited", "⏳", "Stops time around the target: AoE 130%, frozen for 1.3s.", freeze(1.3, 2.2, 1.3)),
+  gracenovamon: u("Grace Nova", "🌟", "A blade of every Royal Knight — AoE 200%.", nova(2.0, 2.2)),
   // Support rally on a couple of casters keeps team comps interesting
   candlemon: u("Ember Rally", "🕯️", "Ignites allies: +22% attack for the battle.", rally(0.22)),
   // rookies whose family synergies fit them badly (or too well) get their own moves

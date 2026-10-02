@@ -10,7 +10,7 @@
  * Run: npm run balance
  */
 import type { Attribute, Fighter, Form, Role, Unit } from "../src/game/types";
-import { FORMS, ALL_FORM_IDS, statsFor } from "../src/game/creatures";
+import { FORMS, PLAYABLE_IDS as ALL_FORM_IDS, statsFor } from "../src/game/creatures";
 import { applySynergies } from "../src/game/synergies";
 import { makeFighter, stepCombat, SIM_DT, HP_SCALE } from "../src/game/battle";
 

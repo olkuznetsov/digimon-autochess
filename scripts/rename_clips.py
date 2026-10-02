@@ -35,9 +35,17 @@ ADHOC = {
     "move2": "move",
     "attack": "attack01",
     "attack1": "attack01",
+    "attack_1": "attack01",
     "attack2": "attack02",
     "skill1": "special01",
     "skill2": "special02",
+    "hurt": "damage",
+}
+# last resort for the mobile-game rips (Flamemon, Aldamon …) that only ship
+# dash-in takes: the run-up-and-hit clip stands in for the attack / special
+FALLBACK = {
+    "attack01": ["attack_move_to", "attack_move"],
+    "special01": ["skill1_move_to", "skill2_move_to"],
 }
 
 
@@ -79,6 +87,14 @@ def fix(path):
             a["name"] = new
             taken.add(new)
             renames.append(f"{old}->{new}")
+    for want, sources in FALLBACK.items():
+        if want in taken or (want == "special01" and "special02" in taken):
+            continue
+        a = next((x for src in sources for x in anims if x.get("name") == src), None)
+        if a:
+            renames.append(f"{a['name']}->{want} (fallback)")
+            a["name"] = want
+            taken.add(want)
     if renames:
         save_glb(path, j, rest)
         print(f"{path}: {', '.join(renames)}")

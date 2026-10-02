@@ -1,5 +1,5 @@
 import type { Fighter } from "./types";
-import { FORMS, ALL_FORM_IDS } from "./creatures";
+import { FORMS, PLAYABLE_IDS } from "./creatures";
 import { makeFighter } from "./battle";
 import { COLS } from "./board";
 
@@ -65,7 +65,7 @@ export const WAVES = {
 // Every 5th round is a BOSS: one oversized villain with big HP (+2 adds) and a
 // guaranteed item reward.
 const BOSS_IDS: Record<number, string> = { 5: "skullsatamon", 10: "machinedramon", 15: "diaboromon" };
-const ENDLESS_BOSSES = ["gankoomon", "imperialdramon", "alphamon", "machinedramon", "diaboromon"];
+const ENDLESS_BOSSES = ["gankoomon", "zeed", "imperialdramon", "gracenovamon", "alphamon", "machinedramon", "diaboromon"];
 
 export const isBossRound = (round: number) => round % 5 === 0;
 
@@ -80,7 +80,7 @@ type BossSpec = { id: string; hp: number; atk: number; adds: 1 | 2 | 3; addCount
  *  forms in the same cells (both VS clients rely on this). `prefix` keeps uids apart. */
 function buildWave(round: number, hpScale: number, boss: BossSpec | null, mix: Mix, prefix = "e"): Fighter[] {
   const pick = (stage: 1 | 2 | 3, i: number) => {
-    const pool = ALL_FORM_IDS.filter((id) => FORMS[id].stage === stage);
+    const pool = PLAYABLE_IDS.filter((id) => FORMS[id].stage === stage);
     return pool[(round * 3 + i * 5) % pool.length];
   };
   const at = (i: number) => ({ col: i % COLS, row: 5 - Math.floor(i / COLS) });
@@ -138,14 +138,14 @@ export const VS = {
   /** wild-Digimon rounds: [rookies, champions, megas]; later stages repeat the last.
    *  Tuned on 600 bot runs' boards (`npm run runsim -- dumpBoards=…`): a typical board wins
    *  ~90% — loot rounds, but a weak board can trip. */
-  wild: { 1: [2, 0, 0], 2: [3, 0, 0], 5: [3, 1, 0], 15: [0, 6, 0], 25: [0, 4, 2], 35: [0, 3, 4] } as Record<number, Mix>,
+  wild: { 1: [2, 0, 0], 2: [3, 0, 0], 5: [3, 1, 0], 15: [1, 5, 0], 25: [0, 4, 2], 35: [0, 3, 4] } as Record<number, Mix>,
   /** bosses of rounds 10, 20, 30, 40+ — a real check, getting harder: a typical board
    *  beats them ~68% / 63% / 57% / 52% of the time (same tuning run) */
   bosses: [
     { id: "skullsatamon", hp: 4.4, atk: 1.8, adds: 2, addCount: 2 },
-    { id: "machinedramon", hp: 3.0, atk: 1.45, adds: 3, addCount: 2 },
-    { id: "diaboromon", hp: 3.6, atk: 1.6, adds: 3, addCount: 2 },
-    { id: "alphamon", hp: 3.6, atk: 1.6, adds: 3, addCount: 3 },
+    { id: "machinedramon", hp: 2.6, atk: 1.45, adds: 3, addCount: 2 },
+    { id: "zeed", hp: 2.9, atk: 1.3, adds: 3, addCount: 2 },
+    { id: "gracenovamon", hp: 3.2, atk: 1.45, adds: 3, addCount: 3 },
   ] as BossSpec[],
 };
 
