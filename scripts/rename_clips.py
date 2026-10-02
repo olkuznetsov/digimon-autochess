@@ -68,6 +68,9 @@ def canonical(name: str, taken: set) -> str | None:
     m = re.fullmatch(r"chr\w*?_([a-z]{2}\d{2})(?:_rd)?", name)
     if m and m.group(1) in CS_CODES:
         return CS_CODES[m.group(1)]
+    # models converted from the game files (scripts/dscs_to_glb.py) name clips by bare code
+    if name in CS_CODES:
+        return CS_CODES[name]
     if name in ADHOC and ADHOC[name] not in taken:
         return ADHOC[name]
     return None

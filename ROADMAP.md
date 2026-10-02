@@ -184,14 +184,26 @@
 - Друзі: постійні коди + запрошення (потрібні присутність/сповіщення на воркері).
 - Бот для `runsim`, що вміє зливати предмети.
 - Herissmon → Filmon → Rasenmon — повна лінія (Digimon ReArise), зараз дикі: можна зробити 16-ю грабельною лінією.
-- Більше Дигімонів: DigiChess вичерпано. Гра в Саші куплена (Cyber Sleuth: Complete Edition, лише Windows); на маку:
-  SteamCMD `+@sSteamCmdForcePlatformType windows` (логін робить Саша) → MVGLTools (Linux/Windows-бінарники, на
-  мак — збірка з CMake/Boost) → Blender 2.91 (Rosetta) + Blender-Tools-for-DSCS (з анімаціями) → glTF → наш пайплайн.
+- Більше Дигімонів: джерело готове — файли Cyber Sleuth (368 моделей, 46 уже в нас; `scripts/dscs_convert.py --list`).
+  Обрати лінії з Сашею й додати партією (моделі, ульти, баланс).
 - Режими складності; рейтингова ghost-драбина; більше босів з унікальними механіками.
 - Code-splitting (модалки мультиплеєра/лідерборду), розбиття `store.ts` на слайси.
 
 ## 5. Журнал
 <!-- новіші записи зверху -->
+- **2026-10-02** — Моделі прямо з файлів Digimon Story Cyber Sleuth (гра в Саші куплена, лише Windows) на маку:
+  SteamCMD з `+@sSteamCmdForcePlatformType windows` (логін вводить Саша) → MVGLTools v2.2.0, зібраний з коду
+  (у libc++ від Apple немає `views::zip_transform` — дві правки на `zip | transform`; Boost — релізний CMake-архів
+  ~40 МБ замість повного клону) → власний конвертер `scripts/dscs_to_glb.py`: читачі з Blender-Tools-for-DSCS
+  (чистий Python + numpy) і glTF напряму, ~1 с на модель. Blender 2.91 (останній, з яким працює плагін) під
+  Rosetta на macOS 26 падав у половині запусків (пошкоджена купа; Саші вискакували вікна «Blender quit
+  unexpectedly») — відмовились. `scripts/dscs_setup.sh` (разово), `scripts/dscs_convert.py` (каталог і конвертація).
+  Пастки: (1) частина моделей не має своїх кліпів — гра бере чужі за `same_animation_data.mbe` (GeoGreymon ←
+  Greymon); (2) контурні оболонки `MTR_line*` без текстури — сірі «халати», викидаємо; (3) кліпи гри — відносно
+  пози прив'язки (IBM), не rest-пози .skel: final = bind_local × clip, запікаємо в ключі (перша спроба дала
+  «зламану» модель); кватерніони кліпів читач віддає як WXYZ; (4) шаблони таблиць MVGLTools з Windows-
+  розділювачами. Перевірено: GeoGreymon (кожна кістка в межах 0,06% від Blender-версії в усіх кліпах), Renamon,
+  Gatomon, Omnimon — на дошці в грі.
 - **2026-10-02** — Версія правил для VS. Хеш `src/game/` штампується в кожну збірку (`npm run build`, `dev` і
   збірка воркера через `build.command` — npm-скрипт, бо `cwd` у wrangler рахується від теки запуску, а не
   конфігу). Воркер пускає лише свою версію; матч, що вже йде, догравається на своїй; «Play again» просить старі

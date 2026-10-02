@@ -41,7 +41,15 @@ Wild Digimon (`wild`: met in PvE waves, never recruited): `coronamon`(V), `heris
 `filmon`(D), `piximon`(D) champions; `rasenmon`(D) mega.
 
 DigiChess is now used up. Herissmon → Filmon → Rasenmon is a real line (Digimon ReArise) and could become a
-playable 16th line by moving it from `wild` to a cost + `evolvesTo`. A bigger expansion needs a new source:
-Digimon Story Cyber Sleuth: Complete Edition (Windows-only; on a Mac: SteamCMD with
-`+@sSteamCmdForcePlatformType windows` downloads it, MVGLTools unpacks it, Blender 2.91 + Blender-Tools-for-DSCS
-imports models with animations → glTF).
+playable 16th line by moving it from `wild` to a cost + `evolvesTo`.
+
+**The big source is ready: Digimon Story Cyber Sleuth's own files** (see models-src/README.md). 368 models,
+46 of them already in the roster; `python3 scripts/dscs_convert.py --list` prints the catalog. Complete lines
+we don't have yet include Tentomon → Kabuterimon → MegaKabuterimon/HerculesKabuterimon, Biyomon → Birdramon →
+Garudamon/Hououmon, Renamon → Kyubimon → Taomon/Sakuyamon, Terriermon → Gargomon → Rapidmon/MegaGargomon,
+Gaomon → GaoGamon → MachGaogamon/MirageGaogamon, Lunamon → Lekismon → Crescemon/Dianamon, Falcomon → Peckmon →
+Crowmon/Ravemon, Kudamon → Reppamon → Chirinmon, Hackmon → BaoHuckmon → SaviorHuckmon/Jesmon, the Frontier
+spirits (Agunimon → BurningGreymon → KaiserGreymon, Lobomon → KendoGarurumon → MagnaGarurumon) — and the
+"removed" ones above (GeoGreymon/RizeGreymon, Tyrannomon/MetalTyrannomon, WereGarurumon, Devimon/Myotismon,
+Woodmon/Cherrymon). Tested end to end with GeoGreymon (same look and brightness as the DigiChess Greymon; every
+bone within 0.06% of a Blender-made conversion in every clip), Renamon, Gatomon and Omnimon.

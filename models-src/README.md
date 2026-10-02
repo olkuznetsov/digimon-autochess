@@ -19,3 +19,21 @@ Pipeline:
 3. `npm run check-models` — clips present, baked scale consistent across clips, manifest complete.
 4. Portrait: `/?studio&only=<formId>` in the dev server writes `public/portraits/<formId>.webp`.
 5. Verify in the browser (sizes, animation, no white/giant models) before committing.
+
+## Straight from the game files (Digimon Story Cyber Sleuth: Complete Edition)
+
+The game is Windows-only; on a Mac its files come through SteamCMD (the account must own it):
+
+    brew install --cask steamcmd
+    steamcmd +@sSteamCmdForcePlatformType windows +force_install_dir ~/Games/dscs +login <steam login> +app_update 1042550 validate +quit
+
+1. `scripts/dscs_setup.sh` (once): builds MVGLTools (patched for Apple's libc++), fetches Blender-Tools-for-DSCS
+   for its file readers, makes a venv with numpy + Pillow, unpacks the main archive (~13 GB) and the name /
+   shared-clip tables — all under `model-sources/` (git-ignored). No Blender: the 2.91 the importer needs
+   corrupts its own heap at random under Rosetta, so `scripts/dscs_to_glb.py` writes the glTF itself (~1 s).
+2. `python3 scripts/dscs_convert.py --list [name]` — the game's 368 models: chr number, name, clips, and which are
+   already in our roster.
+3. `python3 scripts/dscs_convert.py <chr number> <formId>` → `models-src/<formId>.glb` with canonical clip names.
+   A model without clips of its own borrows another's, as the game does (GeoGreymon plays Greymon's); the cel
+   outline shells (`MTR_line*`) are dropped. The game's clips are relative to the bind pose (the inverse bind
+   matrices), so that is baked into the keys. Then the steps above: optimize, check, portrait, browser.
