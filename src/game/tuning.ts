@@ -57,7 +57,7 @@ export const WAVES = {
   boss: [
     { hp: 3.4, atk: 1.35, adds: 1 },
     { hp: 2.4, atk: 1.2, adds: 2 },
-    { hp: 2.6, atk: 1.25, adds: 2 },
+    { hp: 2.5, atk: 1.25, adds: 2 },
     { hp: 4.2, atk: 1.6, adds: 3 },
   ] as { hp: number; atk: number; adds: 1 | 2 | 3 }[],
 };

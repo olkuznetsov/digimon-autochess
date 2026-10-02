@@ -159,7 +159,7 @@ export const ULTIMATES: Record<string, Ultimate> = {
   magnaangemon: u("Gate of Destiny", "⚔️", "Banishes a weakened foe — 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
   // Nature Spirits — Dracomon line
   coredramon: u("Blue Flare Breath", "🔥", "A dragon-fire blast for 255%.", bolt(2.55)),
-  breakdramon: u("Giga Drill", "🩸", "Braces behind a 15% team shield.", bulwark(0.15, true)),
+  breakdramon: u("Giga Drill", "🩸", "Braces behind a 13% team shield.", bulwark(0.13, true)),
   // Deep Savers — Keramon line
   infermon: u("Cable Crusher", "🕸️", "Three savage strikes (120% each).", barrage(3, 1.2)),
   diaboromon: u("Web Wrecker", "🕷️", "A viral nova (150%) around the target.", nova(1.5, 1.7)),
@@ -169,7 +169,7 @@ export const ULTIMATES: Record<string, Ultimate> = {
   // Nature Spirits — Palmon line
   togemon: u("Needle Spray", "🌵", "Showers needles in an AoE (140%).", nova(1.4, 1.6)),
   rosemon: u("Thorn Whip", "🌹", "Five lashes that heal her (95% each, 25% lifesteal).", siphon(5, 0.95, 0.25)),
-  rosemonbm: u("Danger Thorn", "🥀", "A toxic bloom detonates — AoE 165%.", nova(1.65, 1.8)),
+  rosemonbm: u("Danger Thorn", "🥀", "A toxic bloom detonates — AoE 185%.", nova(1.85, 1.8)),
   // Deep Savers — Gomamon line
   ikkakumon: u("Harpoon Torpedo", "🐚", "Braces behind a 21% shield.", bulwark(0.21)),
   vikemon: u("Arctic Blizzard", "🧊", "A polar storm: AoE 110% and freezes for 1s.", freeze(1.1, 1.8, 1.0)),
@@ -188,6 +188,10 @@ export const ULTIMATES: Record<string, Ultimate> = {
   alphamon: u("Seiken Gradalpha", "👑", "The Royal Knight's blade erupts — AoE 185%.", nova(1.85, 2.0)),
   // Support rally on a couple of casters keeps team comps interesting
   candlemon: u("Ember Rally", "🕯️", "Ignites allies: +18% attack for the battle.", rally(0.18)),
+  // rookies whose family synergies fit them badly (or too well) get their own moves
+  gomamon: u("Marching Fishes", "🐟", "A school of fish rams the target twice (100% each).", barrage(2, 1.0)),
+  gabumon: u("Blue Blaster", "🔵", "A blue flame for 290% attack.", bolt(2.9)),
+  veemon: u("Vee Headbutt", "💢", "A charging headbutt for 290% attack.", bolt(2.9)),
 };
 
 /** Resolve a form's ultimate, falling back to its role ability. */
