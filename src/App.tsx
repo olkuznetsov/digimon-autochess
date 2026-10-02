@@ -6,6 +6,7 @@ import { EvolutionChoice } from "./ui/EvolutionChoice";
 import { ItemTray } from "./ui/ItemTray";
 import { UnitPanel } from "./ui/UnitPanel";
 import { EvoBanner } from "./ui/EvoBanner";
+import { DiscoveryToast } from "./ui/DiscoveryToast";
 import { LoadingScreen } from "./ui/LoadingScreen";
 import { AudioDirector } from "./audio/AudioDirector";
 import { Hotkeys } from "./ui/Hotkeys";
@@ -33,6 +34,7 @@ export default function App() {
       </div>
       <UnitPanel />
       <EvoBanner />
+      <DiscoveryToast />
       <EvolutionChoice />
       <CarouselPanel />
       <AugmentChoice />

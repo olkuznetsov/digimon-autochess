@@ -124,6 +124,12 @@ function discover(discovered: string[], units: Unit[]): string[] {
   return add.length ? [...discovered, ...add] : discovered;
 }
 
+/** discover() plus the toast for whatever is new (spread into a store update). */
+function discovery(prev: string[], units: Unit[]) {
+  const next = discover(prev, units);
+  return next === prev ? {} : { discovered: next, discoveryFlash: { ids: next.slice(prev.length), key: Date.now() } };
+}
+
 /** The shared pool shops roll from — only during a VS match. */
 const shopPool = (s: { pvp: PvpState | null }) => (s.pvp?.snap.stage === "match" ? s.pvp.snap.pool : undefined);
 
@@ -224,6 +230,8 @@ interface GameState {
   shop: string[];
   /** Champions and Megas raised this game: the shop's tiers 4–5 offer only these */
   discovered: string[];
+  /** the latest discoveries — the "now in your shop" toast */
+  discoveryFlash: { ids: string[]; key: number } | null;
   units: Unit[];
   inventory: string[];
   selectedItem: string | null;
@@ -369,6 +377,7 @@ function freshMatchRun() {
     units: [] as Unit[],
     inventory: [] as string[],
     discovered: [] as string[],
+    discoveryFlash: null,
     shop: rollShop(START_LEVEL, [], fullPool()),
     shopLocked: false,
     phase: "prep" as Phase,
@@ -408,6 +417,7 @@ function initialState() {
     gameOver: false,
     shop: rollShop(START_LEVEL, []),
     discovered: [] as string[],
+    discoveryFlash: null as { ids: string[]; key: number } | null,
     units: [] as Unit[],
     inventory: [] as string[],
     selectedItem: null as string | null,
@@ -510,7 +520,7 @@ export const useGame = create<GameState>((set, get) => ({
       gold: gold - cost,
       shop: newShop,
       units: resolved.units,
-      discovered: discover(get().discovered, resolved.units),
+      ...discovery(get().discovered, resolved.units),
       pendingEvolution: resolved.pending,
       ...(resolved.spill.length ? { inventory: [...inventory, ...resolved.spill] } : {}),
       ...(last ? { evoFlash: { ...last, key: Date.now() } } : {}),
@@ -539,7 +549,7 @@ export const useGame = create<GameState>((set, get) => ({
     const flash = last ?? { from: pendingEvolution.fromFormId, to: formId, uid: evolvedUid };
     set({
       units: resolved.units,
-      discovered: discover(get().discovered, resolved.units),
+      ...discovery(get().discovered, resolved.units),
       pendingEvolution: resolved.pending,
       inventory: [...inventory, ...pooled.slice(2), ...resolved.spill],
       evoFlash: { ...flash, key: Date.now() },
@@ -1236,7 +1246,7 @@ function grantUnits(formIds: string[]) {
     const last = resolved.evolved[resolved.evolved.length - 1];
     useGame.setState({
       units: resolved.units,
-      discovered: discover(s.discovered, resolved.units),
+      ...discovery(s.discovered, resolved.units),
       pendingEvolution: resolved.pending,
       inventory: [...s.inventory, ...resolved.spill],
       ...(last ? { evoFlash: { ...last, key: Date.now() } } : {}),

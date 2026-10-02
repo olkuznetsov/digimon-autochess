@@ -18,6 +18,7 @@ import { TRAITS } from "../game/synergies";
 import { ITEMS, BASE_ITEM_IDS, FUSED_ITEM_IDS, fuseResult } from "../game/items";
 import { AUGMENTS, AUGMENT_IDS, AUGMENT_ROUNDS } from "../game/augments";
 import { ECONOMY, SHOP_ODDS, VS, WAVES } from "../game/tuning";
+import { MAX_LEVEL } from "../game/xpView";
 import { POOL_COPIES, ratingDelta } from "../game/lobby";
 import type { Family, Role } from "../game/types";
 import { Portrait } from "./Portrait";
@@ -74,7 +75,7 @@ function Basics() {
       <section className="guide-sec">
         <h3>The round</h3>
         <ul>
-          <li>🛒 <b>Buy rookies</b> in the shop (1–4 gold) — they wait on your bench.</li>
+          <li>🛒 <b>Buy Digimon</b> in the shop — the price is the stage: ⛂1 Fresh, ⛂2 In-Training, ⛂3 Rookie, ⛂4 Champion, ⛂5 Mega. They wait on your bench.</li>
           <li>🖱 <b>Drag them onto your half</b> of the board. Your level is how many can fight.</li>
           <li>⚔ <b>The battle plays itself</b>: units attack, fill their mana and cast their ultimate.</li>
           <li>♥ Lose and you take damage; at 0 the run (or match) is over.</li>
@@ -84,10 +85,22 @@ function Basics() {
         <h3>Digivolve</h3>
         <ul>
           <li>🧬 <b>3 copies</b> of the same Digimon merge into the next stage: Fresh → In-Training → Rookie → Champion → Mega.</li>
-          <li>💎 A Digimon's <b>stage is its price</b> (⛂1 Fresh … ⛂5 Mega). Fresh, In-Training and Rookies are always in the shop; a <b>Champion or Mega</b> shows up there only after you've raised it yourself this game.</li>
-          <li>🔀 Some lines <b>branch</b> — you pick the evolution, and with it the attribute and family.</li>
+          <li>🔀 Most stages <b>branch</b> — you pick the evolution (3 Koromon: Agumon, Guilmon or Dracomon), and with it the attribute and family.</li>
+          <li>🍼 <b>Babies</b> (Fresh, In-Training) have no attribute and no family: neutral to everyone, no synergies. Raise them into Rookies.</li>
           <li>🎒 Items carry over: two stay on the new form, the rest go back to your tray.</li>
           <li>✨ The shop highlights what you're collecting: <b>×1 owned</b>, <b>⬆ Digivolve</b> (third copy), <b>★ line</b>.</li>
+        </ul>
+      </section>
+      <section className="guide-sec">
+        <h3>Discovery</h3>
+        <ul>
+          <li>🔓 Fresh, In-Training and Rookies are <b>always in the shop</b>.</li>
+          <li>
+            ✨ A <b>Champion or Mega</b> shows up in your shop only once you've <b>raised one yourself</b> this game. The first
+            costs three copies of the stage below; after that the shop can offer more for ⛂4 / ⛂5 — the fast way to the
+            three you need for the next stage. Every game starts with nothing discovered.
+          </li>
+          <li>📊 The strip over the shop shows your level's odds; a dim ⛂4 / ⛂5 means nothing of that tier raised yet — those slots roll another tier.</li>
         </ul>
       </section>
       <section className="guide-sec">
@@ -95,16 +108,19 @@ function Basics() {
         <ul>
           <li>
             💰 You start with <b>{ECONOMY.startGold} gold</b>. Every round: <b>{ECONOMY.baseIncome} gold</b> + interest (1
-            per 10 banked, up to 5) + a streak bonus (2+ wins or losses in a row: +1 to +3) + <b>{ECONOMY.winGold}</b>{" "}
-            for a win.
+            per 10 banked, up to 5) + a streak bonus (2+ wins <i>or</i> 2+ losses in a row: +1 to +3) +{" "}
+            <b>{ECONOMY.winGold}</b> for a win.
           </li>
           <li>
-            ⟳ <b>Reroll</b> the shop for <b>{ECONOMY.rerollCost} gold</b>. With {ROOKIE_IDS.length} lines on offer, rerolling
-            is how you find the copies you're collecting — and the lock (🔒) keeps a good shop for next round.
+            ⟳ <b>Reroll</b> the shop for <b>{ECONOMY.rerollCost} gold</b> — it's how you find the copies you're collecting,
+            and the lock (🔒) keeps a good shop for next round.
+          </li>
+          <li>
+            💱 <b>Selling</b> gives back everything a Digimon cost — a merged one returns the price of every copy in it.
           </li>
           <li>
             ▲ <b>Buy XP</b>: {ECONOMY.xpCost} gold for {ECONOMY.xpPerBuy} XP; you also get {ECONOMY.passiveXp} XP every round.
-            Your level is how many Digimon fit on the board, and it sets the shop's odds (tiers 4–5 offer only what you've raised):
+            Your level (1–{MAX_LEVEL}) is how many Digimon fit on the board, and it sets the shop's odds:
           </li>
         </ul>
         <table className="guide-table">
@@ -149,8 +165,9 @@ function Basics() {
   );
 }
 
-/** One form's card: portrait, role, attribute, stats and ultimate. */
-function FormCard({ id }: { id: string }) {
+/** One form's card: portrait, role, attribute, stats and ultimate (and, for the babies,
+ *  what they digivolve into). */
+function FormCard({ id, next = false }: { id: string; next?: boolean }) {
   const form = FORMS[id];
   const s = statsFor(form);
   const ult = ultimateFor(id, form.role);
@@ -168,8 +185,38 @@ function FormCard({ id }: { id: string }) {
         <span className="dex-ult" title={ult.desc}>
           {ult.icon} <b>{ult.name}</b> — {ult.desc}
         </span>
+        {next && form.evolvesTo && (
+          <span className="dex-next">→ {form.evolvesTo.map((n) => FORMS[n].name).join(" · ")}</span>
+        )}
       </div>
     </div>
+  );
+}
+
+const BABY_IDS = PLAYABLE_IDS.filter((id) => FORMS[id].stage <= 2);
+/** The In-Training forms that digivolve into a rookie. */
+const BABY_OF: Record<string, string[]> = {};
+for (const id of BABY_IDS) for (const n of FORMS[id].evolvesTo ?? []) (BABY_OF[n] ??= []).push(id);
+
+/** Fresh → In-Training → which rookies: the start of every line that has babies. */
+function Babies() {
+  return (
+    <section className="dex-line">
+      <div className="dex-line-head">
+        <b>Babies</b>
+        <span className="dex-note">⛂1 Fresh and ⛂2 In-Training — no attribute, no family; three of a kind digivolve</span>
+      </div>
+      <div className="dex-tree">
+        {([1, 2] as const).map((stage) => (
+          <div key={stage} className="dex-stage">
+            <span className="dex-stage-name">{STAGE_NAME[stage]}</span>
+            {BABY_IDS.filter((id) => FORMS[id].stage === stage).map((id) => (
+              <FormCard key={id} id={id} next />
+            ))}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -258,9 +305,9 @@ function Digimon() {
   return (
     <>
       <p className="guide-intro">
-        {lines.length} lines, {PLAYABLE_IDS.length} forms to collect — plus {WILD_IDS.length} wild Digimon and{" "}
-        {BOSS_IDS.length} bosses you can only fight. Stats are per role and stage; what sets a Digimon apart is its
-        attribute, family and ultimate.
+        {lines.length} lines from {BABY_IDS.length} babies, {PLAYABLE_IDS.length} forms to collect — plus {WILD_IDS.length}{" "}
+        wild Digimon and {BOSS_IDS.length} bosses you can only fight. Stats are per role and stage; what sets a Digimon
+        apart is its attribute, family and ultimate.
       </p>
       <div className="guide-chips">
         <button className={`guide-chip${family === null ? " on" : ""}`} onClick={() => setFamily(null)}>
@@ -277,12 +324,16 @@ function Digimon() {
           </button>
         ))}
       </div>
+      {!family && <Babies />}
       {lines
         .filter((l) => !family || [l.rookie, ...l.champions, ...l.megas].some((id) => FORMS[id].family === family))
         .map((l) => (
           <section key={l.rookie} className="dex-line">
             <div className="dex-line-head">
               <b>{FORMS[l.rookie].name} line</b>
+              <span className="dex-note">
+                {BABY_OF[l.rookie] ? `from ${BABY_OF[l.rookie].map((b) => FORMS[b].name).join(" / ")}` : "starts at Rookie"}
+              </span>
               <span style={{ color: FAMILY_COLOR[FORMS[l.rookie].family] }}>{FORMS[l.rookie].family}</span>
               {(l.champions.length > 1 || l.megas.length > 1) && <span className="dex-branch">🔀 branches</span>}
             </div>
@@ -327,7 +378,10 @@ function Synergies() {
       </section>
       <section className="guide-sec">
         <h3>Synergies</h3>
-        <p>Different Digimon of the same attribute or family on the board unlock a bonus (copies of one form count once).</p>
+        <p>
+          Different Digimon of the same attribute or family on the board unlock a bonus (copies of one form count once).
+          Babies count for none.
+        </p>
         <div className="syn-grid">
           {TRAITS.map((t) => {
             const members = Object.values(FORMS)

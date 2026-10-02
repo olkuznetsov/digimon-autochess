@@ -256,6 +256,80 @@ body,
   font-weight: 800;
 }
 
+.shop-odds {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(5, 6, 15, 0.72);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: auto;
+}
+.odds-tier.dim {
+  opacity: 0.4;
+}
+.odds-raised {
+  color: #ffe9a3;
+}
+.shop-card.epic {
+  box-shadow: var(--panel-glow), 0 0 14px rgba(255, 155, 84, 0.45);
+}
+.shop-card.legendary {
+  box-shadow: var(--panel-glow), 0 0 18px rgba(255, 211, 77, 0.6);
+}
+.discovery-toast {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 24;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 8px;
+  border: 1.5px solid;
+  border-radius: 14px;
+  background: rgba(10, 12, 28, 0.92);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  animation: discovery 4.2s ease-out forwards;
+}
+.discovery-portrait {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+.discovery-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: #cfd8f0;
+  white-space: nowrap;
+}
+.discovery-text b {
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+@keyframes discovery {
+  0% { opacity: 0; transform: translate(-50%, 10px); }
+  8% { opacity: 1; transform: translate(-50%, 0); }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (max-width: 640px) {
+  .shop-odds { top: -12px; gap: 6px; font-size: 9px; padding: 1px 8px; }
+  .discovery-text { font-size: 11px; }
+  .discovery-text b { font-size: 12px; }
+}
+
 .shop-slots {
   display: flex;
   gap: 10px;
@@ -2691,6 +2765,10 @@ html, body {
 .dex-branch {
   color: var(--gold);
   font-size: 12px;
+}
+.dex-next {
+  font-size: 11px;
+  color: #ff9ccf;
 }
 .dex-note {
   color: var(--text-dim);

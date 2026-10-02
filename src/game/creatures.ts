@@ -207,6 +207,10 @@ export const FORMS: Record<string, Form> = {
   piximon: f("piximon", "Piximon", 4, "Data", "Wind Guardians", "caster", { wild: true }),
 };
 
+/** Shop tier (= stage) colours: warm and neutral on purpose — green, blue and purple
+ *  already mean Vaccine, Data and Virus. Champions glow orange ("epic"), Megas gold. */
+export const TIER_COLOR = ["", "#9aa3b5", "#f2a7cf", "#e3ebf7", "#ff9b54", "#ffd34d"] as const;
+
 /** Display names of the five stages (the game's top tier is called Mega throughout). */
 export const STAGE_NAME = ["", "Fresh", "In-Training", "Rookie", "Champion", "Mega"] as const;
 

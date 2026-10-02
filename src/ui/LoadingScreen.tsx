@@ -4,6 +4,9 @@ import { preloadRemainingModels } from "../three/models";
 
 const TIPS = [
   "Three copies of a Digimon digivolve into its next form.",
+  "A Digimon's price is its stage: ⛂1 Fresh, ⛂2 In-Training, ⛂3 Rookie, ⛂4 Champion, ⛂5 Mega.",
+  "Raise a Champion or Mega once, and the shop starts offering it.",
+  "Botamon → Koromon → Agumon, Guilmon or Dracomon: know who digivolves into whom.",
   "At some digivolutions you choose the branch — it changes your synergies.",
   "Vaccine beats Virus, Virus beats Data, Data beats Vaccine.",
   "Every 5th round a boss appears — beat it for a guaranteed item.",
