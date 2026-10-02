@@ -43,27 +43,43 @@ const ATTRIBUTE_TRAITS: TraitDef[] = [
   },
 ];
 
-// Family traits (origin/class axis)
+// Family traits (origin/class axis): two tiers each — 2 different members for a
+// taste, 4 for the full bonus (a line's forms count separately: Agumon + Greymon is 2)
 const FAMILY_TRAITS: TraitDef[] = [
   {
     key: "Dragon's Roar", name: "Dragon's Roar", kind: "family", color: FAMILY_COLOR["Dragon's Roar"],
-    tiers: [{ need: 2, desc: "+20% attack", atkPct: 0.2 }],
+    tiers: [
+      { need: 2, desc: "+15% attack", atkPct: 0.15 },
+      { need: 4, desc: "+32% attack", atkPct: 0.32 },
+    ],
   },
   {
     key: "Nature Spirits", name: "Nature Spirits", kind: "family", color: FAMILY_COLOR["Nature Spirits"],
-    tiers: [{ need: 3, desc: "+25% max HP", hpPct: 0.25 }],
+    tiers: [
+      { need: 2, desc: "+12% max HP", hpPct: 0.12 },
+      { need: 4, desc: "+30% max HP", hpPct: 0.3 },
+    ],
   },
   {
     key: "Wind Guardians", name: "Wind Guardians", kind: "family", color: FAMILY_COLOR["Wind Guardians"],
-    tiers: [{ need: 3, desc: "ranged: +35% atk speed", asPct: 0.35, rangedOnly: true }],
+    tiers: [
+      { need: 2, desc: "+15% attack speed", asPct: 0.15 },
+      { need: 4, desc: "+35% attack speed", asPct: 0.35 },
+    ],
   },
   {
     key: "Nightmare Soldiers", name: "Nightmare Soldiers", kind: "family", color: FAMILY_COLOR["Nightmare Soldiers"],
-    tiers: [{ need: 2, desc: "+16% damage", atkPct: 0.16 }],
+    tiers: [
+      { need: 2, desc: "+14% damage", atkPct: 0.14 },
+      { need: 4, desc: "+28% damage", atkPct: 0.28 },
+    ],
   },
   {
     key: "Deep Savers", name: "Deep Savers", kind: "family", color: FAMILY_COLOR["Deep Savers"],
-    tiers: [{ need: 2, desc: "+22% max HP", hpPct: 0.22 }],
+    tiers: [
+      { need: 2, desc: "+20% max HP", hpPct: 0.2 },
+      { need: 4, desc: "+36% max HP", hpPct: 0.36 },
+    ],
   },
 ];
 

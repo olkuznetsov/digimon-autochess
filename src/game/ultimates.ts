@@ -159,7 +159,7 @@ export const ULTIMATES: Record<string, Ultimate> = {
   magnaangemon: u("Gate of Destiny", "⚔️", "Banishes a weakened foe — 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
   // Nature Spirits — Dracomon line
   coredramon: u("Blue Flare Breath", "🔥", "A dragon-fire blast for 255%.", bolt(2.55)),
-  breakdramon: u("Giga Drill", "🩸", "Braces behind a 13% team shield.", bulwark(0.13, true)),
+  breakdramon: u("Giga Drill", "🩸", "Braces behind a 9% team shield.", bulwark(0.09, true)),
   // Deep Savers — Keramon line
   infermon: u("Cable Crusher", "🕸️", "Three savage strikes (120% each).", barrage(3, 1.2)),
   diaboromon: u("Web Wrecker", "🕷️", "A viral nova (150%) around the target.", nova(1.5, 1.7)),
@@ -175,19 +175,19 @@ export const ULTIMATES: Record<string, Ultimate> = {
   vikemon: u("Arctic Blizzard", "🧊", "A polar storm: AoE 110% and freezes for 1s.", freeze(1.1, 1.8, 1.0)),
   // Wind Guardians — Veemon line
   exveemon: u("Vee-Laser", "⚡", "An X-shaped beam for 250%.", bolt(2.5)),
-  paildramon: u("Desperado Blaster", "🔫", "Rapid fire at the 3 nearest (130%).", volley(3, 1.3)),
+  paildramon: u("Desperado Blaster", "🔫", "Rapid fire at the 3 nearest (120%).", volley(3, 1.2)),
   imperialdramon: u("Positron Laser", "🌌", "A galaxy-splitting shot for 400%.", bolt(4.0)),
   // Wind Guardians — Wormmon line
   stingmon: u("Spiking Strike", "🗡️", "Three piercing thrusts (120% each).", barrage(3, 1.2)),
   banchostingmon: u("Bancho Spear", "🥇", "A relentless five-hit combo (105% each).", barrage(5, 1.05)),
   // Dragon's Roar — Guilmon line
   growlmon: u("Pyro Blaster", "🔥", "A blazing blast for 260%.", bolt(2.6)),
-  gallantmon: u("Lightning Joust", "⚔️", "A lance strike (250%) that splashes (90%).", smite(2.5, 0.9, 1.5)),
+  gallantmon: u("Lightning Joust", "⚔️", "A lance strike (280%) that splashes (100%).", smite(2.8, 1.0, 1.6)),
   // Dragon's Roar — Dorumon line
   dorugamon: u("Power Metal", "⚙️", "Fires an iron sphere for 255%.", bolt(2.55)),
   alphamon: u("Seiken Gradalpha", "👑", "The Royal Knight's blade erupts — AoE 185%.", nova(1.85, 2.0)),
   // Support rally on a couple of casters keeps team comps interesting
-  candlemon: u("Ember Rally", "🕯️", "Ignites allies: +18% attack for the battle.", rally(0.18)),
+  candlemon: u("Ember Rally", "🕯️", "Ignites allies: +22% attack for the battle.", rally(0.22)),
   // rookies whose family synergies fit them badly (or too well) get their own moves
   gomamon: u("Marching Fishes", "🐟", "A school of fish rams the target twice (100% each).", barrage(2, 1.0)),
   gabumon: u("Blue Blaster", "🔵", "A blue flame for 290% attack.", bolt(2.9)),
