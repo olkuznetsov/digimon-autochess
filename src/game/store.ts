@@ -793,7 +793,7 @@ export const useGame = create<GameState>((set, get) => ({
         try {
           const best = Number(localStorage.getItem("dac-best-round") ?? 0);
           if (state.round > best) localStorage.setItem("dac-best-round", String(state.round));
-          localStorage.removeItem("dac-save");
+          localStorage.removeItem(SAVE_KEY);
         } catch { /* ignore */ }
         submitScore({ best: state.round, board: wireBoard(state.boardSnapshot ?? state.units) });
       } else if (win && state.round >= 15) {
