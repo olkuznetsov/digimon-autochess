@@ -1,4 +1,4 @@
-# Roster — 49 forms + 2 bosses, 100% real animated models
+# Roster — 49 forms + 6 wild + 4 bosses, 100% real animated models
 
 Every form has an animated model: source `models-src/<formId>.glb`, shipped (optimized by `npm run optimize-models`) as `public/models/<formId>.glb` (idle/move/attack01… clips
 drive the combat state machine). The roster is deliberately shaped around sourceable models.
@@ -29,9 +29,19 @@ Removed (no animated rips exist anywhere): GeoGreymon/RizeGreymon, Tyrannomon/Me
 Gaogamon/MachGaogamon, WereGarurumon, Devimon/IceDevimon/Myotismon, Pegasusmon,
 Woodmon/Cherrymon, Dolphmon. They can return later via Meshy/AI generation.
 
-Boss-only (`bossOnly`: never in the shop, wild waves or scrims): `zeed` ZeedMillenniummon (Vi, Nightmare
-Soldiers) and `gracenovamon` Gracenovamon (D, Dragon's Roar) — VS bosses of rounds 30 and 40+, endless bosses.
+Boss-only (`bossOnly`: never in the shop, wild waves or scrims) — boss rounds draw from candidates:
+| Form | Attr / family | Where |
+|---|---|---|
+| `zeed` ZeedMillenniummon | Vi, Nightmare Soldiers | VS R30 (or Apollomon), endless |
+| `gracenovamon` Gracenovamon | D, Dragon's Roar | VS R40+, endless |
+| `apollomon` Apollomon | V, Dragon's Roar | solo R15 (or Diaboromon), VS R30, endless |
+| `mitamamon` Mitamamon | V, Wind Guardians | solo R10 (or Machinedramon), VS R20, endless |
 
-Still unused in the DigiChess source, none forming a full three-stage line: Coronamon, Apollomon (no Firamon
-between them), Herissmon, Filmon, Rasenmon, Tapirmon, Piximon, Mitamamon. A bigger expansion needs a new source
-(Digimon Story Cyber Sleuth PC + DSCSTools / Blender-Tools-for-DSCS — needs owning the game).
+Wild Digimon (`wild`: met in PvE waves, never recruited): `coronamon`(V), `herissmon`(D), `tapirmon`(V) rookies;
+`filmon`(D), `piximon`(D) champions; `rasenmon`(D) mega.
+
+DigiChess is now used up. Herissmon → Filmon → Rasenmon is a real line (Digimon ReArise) and could become a
+playable 16th line by moving it from `wild` to a cost + `evolvesTo`. A bigger expansion needs a new source:
+Digimon Story Cyber Sleuth: Complete Edition (Windows-only; on a Mac: SteamCMD with
+`+@sSteamCmdForcePlatformType windows` downloads it, MVGLTools unpacks it, Blender 2.91 + Blender-Tools-for-DSCS
+imports models with animations → glTF).

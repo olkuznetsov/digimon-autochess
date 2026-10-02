@@ -7,7 +7,8 @@ shipped copies in `public/models/` — they are generated.**
 Pipeline:
 
 1. New rip → `python3 scripts/convert_model.py <file.fbx|.dae> <formId>` (assimp → `models-src/<formId>.glb`,
-   strips baked vertex colors, resets 3ds Max's default grey diffuse, copies textures). Then, if needed:
+   strips baked vertex colors, resets 3ds Max's default grey diffuse, copies textures — a different file under a
+   taken name gets the form id as a prefix). Then, if needed:
    `python3 scripts/dedup_clips.py models-src/<formId>.glb` (duplicate partial takes) and
    `python3 scripts/rename_clips.py models-src/<formId>.glb` (Cyber Sleuth clip codes → idle/move/attack01…) and
    `python3 scripts/drop_meshes.py models-src/<formId>.glb <node>…` (effect meshes the game drew with its own
