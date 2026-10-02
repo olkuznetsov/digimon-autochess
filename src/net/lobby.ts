@@ -197,7 +197,7 @@ useGame.subscribe((s, prev) => {
   if (heldTimer) clearTimeout(heldTimer);
   heldTimer = setTimeout(() => {
     const { units, pvp } = useGame.getState();
-    const counts = heldCopies(units.map((u) => u.formId));
+    const counts = heldCopies(units);
     const key = `${pvp?.snap.match}:${JSON.stringify(counts)}`;
     if (key === heldSent) return;
     heldSent = key;

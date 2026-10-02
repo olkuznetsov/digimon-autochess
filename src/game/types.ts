@@ -47,8 +47,9 @@ export interface Unit {
   placement: Placement;
   /** equipped item ids (max 2), persist through digivolution */
   items: string[];
-  /** gold paid for it, merged copies included — what selling it returns */
-  paid?: number;
+  /** the shop copies merged into it (unset: one of its own form, as bought) — what it
+   *  holds of the VS pool and what selling it returns */
+  parts?: Record<string, number>;
 }
 
 export type Placement =

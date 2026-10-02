@@ -250,9 +250,21 @@ const descend = (id: string): Set<string> => {
 };
 for (const id of ALL_FORM_IDS) descend(id);
 
-/** Gold refunded when selling a unit: what was paid for it (merged copies included). */
-export function sellValue(unit: { formId: string; paid?: number }): number {
-  return unit.paid ?? costOf(unit.formId);
+type Held = { formId: string; parts?: Record<string, number> };
+
+/** The shop copies a unit holds: everything merged into it, or one of its own form. */
+export const partsOf = (unit: Held): Record<string, number> => unit.parts ?? { [unit.formId]: 1 };
+
+/** The copies of the units a digivolution consumes, all kept in the new form. */
+export function mergeParts(units: Held[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const u of units) for (const [id, n] of Object.entries(partsOf(u))) out[id] = (out[id] ?? 0) + n;
+  return out;
+}
+
+/** Gold refunded when selling a unit: the price of every copy merged into it. */
+export function sellValue(unit: Held): number {
+  return Object.entries(partsOf(unit)).reduce((a, [id, n]) => a + costOf(id) * n, 0);
 }
 
 /** Attribute → display color (Vaccine green, Data blue, Virus purple, Free grey). */

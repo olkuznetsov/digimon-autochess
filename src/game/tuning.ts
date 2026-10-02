@@ -12,8 +12,8 @@ import { COLS } from "./board";
  *  each boss beaten by about half the runs, as before) and let fans dig for favourites. */
 export const ECONOMY = {
   /** gold at the start of a run or match */
-  startGold: 8,
-  baseIncome: 6,
+  startGold: 10,
+  baseIncome: 7,
   /** extra gold for winning a round */
   winGold: 1,
   /** free XP every round */
@@ -29,15 +29,15 @@ export const ECONOMY = {
  *  raised this game (discovery); with nothing discovered there, the slot rolls again. */
 export const SHOP_ODDS: Record<number, [number, number, number, number, number]> = {
   1: [100, 0, 0, 0, 0],
-  2: [70, 30, 0, 0, 0],
-  3: [45, 40, 15, 0, 0],
-  4: [30, 40, 30, 0, 0],
-  5: [20, 35, 45, 0, 0],
-  6: [10, 30, 52, 8, 0],
-  7: [5, 25, 52, 17, 1],
-  8: [0, 20, 50, 25, 5],
-  9: [0, 15, 45, 30, 10],
-  10: [0, 10, 40, 32, 18],
+  2: [65, 35, 0, 0, 0],
+  3: [35, 45, 20, 0, 0],
+  4: [15, 40, 45, 0, 0],
+  5: [5, 30, 65, 0, 0],
+  6: [0, 20, 70, 10, 0],
+  7: [0, 15, 65, 19, 1],
+  8: [0, 10, 58, 27, 5],
+  9: [0, 5, 50, 33, 12],
+  10: [0, 0, 40, 38, 22],
 };
 
 export const WAVES = {
@@ -53,13 +53,13 @@ export const WAVES = {
     3: [0, 3, 1, 0, 0],
     4: [0, 2, 2, 0, 0],
     6: [0, 1, 3, 0, 0],
-    7: [0, 0, 4, 1, 0],
-    8: [0, 0, 3, 2, 0],
-    9: [0, 0, 3, 3, 0],
-    11: [0, 0, 2, 4, 0],
-    12: [0, 0, 1, 5, 0],
-    13: [0, 0, 1, 6, 0],
-    14: [0, 0, 0, 6, 1],
+    7: [0, 0, 4, 0, 0],
+    8: [0, 1, 4, 0, 0],
+    9: [0, 0, 4, 1, 0],
+    11: [0, 0, 2, 3, 0],
+    12: [0, 0, 2, 4, 0],
+    13: [0, 0, 1, 3, 1],
+    14: [0, 0, 1, 4, 1],
     16: [0, 0, 0, 5, 3],
     17: [0, 0, 0, 4, 4],
     18: [0, 0, 0, 3, 5],
@@ -70,14 +70,14 @@ export const WAVES = {
    *  one candidate per round, picked by its seed. Candidates are tuned to the same pass
    *  rate on the same 600 bot boards (`npm run runsim` prints "boss candidates"). */
   bosses: [
-    [{ id: "skullsatamon", hp: 2.85, atk: 1.25, adds: 3 }],
+    [{ id: "skullsatamon", hp: 1.6, atk: 1.0, adds: 2 }],
     [
-      { id: "machinedramon", hp: 2.25, atk: 1.2, adds: 4 },
-      { id: "mitamamon", hp: 1.88, atk: 0.86, adds: 4 },
+      { id: "machinedramon", hp: 1.35, atk: 0.85, adds: 3 },
+      { id: "mitamamon", hp: 1.13, atk: 0.61, adds: 3 },
     ],
     [
-      { id: "diaboromon", hp: 2.35, atk: 1.25, adds: 4 },
-      { id: "apollomon", hp: 2.63, atk: 0.95, adds: 4 },
+      { id: "diaboromon", hp: 3.25, atk: 1.45, adds: 4 },
+      { id: "apollomon", hp: 3.6, atk: 1.13, adds: 4 },
     ],
   ] as Omit<BossSpec, "addCount">[][],
   /** endless mode: every 5th round the next of these, all with the same multipliers */

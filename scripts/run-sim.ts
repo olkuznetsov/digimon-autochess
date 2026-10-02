@@ -16,12 +16,12 @@
 import { writeFileSync } from "node:fs";
 import { useGame, wireBoard, type PvpBoardUnit } from "../src/game/store";
 import { pveFighters, simulate } from "../src/game/vsFights";
-import { FORMS } from "../src/game/creatures";
+import { FORMS, costOf } from "../src/game/creatures";
 import { SIM_DT } from "../src/game/battle";
 import { traitCounts, TRAITS } from "../src/game/synergies";
 import { COLS, BENCH_SLOTS } from "../src/game/board";
 import type { Unit, Placement } from "../src/game/types";
-import { ECONOMY, WAVES, isBossRound, makeEnemyWave, vsRoundKind } from "../src/game/tuning";
+import { ECONOMY, SHOP_ODDS, WAVES, isBossRound, makeEnemyWave, vsRoundKind } from "../src/game/tuning";
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.split("=")));
 const RUNS = Number(args.runs ?? 300);
@@ -30,26 +30,16 @@ const MAX_ROUND = Number(args.maxRound ?? 25);
 const DUMP = args.dumpBoards as string | undefined;
 
 // ---------- tuning experiments: `variant=name` applies one of these before the runs ----------
+// boss knobs for quick sweeps: `r5=hp,atk,adds` etc. override one round's (first) candidate
 const VARIANTS: Record<string, () => void> = {
   current: () => {},
-  // the economy before the roster grew to 24 lines (Oct 2026), for comparison
-  preExpansion: () => {
-    Object.assign(ECONOMY, { startGold: 10, baseIncome: 5, rerollCost: 2 });
-    WAVES.bosses[0] = [{ id: "skullsatamon", hp: 3.4, atk: 1.35, adds: 1 }];
-  },
-  // example experiment: the pre-tuning curve (Sept 2026) for comparison
-  legacy: () => {
-    Object.assign(ECONOMY, { winGold: 0, passiveXp: 1 });
-    WAVES.hpRamp = 0.035;
-    Object.assign(WAVES.table, {
-      6: [0, 4, 0], 7: [0, 5, 0], 8: [0, 4, 1], 9: [0, 5, 1],
-      11: [0, 5, 1], 12: [0, 4, 2], 13: [0, 3, 3], 14: [0, 3, 4],
-      16: [0, 0, 7], 17: [0, 0, 7], 18: [0, 0, 7], 19: [0, 0, 7],
-    });
-    WAVES.bosses[1] = [{ id: "machinedramon", hp: 3.6, atk: 1.45, adds: 2 }];
-    WAVES.bosses[2] = [{ id: "diaboromon", hp: 4.2, atk: 1.6, adds: 3 }];
-  },
 };
+for (const round of [5, 10, 15]) {
+  const spec = args[`r${round}`] as string | undefined;
+  if (!spec) continue;
+  const [hp, atk, adds] = spec.split(",").map(Number);
+  WAVES.bosses[round / 5 - 1] = WAVES.bosses[round / 5 - 1].map((b) => ({ ...b, hp, atk, adds: (adds || b.adds) as typeof b.adds }));
+}
 const variant = String(args.variant ?? "current");
 if (!VARIANTS[variant]) throw new Error(`unknown variant ${variant}: ${Object.keys(VARIANTS).join(", ")}`);
 VARIANTS[variant]();
@@ -68,10 +58,9 @@ const S = () => g.getState();
 const copiesOf = (formId: string) => S().units.filter((u) => u.formId === formId).length;
 const onBoard = () => S().units.filter((u) => u.placement.kind === "board");
 
-/** Rough strength of a unit: stage dominates, then cost, then items. */
+/** Rough strength of a unit: stage dominates, then items. */
 function power(u: Unit): number {
-  const f = FORMS[u.formId];
-  return f.stage * 100 + (f.cost ?? 1) * 6 + (u.items?.length ?? 0) * 15;
+  return FORMS[u.formId].stage * 100 + (u.items?.length ?? 0) * 15;
 }
 
 /** How much a form would add to the traits of the current board (0..). */
@@ -81,7 +70,8 @@ function synergyFit(formId: string, board: Unit[]): number {
   let fit = 0;
   for (const key of [f.attribute, f.family]) {
     const c = counts.get(key) ?? 0;
-    const def = TRAITS.find((t) => t.key === key)!;
+    const def = TRAITS.find((t) => t.key === key);
+    if (!def) continue; // the babies: no attribute, no family
     const next = def.tiers.find((t) => t.need > c);
     if (next && next.need - c === 1) fit += 3; // completes a tier
     else if (c > 0) fit += 1;
@@ -91,7 +81,7 @@ function synergyFit(formId: string, board: Unit[]): number {
 
 /** Desired level by round — a standard curve, accelerated when rich. */
 function targetLevel(round: number): number {
-  return round >= 13 ? 8 : round >= 10 ? 7 : round >= 7 ? 6 : round >= 5 ? 5 : round >= 2 ? 4 : 3;
+  return round >= 16 ? 9 : round >= 13 ? 8 : round >= 10 ? 7 : round >= 7 ? 6 : round >= 5 ? 5 : round >= 3 ? 4 : round >= 2 ? 3 : 2;
 }
 
 /** Gold the bot refuses to spend below: grows an interest bank from round 4 (10 per
@@ -134,7 +124,12 @@ function shopValue(formId: string): number {
   const c = copiesOf(formId);
   const board = onBoard();
   const space = board.length < S().level ? 1 : 0;
-  return c * 50 + lineDepth(formId) * 30 + synergyFit(formId, board) * 10 + space * 15 + (FORMS[formId].cost ?? 1) * 3;
+  // a higher stage than the weakest fielded unit is an upgrade on its own (a discovered
+  // Champion or Mega in the shop above all)
+  const stage = FORMS[formId].stage;
+  const weakest = board.length ? Math.min(...board.map((u) => FORMS[u.formId].stage)) : 0;
+  const upgrade = space ? stage * 4 : Math.max(0, stage - weakest) * 20;
+  return c * 50 + lineDepth(formId) * 30 + synergyFit(formId, board) * 10 + space * 15 + upgrade;
 }
 
 function buyRound() {
@@ -145,7 +140,7 @@ function buyRound() {
     let bestVal = 0;
     shop.forEach((id, i) => {
       if (!id) return;
-      const cost = FORMS[id].cost ?? 1;
+      const cost = costOf(id);
       const pair = copiesOf(id) >= 1 || lineDepth(id) >= 1;
       const short = S().units.length < S().level;
       // an unfilled board always buys; merges may dip into the reserve; speculation may not
@@ -249,7 +244,8 @@ interface RoundLog {
   level: number;
   /** gold left after shopping (banked for interest) */
   gold: number;
-  stages: [number, number, number];
+  /** fielded units by stage: Fresh, In-Training, Rookie, Champion, Mega */
+  stages: number[];
   /** VS wild/boss rounds only: did this board also beat the VS wave of the round? */
   vs?: boolean;
   /** VS wild/boss rounds, dump mode only */
@@ -291,7 +287,7 @@ function playRun(): RoundLog[] {
     const wired = vsRoundKind(S().round) === "pvp" ? undefined : wireBoard(board);
     const vs = wired && simulate(pveFighters(wired, S().round, 0)).win;
     const bosses = bossProbe(wireBoard(board), S().round);
-    const stages: [number, number, number] = [0, 0, 0];
+    const stages = [0, 0, 0, 0, 0];
     for (const u of board) stages[FORMS[u.formId].stage - 1]++;
     S().startBattle();
     if (S().phase !== "battle") break; // empty board — shouldn't happen
@@ -365,7 +361,7 @@ console.log(
     (DUMP ? "" : "  (later rounds: dumpBoards)"),
 );
 
-console.log(`\nround  played  win%  avg-fight  avg-dmg-taken  avg-hp  lvl  banked  board stages (R/C/M)`);
+console.log(`\nround  played  win%  avg-fight  avg-dmg-taken  avg-hp  lvl  banked  board stages (F/I/R/C/M)`);
 for (let round = 1; round <= MAX_ROUND; round++) {
   const rows = runs.map((r) => r.find((x) => x.round === round)).filter(Boolean) as RoundLog[];
   if (rows.length === 0) break;
@@ -373,7 +369,8 @@ for (let round = 1; round <= MAX_ROUND; round++) {
   console.log(
     `${String(round).padStart(5)}  ${String(rows.length).padStart(6)}  ${(avg((x) => (x.win ? 1 : 0)) * 100).toFixed(0).padStart(4)}` +
       `  ${avg((x) => x.time).toFixed(1).padStart(8)}s  ${avg((x) => x.damage).toFixed(1).padStart(13)}  ${avg((x) => x.health).toFixed(0).padStart(6)}` +
-      `  ${avg((x) => x.level).toFixed(1).padStart(3)}  ${avg((x) => x.gold).toFixed(0).padStart(6)}  ${avg((x) => x.stages[0]).toFixed(1)}/${avg((x) => x.stages[1]).toFixed(1)}/${avg((x) => x.stages[2]).toFixed(1)}`,
+      `  ${avg((x) => x.level).toFixed(1).padStart(3)}  ${avg((x) => x.gold).toFixed(0).padStart(6)}  ` +
+      [0, 1, 2, 3, 4].map((i) => avg((x) => x.stages[i]).toFixed(1)).join("/"),
   );
 }
 process.exit(0);

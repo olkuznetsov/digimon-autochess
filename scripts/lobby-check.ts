@@ -25,7 +25,6 @@ import {
 } from "../src/game/lobby";
 import { VS, isCarouselRound, makeVsWave, vsRoundKind, vsStageDamage } from "../src/game/tuning";
 import { ITEMS } from "../src/game/items";
-import { FORMS, PLAYABLE_IDS } from "../src/game/creatures";
 import { AUGMENT_IDS, augmentOffer } from "../src/game/augments";
 import { roundOutcomes } from "../src/game/vsFights";
 
@@ -132,15 +131,19 @@ for (const [n, s] of Object.entries(stats)) {
     `${n.padStart(7)}  ${String(s.matches).padStart(7)}  ${String(s.rounds).padStart(12)}  ${String(s.repeats).padStart(12)}  ${String(s.byeTwice).padStart(11)}  ${String(s.cycles).padStart(11)}  ${(full * 100).toFixed(0).padStart(13)}%`,
   );
 }
-// shared pool bookkeeping: a Champion holds 3 copies of its line's rookie, a Mega 9
-const champ = PLAYABLE_IDS.find((id) => FORMS[id].stage === 2)!;
-const mega = PLAYABLE_IDS.find((id) => FORMS[id].stage === 3)!;
-const held = heldCopies(["agumon", "agumon", champ, mega]);
-if (Object.values(held).reduce((a, b) => a + b, 0) !== 2 + 3 + 9) fail(`heldCopies ${JSON.stringify(held)}`);
+// shared pool bookkeeping: a merged unit holds every copy merged into it — two bought
+// Agumon, a Greymon raised from 3 Agumon, a WarGreymon from 2 bought Greymon + a raised one
+const held = heldCopies([
+  { formId: "agumon" },
+  { formId: "agumon" },
+  { formId: "greymon", parts: { agumon: 3 } },
+  { formId: "wargreymon", parts: { greymon: 2, agumon: 3 } },
+]);
+if (held.agumon !== 8 || held.greymon !== 2 || held.wargreymon) fail(`heldCopies ${JSON.stringify(held)}`);
 const full = fullPool();
 const left = poolLeft({ 0: { agumon: 5 }, 1: { agumon: 4 }, 2: { agumon: 999 } });
 if (left.agumon !== 0 || left.gabumon !== full.gabumon) fail(`poolLeft ${left.agumon} / ${left.gabumon}`);
-console.log(`\npool: ${Object.keys(full).length} rookies, ${Object.values(full).reduce((a, b) => a + b, 0)} copies in all`);
+console.log(`\npool: ${Object.keys(full).length} forms, ${Object.values(full).reduce((a, b) => a + b, 0)} copies in all`);
 
 // augments: offers are 3 distinct ones you don't have; combat augments change fights,
 // identically on every client

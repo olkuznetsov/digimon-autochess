@@ -1,5 +1,5 @@
 import { VS, vsRoundKind } from "./tuning";
-import { FORMS, PLAYABLE_IDS } from "./creatures";
+import { FORMS, PLAYABLE_IDS, mergeParts } from "./creatures";
 import { BASE_ITEM_IDS, FUSED_ITEM_IDS } from "./items";
 
 /**
@@ -190,8 +190,7 @@ export function ratingDelta(players: number, placement: number): number {
 // ---------- shared unit pool ----------
 // Teamfight Tactics' shared pool: every form exists in a limited number of copies for
 // the whole lobby, so what one player collects the others can't — fewer the higher the
-// tier. (V3: the copies inside merged units are counted in M10.5; until then a unit
-// holds one copy of its own form.)
+// tier. A merged unit keeps holding every copy that went into it.
 
 export const POOL_COPIES: Record<number, number> = { 1: 30, 2: 25, 3: 18, 4: 10, 5: 9 };
 
@@ -200,10 +199,10 @@ export function fullPool(): Record<string, number> {
   return Object.fromEntries(PLAYABLE_IDS.map((id) => [id, POOL_COPIES[FORMS[id].stage] ?? 9]));
 }
 
-/** Copies held by a set of units. */
-export function heldCopies(formIds: string[]): Record<string, number> {
+/** Copies held by a set of units — a merged unit holds every copy merged into it. */
+export function heldCopies(units: { formId: string; parts?: Record<string, number> }[]): Record<string, number> {
   const out: Record<string, number> = {};
-  for (const id of formIds) if (FORMS[id]) out[id] = (out[id] ?? 0) + 1;
+  for (const [id, n] of Object.entries(mergeParts(units))) if (FORMS[id]) out[id] = n;
   return out;
 }
 

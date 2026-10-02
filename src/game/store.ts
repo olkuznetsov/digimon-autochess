@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types";
-import { FORMS, PLAYABLE_IDS, ROOKIE_IDS, costOf, sellValue } from "./creatures";
+import { FORMS, PLAYABLE_IDS, ROOKIE_IDS, costOf, mergeParts, sellValue } from "./creatures";
 import { makeFighter, stepCombat, SIM_DT, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
 import { BASE_ITEM_IDS, FUSED_ITEM_IDS, fuseResult } from "./items";
@@ -183,10 +183,10 @@ function resolveEvolutions(units: Unit[]): {
         const consumed = new Set(others.map((u) => u.uid));
         const items = [...(keep.items ?? []), ...others.flatMap((u) => u.items ?? [])];
         spill.push(...items.slice(2));
-        const paid = [keep, ...others].reduce((a, u) => a + sellValue(u), 0);
+        const parts = mergeParts([keep, ...others]);
         current = current
           .filter((u) => !consumed.has(u.uid))
-          .map((u) => (u.uid === keep.uid ? { ...u, formId: form.evolvesTo![0], items: items.slice(0, 2), paid } : u));
+          .map((u) => (u.uid === keep.uid ? { ...u, formId: form.evolvesTo![0], items: items.slice(0, 2), parts } : u));
         evolved.push({ from: formId, to: form.evolvesTo![0], uid: keep.uid });
         acted = true;
         break; // re-scan from the top
@@ -499,7 +499,7 @@ export const useGame = create<GameState>((set, get) => ({
     if (slot === null && copies < 2) return; // bench truly full
     const placement: Placement =
       slot !== null ? { kind: "bench", slot } : { kind: "bench", slot: 98 }; // temp; consumed by the merge
-    const newUnit: Unit = { uid: nextUid(), formId, placement, items: [], paid: cost };
+    const newUnit: Unit = { uid: nextUid(), formId, placement, items: [] };
     const newShop = [...shop];
     newShop[shopIndex] = "";
     const resolved = resolveEvolutions([...units, newUnit]);
@@ -531,8 +531,8 @@ export const useGame = create<GameState>((set, get) => ({
     const pooled = units.filter((u) => consumed.has(u.uid)).flatMap((u) => u.items ?? []);
     const remaining = units.filter((u) => !consumed.has(u.uid));
     const evolvedUid = nextUid();
-    const paid = units.filter((u) => consumed.has(u.uid)).reduce((a, u) => a + sellValue(u), 0);
-    remaining.push({ uid: evolvedUid, formId, placement: pendingEvolution.placement, items: pooled.slice(0, 2), paid });
+    const parts = mergeParts(units.filter((u) => consumed.has(u.uid)));
+    remaining.push({ uid: evolvedUid, formId, placement: pendingEvolution.placement, items: pooled.slice(0, 2), parts });
     const resolved = resolveEvolutions(remaining);
     sfx.evolve();
     const last = resolved.evolved[resolved.evolved.length - 1];
@@ -1231,7 +1231,7 @@ function grantUnits(formIds: string[]) {
       useGame.setState({ gold: s.gold + costOf(formId) });
       continue;
     }
-    const granted: Unit = { uid: nextUid(), formId, placement: { kind: "bench", slot }, items: [], paid: costOf(formId) };
+    const granted: Unit = { uid: nextUid(), formId, placement: { kind: "bench", slot }, items: [] };
     const resolved = resolveEvolutions([...s.units, granted]);
     const last = resolved.evolved[resolved.evolved.length - 1];
     useGame.setState({

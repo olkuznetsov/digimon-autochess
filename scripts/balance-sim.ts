@@ -9,7 +9,7 @@
  *
  * Run: npm run balance
  */
-import type { Attribute, Fighter, Form, Role, Unit } from "../src/game/types";
+import type { Attribute, Fighter, Form, Role, Stage, Unit } from "../src/game/types";
 import { FORMS, PLAYABLE_IDS as ALL_FORM_IDS, statsFor } from "../src/game/creatures";
 import { applySynergies } from "../src/game/synergies";
 import { makeFighter, stepCombat, SIM_DT, HP_SCALE } from "../src/game/battle";
@@ -70,7 +70,7 @@ function runForms(a: string[], b: string[], synergies: boolean): { result: "a" |
   return fight([...A.fighters, ...B.fighters]);
 }
 
-function syntheticTeam(role: Role, stage: 1 | 2 | 3, attribute: Attribute, team: "player" | "enemy", n = 4): Fighter[] {
+function syntheticTeam(role: Role, stage: Stage, attribute: Attribute, team: "player" | "enemy", n = 4): Fighter[] {
   const front = team === "player" ? 2 : 3;
   const back = team === "player" ? 1 : 4;
   const s = statsFor({ role, stage } as Form);
@@ -109,7 +109,7 @@ const pct = (x: number) => `${Math.round(x * 100)}%`.padStart(4);
 // ---------- 1. role matrix ----------
 const ROLES: Role[] = ["tank", "bruiser", "assassin", "ranged", "caster"];
 const ROLE_RUNS = 100;
-console.log("\n=== 1. ROLE vs ROLE (row's win rate, stage 2, attribute-neutral, 4v4) ===");
+console.log("\n=== 1. ROLE vs ROLE (row's win rate, Champions, attribute-neutral, 4v4) ===");
 console.log("".padEnd(10) + ROLES.map((r) => r.padStart(9)).join(""));
 const roleAvg: Record<string, number> = {};
 for (const a of ROLES) {
@@ -121,8 +121,8 @@ for (const a of ROLES) {
       // alternate sides to cancel any first-mover bias
       const flip = i % 2 === 1;
       const fighters = flip
-        ? [...syntheticTeam(b, 2, "Data", "player"), ...syntheticTeam(a, 2, "Data", "enemy")]
-        : [...syntheticTeam(a, 2, "Data", "player"), ...syntheticTeam(b, 2, "Data", "enemy")];
+        ? [...syntheticTeam(b, 4, "Data", "player"), ...syntheticTeam(a, 4, "Data", "enemy")]
+        : [...syntheticTeam(a, 4, "Data", "player"), ...syntheticTeam(b, 4, "Data", "enemy")];
       const r = fight(fighters).result;
       if (r === "draw") score += 0.5;
       else if ((r === "a") !== flip) score += 1;
@@ -148,8 +148,8 @@ for (const [atkr, dfdr] of TRI) {
   for (let i = 0; i < ROLE_RUNS; i++) {
     const flip = i % 2 === 1;
     const fighters = flip
-      ? [...syntheticTeam("bruiser", 2, dfdr, "player"), ...syntheticTeam("bruiser", 2, atkr, "enemy")]
-      : [...syntheticTeam("bruiser", 2, atkr, "player"), ...syntheticTeam("bruiser", 2, dfdr, "enemy")];
+      ? [...syntheticTeam("bruiser", 4, dfdr, "player"), ...syntheticTeam("bruiser", 4, atkr, "enemy")]
+      : [...syntheticTeam("bruiser", 4, atkr, "player"), ...syntheticTeam("bruiser", 4, dfdr, "enemy")];
     const r = fight(fighters).result;
     if (r === "draw") score += 0.5;
     else if ((r === "a") !== flip) score += 1;
@@ -158,32 +158,36 @@ for (const [atkr, dfdr] of TRI) {
 }
 
 // ---------- 3. stage value ----------
-console.log("\n=== 3. STAGE VALUE (rookies vs their own champion, no synergies) ===");
-const rookies = ALL_FORM_IDS.filter((id) => FORMS[id].stage === 1);
-let w3 = 0;
-let w2 = 0;
-for (const r of rookies) {
-  const champ = FORMS[r].evolvesTo![0];
-  let s3 = 0;
-  let s2 = 0;
-  for (let i = 0; i < 30; i++) {
-    const a = runForms([r, r, r], [champ], false).result;
-    s3 += a === "a" ? 1 : a === "draw" ? 0.5 : 0;
-    const b = runForms([r, r], [champ], false).result;
-    s2 += b === "a" ? 1 : b === "draw" ? 0.5 : 0;
+console.log("\n=== 3. STAGE VALUE (copies vs the form they merge into, no synergies) ===");
+const STAGE_LABEL = ["", "Fresh", "In-Training", "Rookie", "Champion", "Mega"];
+for (const stage of [1, 2, 3, 4] as const) {
+  const lower = ALL_FORM_IDS.filter((id) => FORMS[id].stage === stage && FORMS[id].evolvesTo?.length);
+  let w3 = 0;
+  let w2 = 0;
+  for (const r of lower) {
+    const next = FORMS[r].evolvesTo![0];
+    let s3 = 0;
+    let s2 = 0;
+    for (let i = 0; i < 30; i++) {
+      const a = runForms([r, r, r], [next], false).result;
+      s3 += a === "a" ? 1 : a === "draw" ? 0.5 : 0;
+      const b = runForms([r, r], [next], false).result;
+      s2 += b === "a" ? 1 : b === "draw" ? 0.5 : 0;
+    }
+    w3 += s3 / 30;
+    w2 += s2 / 30;
   }
-  w3 += s3 / 30;
-  w2 += s2 / 30;
+  const lo = STAGE_LABEL[stage];
+  const hi = STAGE_LABEL[stage + 1];
+  console.log(`3x ${lo} beats 1x ${hi}: ${pct(w3 / lower.length)} (want >50%)   2x: ${pct(w2 / lower.length)} (want <50%)`);
 }
-console.log(`3x rookie beats 1x champion: ${pct(w3 / rookies.length)} (want: >50%, rookies favored)`);
-console.log(`2x rookie beats 1x champion: ${pct(w2 / rookies.length)} (want: <50%, champion favored)`);
 
 // ---------- 4. per-form scrims ----------
 console.log("\n=== 4. FORM WIN RATES (random 4v4 scrims with synergies) ===");
 // ~1100 appearances per form whatever the roster size (each scrim fields 8): about ±1.5%
 const SCRIMS_PER_FORM = 140;
 const SHOW_ALL = process.argv.includes("all");
-for (const stage of [1, 2, 3] as const) {
+for (const stage of [1, 2, 3, 4, 5] as const) {
   const pool = ALL_FORM_IDS.filter((id) => FORMS[id].stage === stage);
   const SCRIMS = Math.max(2500, pool.length * SCRIMS_PER_FORM);
   const games = new Map<string, number>();
