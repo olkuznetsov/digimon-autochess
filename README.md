@@ -3,7 +3,8 @@
 A browser auto battler in the Teamfight Tactics mould, themed on Digimon: raise your partners from babies —
 Botamon → Koromon → Agumon, Guilmon or Dracomon → … — merging three copies into the next stage and choosing the
 branch at each step, then watch your team fight in a neon Digital World. Plays on desktop and phones.
-**Live: <https://digimon-autochess.pages.dev>**
+**Live: <https://digimon-autochess.pages.dev>** — mirror for networks that block `pages.dev` (Vodafone Ukraine's
+DNS does): <https://digimon-autochess.askuznetsov6996.workers.dev>
 
 ![Five Mega Digimon on the holographic board](public/og.jpg)
 
@@ -97,8 +98,9 @@ npm run optimize-models
 npm run check-models
 ```
 
-The worker lives in `server/` (`npx wrangler deploy --config server/wrangler.jsonc`). The test channel:
-`npm run deploy:worker:v3` and `npm run deploy:v3`.
+The worker lives in `server/` (`npx wrangler deploy --config server/wrangler.jsonc`); the site goes to Pages and to its
+workers.dev mirror (`npm run deploy:mirror`, `site/wrangler.jsonc`). The test channel: `npm run deploy:worker:v3` and
+`npm run deploy:v3`.
 
 ## Project docs
 

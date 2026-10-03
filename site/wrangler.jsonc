@@ -1,0 +1,10 @@
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  // A mirror of the site on workers.dev — the very build the Pages deploy serves
+  // (`npm run deploy:mirror` after `npm run build`). Vodafone Ukraine's DNS answers nothing
+  // for all of *.pages.dev (found Oct 2026); workers.dev resolves there, and the game's
+  // multiplayer worker lives on it anyway.
+  "name": "digimon-autochess",
+  "compatibility_date": "2026-06-01",
+  "assets": { "directory": "../dist", "not_found_handling": "single-page-application" }
+}

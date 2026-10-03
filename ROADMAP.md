@@ -242,6 +242,12 @@ Herissmon, Agunimon, Lobomon) лишаються досяжними.
 
 ## 5. Журнал
 <!-- новіші записи зверху -->
+- **2026-10-03** — Гра не відкривалась у Саші з 4G: DNS Vodafone Україна (AS21497) повертає порожню відповідь для всього
+  `*.pages.dev` (сам `pages.dev`, wishplace, retrowave теж), а `workers.dev` резолвить — перевірено через точку доступу
+  iPhone (запити напряму до 172.20.10.1); IP Cloudflare доступні (HTTPS 200 через ту саму мережу). Рішення Саші —
+  дзеркало сайту на workers.dev: `site/wrangler.jsonc` (Workers Static Assets з тієї самої `dist`, `_headers` діють),
+  https://digimon-autochess.askuznetsov6996.workers.dev, `npm run deploy:mirror`. Деплой сайту тепер = Pages + дзеркало.
+  Збереження на дзеркалі окремі (інший origin), лідерборд і VS — спільні.
 - **2026-10-03** — Предмети з TFT (вибір Саші): **Digitama** — рідкісний компонент (боси, карусель VS з 2-ї стадії);
   Digitama + базовий = **дігіментал** (емблема родини, як Spatula: Courage → Dragon's Roar, Friendship → Nature
   Spirits, Love → Wind Guardians, Reliability → Deep Savers, Kindness → Nightmare Soldiers; Hope — власна родина

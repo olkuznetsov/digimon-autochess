@@ -1,4 +1,4 @@
-# Cloudflare Pages response headers.
+# Response headers for Cloudflare Pages and the workers.dev mirror (Workers static assets).
 # Vite fingerprints /assets/*; models and portraits are cache-busted by the model's
 # content hash (?v=…), so all can be cached for a year. index.html keeps the default
 # revalidation.

@@ -15,6 +15,7 @@
     "deploy": "npm run build && wrangler pages deploy dist --project-name=digimon-autochess --commit-dirty=true",
     "deploy:v3": "VITE_CHANNEL=v3 npm run build && npx wrangler pages deploy dist --project-name=digimon-autochess --branch=v3 --commit-dirty=true",
     "deploy:worker:v3": "npx wrangler deploy --config server/wrangler.jsonc --env v3",
+    "deploy:mirror": "npx wrangler deploy --config site/wrangler.jsonc",
     "optimize-models": "node scripts/optimize-models.mjs",
     "check-models": "node scripts/check-models.mjs",
     "runsim": "node scripts/run-ts.mjs scripts/run-sim.ts",
