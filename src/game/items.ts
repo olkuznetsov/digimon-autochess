@@ -1,4 +1,4 @@
-import type { Fighter } from "./types";
+import type { Family, Fighter } from "./types";
 
 /** Equippable items: base items drop after battle wins; any two base items fuse into one
  *  stronger item (a recipe) — in the item tray, or on a Digimon that already holds the
@@ -22,6 +22,12 @@ const BASE: Record<string, ItemDef> = {
   vampirecode: { id: "vampirecode", name: "Vampire Code", emoji: "🩸", desc: "20% lifesteal" },
 };
 
+/** Digitama, a Digi-Egg: a rarer component (bosses, the VS carousel). With a base item it
+ *  makes a Digimental — Adventure 02's armor eggs, here an emblem of a family — and two
+ *  make a Digivice. */
+const SPECIAL: Record<string, ItemDef> = {
+  digitama: { id: "digitama", name: "Digitama", emoji: "🥚", desc: "a Digi-Egg: with a base item it makes a Digimental, with another Digitama a Digivice" },
+};
 const fused = (id: string, name: string, emoji: string, desc: string, a: string, b: string): ItemDef => ({
   id,
   name,
@@ -41,7 +47,7 @@ const FUSED: Record<string, ItemDef> = {
   accelsdisk: fused("accelsdisk", "Accel Disk", "⏩", "+55% attack speed", "turbodisk", "turbodisk"),
   overclock: fused("overclock", "Overclock Chip", "🔥", "+20% attack speed, +60% mana gain", "manacore", "turbodisk"),
   hawkeye: fused("hawkeye", "Hawk Eye", "🦅", "+1 range, +25% attack speed", "datalens", "turbodisk"),
-  digiegg: fused("digiegg", "Digi-Egg of Miracles", "🥚", "starts with 50% mana, +40% mana gain", "manacore", "manacore"),
+  digiegg: fused("digiegg", "Digi-Egg of Miracles", "🌟", "starts with 50% mana, +40% mana gain", "manacore", "manacore"),
   crimsoncode: fused("crimsoncode", "Crimson Code", "🩸", "45% lifesteal", "vampirecode", "vampirecode"),
   // ---- every other pair: an item with a mechanic of its own (Adventure's Crests among them)
   couragecrest: fused("couragecrest", "Crest of Courage", "🧡", "+15% attack and HP; every hit dealt or taken: +2% attack, up to +40%", "powerchip", "guardplate"),
@@ -51,14 +57,46 @@ const FUSED: Record<string, ItemDef> = {
   ragechip: fused("ragechip", "Rage Chip", "💢", "+15% attack speed, 10% lifesteal; every attack +6% attack speed, up to +60%", "turbodisk", "vampirecode"),
   lightningcoil: fused("lightningcoil", "Lightning Coil", "🌩️", "+1 range; every 5th attack, lightning strikes the target and every enemy near it (120%)", "datalens", "datalens"),
   bluecard: fused("bluecard", "Blue Card", "🃏", "+30% mana gain; keeps 40% of its mana after casting", "datalens", "manacore"),
-  sincerecrest: fused("sincerecrest", "Crest of Sincerity", "💚", "10% lifesteal; 30% of attack damage heals the most wounded ally", "datalens", "vampirecode"),
+  sincerecrest: fused("sincerecrest", "Crest of Sincerity", "🍀", "10% lifesteal; 30% of attack damage heals the most wounded ally", "datalens", "vampirecode"),
   lovecrest: fused("lovecrest", "Crest of Love", "❤️", "+30% mana gain; every cast heals it for 25% max HP", "manacore", "vampirecode"),
+  // ---- Digitama + a base item: Digimentals, emblems of a family (TFT's Spatula); two Digitama: a Digivice
+  couragemental: fused("couragemental", "Digimental of Courage", "🔶", "counts as Dragon's Roar; +30% attack", "digitama", "powerchip"),
+  friendmental: fused("friendmental", "Digimental of Friendship", "🔷", "counts as Nature Spirits; +1 range", "digitama", "datalens"),
+  lovemental: fused("lovemental", "Digimental of Love", "💗", "counts as Wind Guardians; +25% attack speed", "digitama", "turbodisk"),
+  reliamental: fused("reliamental", "Digimental of Reliability", "💧", "counts as Deep Savers; +35% max HP", "digitama", "guardplate"),
+  kindmental: fused("kindmental", "Digimental of Kindness", "🌑", "counts as Nightmare Soldiers; +60% mana gain", "digitama", "manacore"),
+  hopemental: fused("hopemental", "Digimental of Hope", "🌠", "its own family counts twice; 20% lifesteal", "digitama", "vampirecode"),
+  digivice: fused("digivice", "Digivice", "📟", "+1 Digimon on the board while it fights", "digitama", "digitama"),
 };
 
-export const ITEMS: Record<string, ItemDef> = { ...BASE, ...FUSED };
+/** Complete items with no recipe (TFT's artifacts): bosses and the VS carousel hand them
+ *  out — counters to freezes and to healing. */
+const RELICS: Record<string, ItemDef> = {
+  holyring: { id: "holyring", name: "Holy Ring", emoji: "💍", desc: "+15% attack speed; can't be frozen for the first 10 s of a battle" },
+  blackgear: { id: "blackgear", name: "Black Gear", emoji: "⚙️", desc: "+15% attack; its hits halve the target's healing for 5 s" },
+};
+
+/** Digimental → the family its holder counts as (Hope doubles the holder's own instead). */
+export const EMBLEM_FAMILY: Record<string, Family> = {
+  couragemental: "Dragon's Roar",
+  friendmental: "Nature Spirits",
+  lovemental: "Wind Guardians",
+  reliamental: "Deep Savers",
+  kindmental: "Nightmare Soldiers",
+};
+/** Digivices on a unit add this many board slots (see boardCap in store.ts). */
+export const DIGIVICE = "digivice";
+
+export const ITEMS: Record<string, ItemDef> = { ...BASE, ...SPECIAL, ...FUSED, ...RELICS };
 export const ITEM_IDS = Object.keys(ITEMS);
 /** what battles drop */
 export const BASE_ITEM_IDS = Object.keys(BASE);
+/** what fuses: the base items and Digitama */
+export const COMPONENT_IDS = [...BASE_ITEM_IDS, ...Object.keys(SPECIAL)];
+/** complete items without a recipe */
+export const RELIC_IDS = Object.keys(RELICS);
+/** rare loot (bosses, the carousel): Digitama twice as often as each relic */
+export const RARE_ITEM_IDS = ["digitama", "digitama", ...RELIC_IDS];
 /** two base items fused (bosses and the VS carousel hand these out) */
 export const FUSED_ITEM_IDS = Object.keys(FUSED);
 
@@ -180,6 +218,34 @@ export function applyItems(f: Fighter, items: string[]): void {
       case "lovecrest":
         f.manaMult *= 1.3;
         procs().castHeal = (procs().castHeal ?? 0) + 0.25;
+        break;
+      // ---- Digimentals: their component's stat; the family itself counts in synergies.ts
+      case "couragemental":
+        f.attack = Math.round(f.attack * 1.3);
+        break;
+      case "friendmental":
+        f.range += 1;
+        break;
+      case "lovemental":
+        f.attackSpeed *= 1.25;
+        break;
+      case "reliamental":
+        hp(1.35);
+        break;
+      case "kindmental":
+        f.manaMult *= 1.6;
+        break;
+      case "hopemental":
+        f.lifesteal += 0.2;
+        break;
+      // ---- relics
+      case "holyring":
+        f.attackSpeed *= 1.15;
+        procs().ccImmune = 10;
+        break;
+      case "blackgear":
+        f.attack = Math.round(f.attack * 1.15);
+        procs().wounding = 5;
         break;
     }
   }

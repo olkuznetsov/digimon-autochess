@@ -104,10 +104,12 @@ export interface Fighter {
   castKey: number;
   /** true for the oversized boss unit on boss rounds (visual + reward) */
   boss?: boolean;
-  /** equipped item ids (cosmetic reference) */
+  /** equipped item ids (cosmetic reference; Digimentals count in synergies) */
   items: string[];
   /** item mechanics of their own (the unique fused items), set by applyItems */
   procs?: Procs;
+  /** seconds its healing stays halved (Black Gear) */
+  wounded?: number;
 }
 
 /** Unique item mechanics on a fighter. Static knobs come from items.ts; the running
@@ -134,6 +136,10 @@ export interface Procs {
   /** Crest of Courage: attack gained per hit dealt or taken, up to courageMax */
   courage?: number;
   courageMax?: number;
+  /** Holy Ring: seconds left that freezes don't take */
+  ccImmune?: number;
+  /** Black Gear: seconds of halved healing its hits leave */
+  wounding?: number;
   // running state
   attacks?: number;
   ramped?: number;

@@ -15,7 +15,7 @@ import {
 import { ultimateFor } from "../game/ultimates";
 import { HP_SCALE } from "../game/battle";
 import { TRAITS } from "../game/synergies";
-import { ITEMS, BASE_ITEM_IDS, FUSED_ITEM_IDS, fuseResult } from "../game/items";
+import { ITEMS, COMPONENT_IDS, FUSED_ITEM_IDS, RELIC_IDS, fuseResult } from "../game/items";
 import { AUGMENTS, AUGMENT_IDS, AUGMENT_ROUNDS } from "../game/augments";
 import { ECONOMY, SHOP_ODDS, VS, WAVES } from "../game/tuning";
 import { MAX_LEVEL } from "../game/xpView";
@@ -380,7 +380,7 @@ function Synergies() {
         <h3>Synergies</h3>
         <p>
           Different Digimon of the same attribute or family on the board unlock a bonus (copies of one form count once).
-          Babies count for none.
+          Babies count for none — unless a Digimental gives them a family.
         </p>
         <div className="syn-grid">
           {TRAITS.map((t) => {
@@ -416,9 +416,12 @@ function Items() {
     <>
       <section className="guide-sec">
         <h3>Base items</h3>
-        <p>Won in battles, bosses and VS loot. Click an item, then a Digimon, to equip it — two per unit.</p>
+        <p>
+          Won in battles, bosses and VS loot. Click an item, then a Digimon, to equip it — two per unit. 🥚 Digitama is
+          rarer: bosses and the VS carousel.
+        </p>
         <div className="item-grid">
-          {BASE_ITEM_IDS.map((id) => (
+          {COMPONENT_IDS.map((id) => (
             <div key={id} className="item-card">
               <span className="item-emoji">{ITEMS[id].emoji}</span>
               <b>{ITEMS[id].name}</b>
@@ -432,14 +435,15 @@ function Items() {
         <p>
           Any two base items fuse into a stronger one: pick one, then a glowing partner in your tray — or put the second
           on a Digimon that holds the first, and they fuse right there. The Crests, Lightning Coil, Spike Shell, Rage Chip
-          and Blue Card do something of their own in battle.
+          and Blue Card do something of their own in battle. A <b>Digimental</b> (Digitama + a base item) makes its holder
+          count for a family — a baby too; two Digitama make a <b>Digivice</b>: one more Digimon on the board.
         </p>
         <div className="fuse-wrap">
           <table className="guide-table fuse">
             <thead>
               <tr>
                 <th />
-                {BASE_ITEM_IDS.map((id) => (
+                {COMPONENT_IDS.map((id) => (
                   <th key={id} title={ITEMS[id].name}>
                     {ITEMS[id].emoji}
                   </th>
@@ -447,10 +451,10 @@ function Items() {
               </tr>
             </thead>
             <tbody>
-              {BASE_ITEM_IDS.map((a) => (
+              {COMPONENT_IDS.map((a) => (
                 <tr key={a}>
                   <th title={ITEMS[a].name}>{ITEMS[a].emoji}</th>
-                  {BASE_ITEM_IDS.map((b) => {
+                  {COMPONENT_IDS.map((b) => {
                     const r = fuseResult(a, b);
                     return (
                       <td key={b} title={r ? `${ITEMS[r].name}: ${ITEMS[r].desc}` : ""}>
@@ -472,6 +476,19 @@ function Items() {
               <span className="item-from">
                 {ITEMS[id].from?.map((f) => ITEMS[f].emoji).join(" + ")}
               </span>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="guide-sec">
+        <h3>Relics</h3>
+        <p>Complete items with no recipe — bosses and the VS carousel hand them out. Counters to freezes and to healing.</p>
+        <div className="item-grid">
+          {RELIC_IDS.map((id) => (
+            <div key={id} className="item-card fused">
+              <span className="item-emoji">{ITEMS[id].emoji}</span>
+              <b>{ITEMS[id].name}</b>
+              <span>{ITEMS[id].desc}</span>
             </div>
           ))}
         </div>

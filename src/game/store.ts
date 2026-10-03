@@ -3,7 +3,7 @@ import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types"
 import { FORMS, PLAYABLE_IDS, ROOKIE_IDS, costOf, mergeParts, sellValue } from "./creatures";
 import { makeFighter, stepCombat, SIM_DT, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
-import { BASE_ITEM_IDS, FUSED_ITEM_IDS, fuseResult } from "./items";
+import { BASE_ITEM_IDS, DIGIVICE, FUSED_ITEM_IDS, RARE_ITEM_IDS, fuseResult } from "./items";
 import { ECONOMY, SHOP_ODDS, VS, isBossRound, makeEnemyWave, vsRoundKind } from "./tuning";
 import {
   carouselEnd,
@@ -353,7 +353,8 @@ function vsRewards(round: number, o: Outcome, streak: number) {
   const kind = vsRoundKind(round);
   const pve = kind !== "pvp";
   return {
-    items: pve && o.won ? [randomOf(kind === "boss" ? FUSED_IDS : BASE_ITEM_IDS)] : [],
+    // a boss also leaves something rare: Digitama or a relic
+    items: pve && o.won ? (kind === "boss" ? [randomOf(FUSED_IDS), randomOf(RARE_ITEM_IDS)] : [randomOf(BASE_ITEM_IDS)]) : [],
     gold: pve ? (o.won ? (kind === "boss" ? 4 : 2) : 1) : o.won ? ECONOMY.winGold : 0,
     streak: pve ? streak : o.won ? Math.max(1, streak + 1) : Math.min(-1, streak - 1),
   };
@@ -459,6 +460,9 @@ function firstEmptyBench(units: Unit[]): number | null {
 }
 
 const boardCount = (units: Unit[]) => units.filter((u) => u.placement.kind === "board").length;
+/** How many Digimon may fight: the level, plus one per Digivice on a fielded unit. */
+export const boardCap = (units: Unit[], level: number) =>
+  level + units.filter((u) => u.placement.kind === "board").reduce((n, u) => n + (u.items ?? []).filter((i) => i === DIGIVICE).length, 0);
 
 /** A wire board unit as a Unit (for applySynergies, which only counts forms). */
 const wireToUnit = (uid: string, u: PvpBoardUnit): Unit => ({
@@ -628,7 +632,7 @@ export const useGame = create<GameState>((set, get) => ({
             (u.placement as { col: number; row: number }).row === (target as { col: number; row: number }).row)),
     );
 
-    if (target.kind === "board" && moving.placement.kind === "bench" && !occupant && boardCount(units) >= level) {
+    if (target.kind === "board" && moving.placement.kind === "bench" && !occupant && boardCount(units) >= boardCap(units, level)) {
       return;
     }
 
@@ -789,10 +793,12 @@ export const useGame = create<GameState>((set, get) => ({
           ? state.streak - 1
           : -1;
       const bossBonus = win && isBossRound(state.round);
-      const inventory =
+      const dropped =
         win && state.inventory.length < 8 && (bossBonus || Math.random() < 0.55)
           ? [...state.inventory, BASE_ITEM_IDS[Math.floor(Math.random() * BASE_ITEM_IDS.length)]]
           : state.inventory;
+      // bosses also leave something rare: Digitama (Digimentals, Digivice) or a relic
+      const inventory = bossBonus && dropped.length < 9 ? [...dropped, randomOf(RARE_ITEM_IDS)] : dropped;
       if (win) sfx.win();
       else sfx.lose();
       if (inventory.length > state.inventory.length) sfx.drop();

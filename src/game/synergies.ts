@@ -1,5 +1,6 @@
 import type { Fighter, Unit } from "./types";
 import { FORMS, ATTR_COLOR, FAMILY_COLOR } from "./creatures";
+import { EMBLEM_FAMILY } from "./items";
 
 export interface TraitTier {
   need: number;
@@ -85,16 +86,32 @@ const FAMILY_TRAITS: TraitDef[] = [
 
 export const TRAITS: TraitDef[] = [...ATTRIBUTE_TRAITS, ...FAMILY_TRAITS];
 
-/** Count UNIQUE creature types on the board per trait (duplicates don't double-count). */
+/** The families a unit counts as: its own, plus any its Digimentals add (a baby too). */
+export function familiesOf(formId: string, items: string[] = []): string[] {
+  const out = [FORMS[formId].family as string];
+  for (const it of items) {
+    const fam = EMBLEM_FAMILY[it];
+    if (fam && !out.includes(fam)) out.push(fam);
+  }
+  return out;
+}
+
+/** Count UNIQUE creature types on the board per trait (duplicates don't double-count).
+ *  Digimentals add their family to the holder; Hope makes its own family count twice. */
 export function traitCounts(units: Unit[]): Map<string, number> {
   const seen = new Set<string>();
   const counts = new Map<string, number>();
+  const add = (trait: string, key: string) => {
+    if (seen.has(key)) return;
+    seen.add(key);
+    counts.set(trait, (counts.get(trait) ?? 0) + 1);
+  };
   for (const u of units) {
-    if (u.placement.kind !== "board" || seen.has(u.formId)) continue;
-    seen.add(u.formId);
+    if (u.placement.kind !== "board") continue;
     const form = FORMS[u.formId];
-    counts.set(form.attribute, (counts.get(form.attribute) ?? 0) + 1);
-    counts.set(form.family, (counts.get(form.family) ?? 0) + 1);
+    add(form.attribute, `${form.attribute}|${u.formId}`);
+    for (const fam of familiesOf(u.formId, u.items)) add(fam, `${fam}|${u.formId}`);
+    if (u.items?.includes("hopemental")) add(form.family, `hope|${u.formId}`);
   }
   return counts;
 }
@@ -142,7 +159,8 @@ export function applySynergies(fighters: Fighter[], units: Unit[]): void {
     const t = a.tier;
     for (const f of fighters) {
       const cform = FORMS[f.formId];
-      const belongs = def.kind === "attribute" ? cform.attribute === def.key : cform.family === def.key;
+      const belongs =
+        def.kind === "attribute" ? cform.attribute === def.key : familiesOf(f.formId, f.items).includes(def.key);
       if (!belongs) continue;
       if (t.rangedOnly && f.range < 2) continue;
       if (t.hpPct) f.maxHp *= 1 + t.hpPct;

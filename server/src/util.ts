@@ -41,7 +41,8 @@ export interface BoardUnit {
 /** A board must be real player forms (no bosses, no wild Digimon) on real player cells
  *  (rows 0–2) with real items; null when anything is off. An empty board is valid. */
 export function cleanUnits(raw: unknown): BoardUnit[] | null {
-  if (!Array.isArray(raw) || raw.length > 9) return null;
+  // level 10 plus Digivices
+  if (!Array.isArray(raw) || raw.length > 12) return null;
   const units: BoardUnit[] = [];
   for (const u of raw as Record<string, unknown>[]) {
     const formId = String(u?.formId ?? "");

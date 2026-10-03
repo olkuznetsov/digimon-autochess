@@ -1,6 +1,6 @@
 import { VS, vsRoundKind } from "./tuning";
 import { FORMS, PLAYABLE_IDS, mergeParts } from "./creatures";
-import { BASE_ITEM_IDS, FUSED_ITEM_IDS } from "./items";
+import { BASE_ITEM_IDS, FUSED_ITEM_IDS, RARE_ITEM_IDS } from "./items";
 
 /**
  * Lobby rules for 2–8 players, shared by the clients and the match server
@@ -257,7 +257,9 @@ export function carouselItems(round: number, players: number, seed: number): str
     while (out.length < k) out.push(...shuffled(ids));
     return out.slice(0, k);
   };
-  return shuffled([...deal(FUSED_ITEM_IDS, fused), ...deal(BASE_ITEM_IDS, n - fused)]);
+  // from stage 2 on, one rare item: Digitama or a relic
+  const rare = stage >= 2 && n - fused >= 1 ? 1 : 0;
+  return shuffled([...deal(FUSED_ITEM_IDS, fused), ...deal(RARE_ITEM_IDS, rare), ...deal(BASE_ITEM_IDS, n - fused - rare)]);
 }
 
 /** Pick order: lowest HP first (ties shuffled), in pairs from four players up. */

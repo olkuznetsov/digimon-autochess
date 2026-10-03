@@ -18,7 +18,7 @@ for model sources.*
 - **TFT-style tiers where the price is the stage** (⛂1 Fresh … ⛂5 Mega), levels 1–10 with level-based shop odds,
   and **discovery**: a Champion or Mega shows up in your shop only once you've raised one yourself that game.
 - **Synergies** (three attributes in a counter triangle, five families with two tiers each), **items** that
-  fuse in pairs into 21 stronger ones (nine with mechanics of their own — Adventure's Crests, Lightning Coil …), boss rounds, a 15-round run plus endless mode.
+  fuse in pairs into 28 stronger ones (Adventure's Crests, Lightning Coil …; Digitama + an item = a Digimental, an emblem of a family; two Digitama = a Digivice, one more Digimon on the board) plus relics against freezes and healing, boss rounds, a 15-round run plus endless mode.
 - **VS for 2–8 players** — with friends over a 4-letter room code, or with strangers through a public
   matchmaking queue — in Teamfight Tactics' round rhythm: a round-robin of opponents (a ghost copy of someone's
   board for the odd one out), stages of five rounds with wild-Digimon rounds, a carousel item draft every stage

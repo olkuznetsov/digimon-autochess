@@ -14,7 +14,7 @@
  * so bots never post to the live leaderboard.)
  */
 import { writeFileSync } from "node:fs";
-import { useGame, wireBoard, type PvpBoardUnit } from "../src/game/store";
+import { boardCap, useGame, wireBoard, type PvpBoardUnit } from "../src/game/store";
 import { pveFighters, simulate } from "../src/game/vsFights";
 import { FORMS, costOf } from "../src/game/creatures";
 import { SIM_DT } from "../src/game/battle";
@@ -193,7 +193,7 @@ function arrange() {
   resolvePending();
   const { units, level } = S();
   const ranked = [...units].sort((a, b) => power(b) + synergyFit(b.formId, units) * 4 - (power(a) + synergyFit(a.formId, units) * 4));
-  const fielded = ranked.slice(0, level);
+  const fielded = ranked.slice(0, boardCap(ranked.slice(0, level).map((u) => ({ ...u, placement: { kind: "board", col: 0, row: 0 } as Placement })), level));
   const rows: Record<number, number> = { 2: 0, 1: 0, 0: 0 };
   const rowFor = (u: Unit) => {
     const role = FORMS[u.formId].role;

@@ -117,6 +117,12 @@ const CHAIN_RADIUS = 1.6;
 const atkMult = (f: Fighter) => 1 + (f.procs?.braved ?? 0);
 const asMult = (f: Fighter) => 1 + (f.procs?.ramped ?? 0);
 
+/** Every heal goes through here: Black Gear's wound halves it. */
+function heal(f: Fighter, amount: number) {
+  if (amount <= 0 || f.hp <= 0) return;
+  f.hp = Math.min(f.maxHp, f.hp + amount * ((f.wounded ?? 0) > 0 ? 0.5 : 1));
+}
+
 /** Crest of Courage: one more stack per hit dealt or taken. */
 function brave(f: Fighter) {
   const p = f.procs!;
@@ -164,8 +170,9 @@ function strike(src: Fighter, tgt: Fighter, amount: number, events: CombatEvent[
 function dealDamage(src: Fighter, tgt: Fighter, raw: number, events?: CombatEvent[], mult = 1, ability = false): number {
   const amount = raw * (1 - tgt.dmgReduction);
   const wasAlive = strike(src, tgt, amount, events, mult, ability);
-  if (src.lifesteal > 0) src.hp = Math.min(src.maxHp, src.hp + amount * src.lifesteal);
+  if (src.lifesteal > 0) heal(src, amount * src.lifesteal);
   tgt.mana = Math.min(tgt.maxMana, tgt.mana + MANA_PER_HIT_TAKEN * tgt.manaMult);
+  if (src.procs?.wounding) tgt.wounded = Math.max(tgt.wounded ?? 0, src.procs.wounding);
   const p = tgt.procs;
   if (p && wasAlive) {
     if (p.courage) brave(tgt);
@@ -189,7 +196,7 @@ function onAttack(fr: Fighter, target: Fighter, dealt: number, fighters: Fighter
     let low: Fighter | null = null;
     for (const a of fighters)
       if (a.team === fr.team && a.hp > 0 && a.hp < a.maxHp && (!low || a.hp / a.maxHp < low.hp / low.maxHp)) low = a;
-    if (low) low.hp = Math.min(low.maxHp, low.hp + dealt * p.allyHeal);
+    if (low) heal(low, dealt * p.allyHeal);
   }
   if (p.chainEvery && p.attacks % p.chainEvery === 0) {
     procFx(fr, target, "blast", events);
@@ -220,7 +227,7 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], events?:
   });
   fr.castKey++;
   if (fr.castShield > 0) fr.shield += fr.maxHp * fr.castShield;
-  if (fr.procs?.castHeal) fr.hp = Math.min(fr.maxHp, fr.hp + fr.maxHp * fr.procs.castHeal);
+  if (fr.procs?.castHeal) heal(fr, fr.maxHp * fr.procs.castHeal);
   const ctx: UltCtx = {
     caster: fr,
     target,
@@ -231,6 +238,7 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], events?:
       dealDamage(fr, tgt, fr.attack * atkMult(fr) * factor * m * (fr.procs?.ultPower ?? 1), events, m * factor, true);
     },
     stun: (tgt, seconds) => {
+      if ((tgt.procs?.ccImmune ?? 0) > 0) return; // Holy Ring
       tgt.stunned = Math.max(tgt.stunned, seconds);
     },
     dist,
@@ -246,7 +254,9 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], events?:
 export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent[]): void {
   for (const fr of fighters) {
     if (fr.hp <= 0) continue;
-    if (fr.regen > 0) fr.hp = Math.min(fr.maxHp, fr.hp + fr.maxHp * fr.regen * dt);
+    if (fr.regen > 0) heal(fr, fr.maxHp * fr.regen * dt);
+    if (fr.wounded) fr.wounded = Math.max(0, fr.wounded - dt);
+    if (fr.procs?.ccImmune) fr.procs.ccImmune = Math.max(0, fr.procs.ccImmune - dt);
     fr.cooldown = Math.max(0, fr.cooldown - dt);
     // frozen units can't move, attack, or cast until the stun wears off
     if (fr.stunned > 0) {
