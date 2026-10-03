@@ -29,20 +29,21 @@ export const FORMS: Record<string, Form> = {
   // leads only to Digimon we don't have). Candlemon, Flamemon, Herissmon and the Frontier
   // spirits have no babies there: their lines start at Rookie.
   botamon: baby("botamon", "Botamon", 1, "Neutral", "bruiser", ["koromon", "wanyamon"]),
-  kuramon: baby("kuramon", "Kuramon", 1, "Neutral", "assassin", ["tsumemon"]),
+  kuramon: baby("kuramon", "Kuramon", 1, "Neutral", "assassin", ["tsumemon", "pagumon"]),
   pabumon: baby("pabumon", "Pabumon", 1, "Neutral", "ranged", ["motimon", "yokomon", "tanemon"]),
   poyomon: baby("poyomon", "Poyomon", 1, "Neutral", "caster", ["bukamon", "tokomon"]),
   punimon: baby("punimon", "Punimon", 1, "Neutral", "tank", ["nyaromon", "tsunomon"]),
   koromon: baby("koromon", "Koromon", 2, "Fire", "bruiser", ["agumon", "guilmon", "dracomon"]),
   wanyamon: baby("wanyamon", "Wanyamon", 2, "Wind", "bruiser", ["dorumon", "gaomon"]),
   tsumemon: baby("tsumemon", "Tsumemon", 2, "Dark", "assassin", ["keramon", "demidevimon"]),
-  motimon: baby("motimon", "Motimon", 2, "Neutral", "caster", ["hagurumon", "tentomon"]),
+  motimon: baby("motimon", "Motimon", 2, "Neutral", "caster", ["hagurumon", "tentomon", "gotsumon"]),
   yokomon: baby("yokomon", "Yokomon", 2, "Plant", "caster", ["biyomon", "wormmon", "elecmon", "mushroomon"]),
   tanemon: baby("tanemon", "Tanemon", 2, "Plant", "tank", ["palmon", "renamon"]),
   bukamon: baby("bukamon", "Bukamon", 2, "Water", "ranged", ["gomamon", "betamon"]),
-  tokomon: baby("tokomon", "Tokomon", 2, "Neutral", "assassin", ["patamon", "falcomon"]),
-  nyaromon: baby("nyaromon", "Nyaromon", 2, "Light", "assassin", ["terriermon", "salamon", "lunamon"]),
-  tsunomon: baby("tsunomon", "Tsunomon", 2, "Earth", "tank", ["gabumon", "veemon", "monodramon"]),
+  tokomon: baby("tokomon", "Tokomon", 2, "Neutral", "assassin", ["patamon", "falcomon", "hawkmon"]),
+  nyaromon: baby("nyaromon", "Nyaromon", 2, "Light", "assassin", ["terriermon", "salamon", "lunamon", "armadillomon"]),
+  tsunomon: baby("tsunomon", "Tsunomon", 2, "Earth", "tank", ["gabumon", "veemon", "monodramon", "goblimon"]),
+  pagumon: baby("pagumon", "Pagumon", 2, "Dark", "caster", ["impmon"]),
 
   // ============ Agumon — Dragon's Roar (branch at Ultimate) ============
   agumon: f("agumon", "Agumon", 3, "Vaccine", "Fire", "bruiser", { evolvesTo: ["greymon", "geogreymon"] }),
@@ -63,7 +64,7 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Hagurumon — Nightmare Soldiers ============
   hagurumon: f("hagurumon", "Hagurumon", 3, "Virus", "Electric", "tank", { evolvesTo: ["guardromon"] }),
-  guardromon: f("guardromon", "Guardromon", 4, "Virus", "Electric", "tank", { evolvesTo: ["machinedramon"] }),
+  guardromon: f("guardromon", "Guardromon", 4, "Virus", "Electric", "tank", { evolvesTo: ["machinedramon", "andromon"] }),
   machinedramon: f("machinedramon", "Machinedramon", 5, "Virus", "Electric", "ranged"),
 
   // ============ Patamon — Wind Guardians ============
@@ -94,7 +95,7 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Gomamon — Deep Savers ============
   gomamon: f("gomamon", "Gomamon", 3, "Vaccine", "Water", "tank", { evolvesTo: ["ikkakumon"] }),
-  ikkakumon: f("ikkakumon", "Ikkakumon", 4, "Vaccine", "Water", "tank", { evolvesTo: ["vikemon"] }),
+  ikkakumon: f("ikkakumon", "Ikkakumon", 4, "Vaccine", "Water", "tank", { evolvesTo: ["vikemon", "zudomon"] }),
   vikemon: f("vikemon", "Vikemon", 5, "Vaccine", "Water", "tank"),
 
   // ============ Veemon — Wind Guardians (branch at Champion) ============
@@ -199,35 +200,72 @@ export const FORMS: Record<string, Form> = {
   // ---- set 6: Cyber Sleuth's files again — a line for every element; attributes as the game
   // has them, except Cyberdramon (Virus) for the triangle
 
-  // ============ Betamon — Deep Savers (Adventure's Seadramon) ============
+  // ============ Betamon — Water (Adventure's Seadramon) ============
   betamon: f("betamon", "Betamon", 3, "Virus", "Water", "caster", { evolvesTo: ["seadramon"] }),
   seadramon: f("seadramon", "Seadramon", 4, "Data", "Water", "ranged", { evolvesTo: ["megaseadramon", "metalseadramon"] }),
   megaseadramon: f("megaseadramon", "MegaSeadramon", 5, "Data", "Water", "caster"),
   metalseadramon: f("metalseadramon", "MetalSeadramon", 5, "Data", "Water", "ranged"),
 
-  // ============ Elecmon — Nature Spirits (Leomon) ============
+  // ============ Elecmon — Electric → Earth (Leomon) ============
   elecmon: f("elecmon", "Elecmon", 3, "Data", "Electric", "bruiser", { evolvesTo: ["leomon"] }),
   leomon: f("leomon", "Leomon", 4, "Vaccine", "Earth", "bruiser", { evolvesTo: ["panjyamon", "saberleomon"] }),
   panjyamon: f("panjyamon", "Panjyamon", 5, "Vaccine", "Water", "bruiser"),
   saberleomon: f("saberleomon", "SaberLeomon", 5, "Data", "Wind", "assassin"),
 
-  // ============ Mushroomon — Nightmare Soldiers (the Dark Masters' Puppetmon) ============
+  // ============ Mushroomon — Plant (the Dark Masters' Puppetmon) ============
   mushroomon: f("mushroomon", "Mushroomon", 3, "Virus", "Plant", "caster", { evolvesTo: ["woodmon"] }),
   woodmon: f("woodmon", "Woodmon", 4, "Virus", "Plant", "tank", { evolvesTo: ["cherrymon", "puppetmon"] }),
   cherrymon: f("cherrymon", "Cherrymon", 5, "Virus", "Plant", "caster"),
   puppetmon: f("puppetmon", "Puppetmon", 5, "Virus", "Plant", "ranged"),
 
-  // ============ Monodramon — Dragon's Roar (Tamers' Cyberdramon) ============
+  // ============ Monodramon — Earth (Tamers' Cyberdramon) ============
   monodramon: f("monodramon", "Monodramon", 3, "Vaccine", "Earth", "bruiser", { evolvesTo: ["strikedramon"] }),
   strikedramon: f("strikedramon", "Strikedramon", 4, "Vaccine", "Earth", "assassin", { evolvesTo: ["cyberdramon", "justimon"] }),
   cyberdramon: f("cyberdramon", "Cyberdramon", 5, "Virus", "Dark", "bruiser"),
   justimon: f("justimon", "Justimon", 5, "Vaccine", "Light", "assassin"),
 
-  // ============ Lunamon — Wind Guardians (Olympos XII's Dianamon) ============
+  // ============ Lunamon — Water (Olympos XII's Dianamon) ============
   lunamon: f("lunamon", "Lunamon", 3, "Data", "Water", "caster", { evolvesTo: ["lekismon"] }),
   lekismon: f("lekismon", "Lekismon", 4, "Data", "Water", "ranged", { evolvesTo: ["crescemon", "dianamon"] }),
   crescemon: f("crescemon", "Crescemon", 5, "Data", "Water", "assassin"),
   dianamon: f("dianamon", "Dianamon", 5, "Data", "Water", "caster"),
+
+  // ---- set 7: Cyber Sleuth's files again — Earth (the thinnest element) first, then Dark and
+  // Wind; Free in the game's table (Armadillomon, Hawkmon lines) gets an attribute for the triangle
+
+  // ============ Armadillomon — Earth (Adventure 02's Ankylomon and Shakkoumon) ============
+  armadillomon: f("armadillomon", "Armadillomon", 3, "Vaccine", "Earth", "tank", { evolvesTo: ["ankylomon"] }),
+  ankylomon: f("ankylomon", "Ankylomon", 4, "Vaccine", "Earth", "tank", { evolvesTo: ["shakkoumon", "groundramon"] }),
+  shakkoumon: f("shakkoumon", "Shakkoumon", 5, "Vaccine", "Light", "caster"),
+  groundramon: f("groundramon", "Groundramon", 5, "Virus", "Earth", "bruiser"),
+
+  // ============ Gotsumon — Earth (Golemon; Volcanomon, Pumpkinmon) ============
+  gotsumon: f("gotsumon", "Gotsumon", 3, "Data", "Earth", "bruiser", { evolvesTo: ["golemon"] }),
+  golemon: f("golemon", "Golemon", 4, "Virus", "Earth", "tank", { evolvesTo: ["volcanomon", "pumpkinmon"] }),
+  volcanomon: f("volcanomon", "Volcanomon", 5, "Data", "Fire", "ranged"),
+  pumpkinmon: f("pumpkinmon", "Pumpkinmon", 5, "Data", "Earth", "caster"),
+
+  // ============ Goblimon — Earth (Adventure's Ogremon) ============
+  goblimon: f("goblimon", "Goblimon", 3, "Virus", "Earth", "bruiser", { evolvesTo: ["ogremon"] }),
+  ogremon: f("ogremon", "Ogremon", 4, "Virus", "Earth", "bruiser", { evolvesTo: ["weregarurumon"] }),
+  weregarurumon: f("weregarurumon", "WereGarurumon", 5, "Vaccine", "Earth", "assassin"),
+
+  // ============ Impmon — Dark (Tamers; Adventure's Wizardmon and Bakemon) ============
+  impmon: f("impmon", "Impmon", 3, "Virus", "Dark", "caster", { evolvesTo: ["wizardmon", "bakemon"] }),
+  wizardmon: f("wizardmon", "Wizardmon", 4, "Data", "Dark", "caster", { evolvesTo: ["wisemon"] }),
+  bakemon: f("bakemon", "Bakemon", 4, "Virus", "Dark", "assassin", { evolvesTo: ["phantomon"] }),
+  wisemon: f("wisemon", "Wisemon", 5, "Virus", "Dark", "caster"),
+  phantomon: f("phantomon", "Phantomon", 5, "Virus", "Dark", "assassin"),
+
+  // ============ Hawkmon — Wind (Adventure 02's Aquilamon) ============
+  hawkmon: f("hawkmon", "Hawkmon", 3, "Data", "Wind", "ranged", { evolvesTo: ["aquilamon"] }),
+  aquilamon: f("aquilamon", "Aquilamon", 4, "Data", "Wind", "ranged", { evolvesTo: ["hippogryphonmon", "aeroveedramon"] }),
+  hippogryphonmon: f("hippogryphonmon", "HippoGryphonmon", 5, "Data", "Wind", "ranged"),
+  aeroveedramon: f("aeroveedramon", "AeroVeedramon", 5, "Vaccine", "Wind", "bruiser"),
+
+  // ============ new branches: Ikkakumon → Zudomon, Guardromon → Andromon (as in the anime) ============
+  zudomon: f("zudomon", "Zudomon", 5, "Vaccine", "Water", "bruiser"),
+  andromon: f("andromon", "Andromon", 5, "Vaccine", "Electric", "bruiser"),
 
   // ============ bosses only ============
   zeed: f("zeed", "ZeedMillenniummon", 5, "Virus", "Dark", "tank", { bossOnly: true }),

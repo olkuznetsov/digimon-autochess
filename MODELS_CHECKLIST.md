@@ -1,4 +1,4 @@
-# Roster — 128 forms in 30 lines (15 babies included) + 3 wild + 4 bosses, 100% real animated models
+# Roster — 151 forms in 35 lines (16 babies included) + 3 wild + 4 bosses, 100% real animated models
 
 Every form has an animated model: source `models-src/<formId>.glb`, shipped (optimized by `npm run optimize-models`) as `public/models/<formId>.glb` (idle/move/attack01… clips
 drive the combat state machine). The roster is deliberately shaped around sourceable models.
@@ -9,12 +9,12 @@ Legend: (V)accine (D)ata (Vi)rus · **[a | b]** = player chooses a branch · Ele
 axis since Oct 2026 (the line's main one first, then any form that differs).
 
 V3 (branch `v3`, M10): **babies** below Rookie, straight from Cyber Sleuth's evolution table — attribute Free;
-Fresh are Neutral, In-Training carry an element as in the game. Fresh (⛂1): `botamon` → [`koromon` | `wanyamon`], `kuramon` → `tsumemon`, `pabumon` → [`motimon` | `yokomon` |
+Fresh are Neutral, In-Training carry an element as in the game. Fresh (⛂1): `botamon` → [`koromon` | `wanyamon`], `kuramon` → [`tsumemon` | `pagumon`], `pabumon` → [`motimon` | `yokomon` |
 `tanemon`], `poyomon` → [`bukamon` | `tokomon`], `punimon` → [`nyaromon` | `tsunomon`]. In-Training (⛂2): `koromon` →
 [`agumon` | `guilmon` | `dracomon`], `wanyamon` → [`dorumon` | `gaomon`], `tsumemon` → [`keramon` | `demidevimon`],
-`motimon` → [`hagurumon` | `tentomon`], `yokomon` → [`biyomon` | `wormmon`], `tanemon` → [`palmon` | `renamon`],
-`bukamon` → `gomamon`, `tokomon` → [`patamon` | `falcomon`], `nyaromon` → [`terriermon` | `salamon`], `tsunomon` →
-[`gabumon` | `veemon`]. Candlemon, Flamemon, Herissmon, Agunimon and Lobomon start at Rookie (no babies in the game).
+`motimon` → [`hagurumon` | `tentomon` | `gotsumon`], `yokomon` → [`biyomon` | `wormmon`], `tanemon` → [`palmon` | `renamon`],
+`bukamon` → `gomamon`, `tokomon` → [`patamon` | `falcomon` | `hawkmon`], `nyaromon` → [`terriermon` | `salamon` | `lunamon` | `armadillomon`],
+`tsunomon` → [`gabumon` | `veemon` | `monodramon` | `goblimon`], `pagumon` → `impmon` (set 7). Candlemon, Flamemon, Herissmon, Agunimon and Lobomon start at Rookie (no babies in the game).
 
 | Line (cost) | Rookie | Champion | Ultimate | Elements |
 |---|---|---|---|---|
@@ -24,13 +24,13 @@ Fresh are Neutral, In-Training carry an element as in the game. Fresh (⛂1): `b
 | Terriermon (1) | `terriermon`(V) | `gargomon`(V) | **[`rapidmon`(V) \| `megagargomon`(V)]** | 🌪️ Wind, ⚡ Electric (gargomon) |
 | Gabumon (1) | `gabumon`(D) | `garurumon`(D) | **[`metalgarurumon`(D) \| `cresgarurumon`(V)]** | 🔥 Fire, 💧 Water (metalgarurumon) |
 | DemiDevimon (1) | `demidevimon`(Vi) | **[`skullsatamon`(Vi) \| `devimon`(Vi)]** | `skullsatamon` → `belzemon`(Vi), `devimon` → **[`myotismon`(Vi) \| `ladydevimon`(Vi)]** | 🌑 Dark |
-| Hagurumon (2) | `hagurumon`(Vi) | `guardromon`(Vi) | `machinedramon`(Vi) | ⚡ Electric |
+| Hagurumon (2) | `hagurumon`(Vi) | `guardromon`(Vi) | **[`machinedramon`(Vi) \| `andromon`(V)]** | ⚡ Electric |
 | Patamon (2) | `patamon`(V) | `angemon`(V) | `magnaangemon`(V) | 🌪️ Wind, ✨ Light (angemon) |
 | Dracomon (2) | `dracomon`(D) | `coredramon`(D) | `breakdramon`(D) | 🔥 Fire, ⛰️ Earth (breakdramon) |
 | Keramon (2) | `keramon`(Vi) | `infermon`(Vi) | `diaboromon`(Vi) | 🌑 Dark |
 | Candlemon (2) | `candlemon`(Vi) | `meramon`(Vi) | `gankoomon`(Vi) | 🔥 Fire |
 | Palmon (3) | `palmon`(D) | `togemon`(D) | **[`rosemon`(D) \| `rosemonbm`(Vi)]** | 🌿 Plant |
-| Gomamon (3) | `gomamon`(V) | `ikkakumon`(V) | `vikemon`(V) | 💧 Water |
+| Gomamon (3) | `gomamon`(V) | `ikkakumon`(V) | **[`vikemon`(V) \| `zudomon`(V)]** | 💧 Water |
 | Veemon (3) | `veemon`(V) | **[`exveemon`(V) \| `paildramon`(D)]** | `imperialdramon`(V) | ⚡ Electric |
 | Gaomon (2) | `gaomon`(D) | `gaogamon`(D) | **[`machgaogamon`(D) \| `miragegaogamon`(D)]** | 🌪️ Wind |
 | Falcomon (2) | `falcomon`(Vi) | `peckmon`(Vi) | **[`crowmon`(D) \| `ravemon`(Vi)]** | 🌪️ Wind |
@@ -43,6 +43,11 @@ Fresh are Neutral, In-Training carry an element as in the game. Fresh (⛂1): `b
 | Mushroomon | `mushroomon`(Vi) | `woodmon`(Vi) | **[`cherrymon`(Vi) \| `puppetmon`(Vi)]** | 🌿 Plant |
 | Monodramon | `monodramon`(V) | `strikedramon`(V) | **[`cyberdramon`(Vi) \| `justimon`(V)]** | ⛰️ Earth, 🌑 Dark (cyberdramon) |
 | Lunamon | `lunamon`(D) | `lekismon`(D) | **[`crescemon`(D) \| `dianamon`(D)]** | 💧 Water |
+| Armadillomon | `armadillomon`(V) | `ankylomon`(V) | **[`shakkoumon`(V) \| `groundramon`(Vi)]** | ⛰️ Earth, ✨ Light (shakkoumon) |
+| Gotsumon | `gotsumon`(D) | `golemon`(Vi) | **[`volcanomon`(D) \| `pumpkinmon`(D)]** | ⛰️ Earth, 🔥 Fire (volcanomon) |
+| Goblimon | `goblimon`(Vi) | `ogremon`(Vi) | `weregarurumon`(V) | ⛰️ Earth |
+| Impmon | `impmon`(Vi) | **[`wizardmon`(D) \| `bakemon`(Vi)]** | `wizardmon` → `wisemon`(Vi), `bakemon` → `phantomon`(Vi) | 🌑 Dark |
+| Hawkmon | `hawkmon`(D) | `aquilamon`(D) | **[`hippogryphonmon`(D) \| `aeroveedramon`(V)]** | 🌪️ Wind |
 | Flamemon (3) | `flamemon`(D) | `aldamon`(D) | `susanoomon`(D) | 🔥 Fire, ✨ Light (susanoomon) |
 | Guilmon (4) | `guilmon`(Vi) | `growlmon`(Vi) | `gallantmon`(Vi) | 🔥 Fire, ✨ Light (gallantmon) |
 | Dorumon (4) | `dorumon`(D) | `dorugamon`(D) | `alphamon`(D) | ⛰️ Earth |
@@ -52,7 +57,7 @@ Fresh are Neutral, In-Training carry an element as in the game. Fresh (⛂1): `b
 Removed early on (no animated rips existed then): GeoGreymon/RizeGreymon, Tyrannomon/MetalTyrannomon,
 Gaogamon/MachGaogamon, WereGarurumon, Devimon/IceDevimon/Myotismon, Pegasusmon,
 Woodmon/Cherrymon, Dolphmon. Cyber Sleuth's files have them all: GeoGreymon/RizeGreymon, Gaogamon/MachGaogamon
-and Devimon/Myotismon are back since sets 4–5.
+and Devimon/Myotismon are back since sets 4–5, Woodmon/Cherrymon since set 6, WereGarurumon and Bakemon since set 7.
 
 Boss-only (`bossOnly`: never in the shop, wild waves or scrims) — boss rounds draw from candidates:
 | Form | Attr / element | Where |

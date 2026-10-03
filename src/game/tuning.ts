@@ -56,7 +56,7 @@ export const WAVES = {
     7: [0, 0, 4, 0, 0],
     8: [0, 1, 4, 0, 0],
     9: [0, 0, 4, 1, 0],
-    11: [0, 0, 2, 3, 0],
+    11: [0, 0, 3, 2, 0],
     12: [0, 0, 2, 4, 0],
     13: [0, 0, 1, 3, 1],
     14: [0, 0, 1, 4, 1],
@@ -70,14 +70,14 @@ export const WAVES = {
    *  one candidate per round, picked by its seed. Candidates are tuned to the same pass
    *  rate on the same 600 bot boards (`npm run runsim` prints "boss candidates"). */
   bosses: [
-    [{ id: "skullsatamon", hp: 1.6, atk: 1.0, adds: 2 }],
+    [{ id: "skullsatamon", hp: 1.55, atk: 0.98, adds: 2 }],
     [
       { id: "machinedramon", hp: 1.14, atk: 0.8, adds: 3 },
       { id: "mitamamon", hp: 1.04, atk: 0.58, adds: 3 },
     ],
     [
-      { id: "diaboromon", hp: 2.82, atk: 1.34, adds: 4 },
-      { id: "apollomon", hp: 3.13, atk: 1.05, adds: 4 },
+      { id: "diaboromon", hp: 2.7, atk: 1.3, adds: 4 },
+      { id: "apollomon", hp: 3.0, atk: 1.02, adds: 4 },
     ],
   ] as Omit<BossSpec, "addCount">[][],
   /** endless mode: every 5th round the next of these, all with the same multipliers */
@@ -181,20 +181,20 @@ export const VS = {
     1: [2, 0, 0, 0, 0],
     2: [1, 2, 0, 0, 0],
     5: [0, 1, 2, 0, 0],
-    15: [0, 0, 1, 5, 0],
-    25: [0, 0, 0, 3, 4],
+    15: [0, 0, 2, 4, 0],
+    25: [0, 0, 0, 4, 3],
     35: [0, 0, 0, 0, 9],
     45: [0, 0, 0, 0, 14],
   } as Record<number, Mix>,
   /** bosses of rounds 10, 20, 30, 40+ — a real check: a typical board beats them ~67% /
-   *  40% / 52% / 69% of the time (600 bot boards on the tier rules, the 7 × 4 board,
-   *  starred Megas and the element synergies, Oct 2026). A match meets one candidate per
+   *  38% / 53% / 69% of the time (600 bot boards on the tier rules, the 7 × 4 board,
+   *  starred Megas, the element synergies and 35 lines, Oct 2026). A match meets one candidate per
    *  round, picked by the room's variant; candidates match. */
   bosses: [
     [{ id: "skullsatamon", hp: 2.3, atk: 1.26, adds: 3, addCount: 2 }],
     [
-      { id: "machinedramon", hp: 4.35, atk: 1.9, adds: 5, addCount: 2 },
-      { id: "mitamamon", hp: 4.3, atk: 1.5, adds: 5, addCount: 2 },
+      { id: "machinedramon", hp: 3.9, atk: 1.8, adds: 5, addCount: 2 },
+      { id: "mitamamon", hp: 3.85, atk: 1.42, adds: 5, addCount: 2 },
     ],
     [
       { id: "zeed", hp: 6.2, atk: 2.2, adds: 5, addCount: 2 },

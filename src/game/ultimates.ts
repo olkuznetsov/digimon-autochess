@@ -273,6 +273,30 @@ export const ULTIMATES: Record<string, Ultimate> = {
   lekismon: u("Tear Arrow", "🏹", "Arrows of moonlit water at the 3 nearest (130%).", volley(3, 1.3)),
   crescemon: u("Lunatic Dance", "🌙", "A dance of crescent blades: five strikes (105% each).", barrage(5, 1.05)),
   dianamon: u("Good Night Moon", "🌕", "Moonlight lulls the area to sleep: AoE 120%, frozen for 1.2s.", freeze(1.2, 1.8, 1.2)),
+  // ---- set 7
+  // Armadillomon line
+  ankylomon: u("Tail Hammer", "🦖", "Braces behind a 20% shield.", bulwark(0.2)),
+  shakkoumon: u("Kachina Bombs", "💣", "Clay bombs burst around the target — AoE 185%.", nova(1.85, 1.8)),
+  groundramon: u("Rock Breaker", "🪨", "A quake (290%) that shakes the foes around it (100%).", smite(2.9, 1.0, 1.6)),
+  // Gotsumon line
+  golemon: u("Crystal Stone", "💎", "Hardens behind a 21% shield.", bulwark(0.21)),
+  volcanomon: u("Volcano Strike", "🌋", "Molten rocks at the 3 nearest (150%).", volley(3, 1.5)),
+  pumpkinmon: u("Trick or Treat", "🎃", "A cursed prank: AoE 120%, frozen for 1.2s.", freeze(1.2, 1.8, 1.2)),
+  // Goblimon line
+  ogremon: u("Pummel Whack", "🦴", "A bone-club smash for 260% attack.", bolt(2.6)),
+  weregarurumon: u("Wolf Claw", "🐺", "Claws of a wolf warrior: four slashes (130% each).", barrage(4, 1.3)),
+  // Impmon line
+  wizardmon: u("Thunder Ball", "⚡", "A ball of lightning for 250% attack.", bolt(2.5)),
+  bakemon: u("Dark Claw", "👻", "Ghostly claws: three strikes (120% each).", barrage(3, 1.2)),
+  wisemon: u("Pendulum Ray", "🔮", "Rays from its Spheres of Ether rain around the target — AoE 185%.", nova(1.85, 1.8)),
+  phantomon: u("Shadow Scythe", "💀", "A reaping scythe: 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
+  // Hawkmon line
+  aquilamon: u("Blast Rings", "💫", "Rings of energy at the 3 nearest (130%).", volley(3, 1.3)),
+  hippogryphonmon: u("Rapid Wing", "🪶", "Razor feathers at the 3 nearest (150%).", volley(3, 1.5)),
+  aeroveedramon: u("Dragon Impulse", "🐉", "A dragon of energy (300%) that tears through nearby foes (100%).", smite(3.0, 1.0, 1.6)),
+  // new branches
+  zudomon: u("Vulcan's Hammer", "🔨", "A hammer blow (290%) that shakes the foes around (100%).", smite(2.9, 1.0, 1.6)),
+  andromon: u("Lightning Blade", "⚡", "A blade of lightning for 400% attack.", bolt(4.0)),
   // Support rally on a couple of casters keeps team comps interesting
   candlemon: u("Ember Rally", "🕯️", "Ignites allies: +30% attack for the battle.", rally(0.3)),
   // rookies whose element synergies fit them badly (or too well) get their own moves
