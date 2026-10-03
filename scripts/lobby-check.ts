@@ -27,6 +27,8 @@ import { VS, isCarouselRound, makeVsWave, vsRoundKind, vsStageDamage } from "../
 import { ITEMS } from "../src/game/items";
 import { AUGMENT_IDS, augmentOffer } from "../src/game/augments";
 import { roundOutcomes } from "../src/game/vsFights";
+import { PLAYABLE_IDS } from "../src/game/creatures";
+import { COLS, PLAYER_ROWS } from "../src/game/board";
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.split("=")));
 const MATCHES = Number(args.matches ?? 2000);
@@ -156,14 +158,40 @@ const duelPlan: RoundPlan = { round: 3, pairs: [[0, 1]], ghost: null };
 const unit = (uid: string, formId: string, col: number) => ({ uid, formId, col, row: 0, items: [] as string[] });
 const duelBoards = { 0: [unit("a", "greymon", 2), unit("b", "garurumon", 3)], 1: [unit("c", "greymon", 2), unit("d", "garurumon", 3)] };
 const plain = roundOutcomes(3, duelPlan, duelBoards, [0, 1]);
-// a mirror is decided by who acts first (and, with an odd column count, by where the
-// mirrored units stand) — boost whichever side lost it, and it must win
-const loser = plain.find((o) => !o.won)?.seat ?? 1;
-const boosted = { [loser]: ["overclock", "firewall", "dragonheart"] };
+// ticks resolve simultaneously: no side acts first, so a mirror duel is a draw — and three
+// combat augments decide it for whoever has them
+if (plain.some((o) => o.won)) fail(`a mirror duel should be a draw: ${JSON.stringify(plain)}`);
+const boosted = { 1: ["overclock", "firewall", "dragonheart"] };
 const withAugs = roundOutcomes(3, duelPlan, duelBoards, [0, 1], boosted);
 if (JSON.stringify(withAugs) !== JSON.stringify(roundOutcomes(3, duelPlan, duelBoards, [0, 1], boosted))) fail("augmented fight not deterministic");
-if (!withAugs.find((o) => o.seat === loser)?.won) fail(`3 combat augments should flip a mirror fight: plain ${JSON.stringify(plain)}, boosted ${JSON.stringify(withAugs)}`);
-console.log(`augments: a mirror duel seat ${loser} loses flips to it with 3 combat augments`);
+if (!withAugs[1].won) fail(`3 combat augments should win a mirror fight: plain ${JSON.stringify(plain)}, boosted ${JSON.stringify(withAugs)}`);
+console.log("augments: a mirror duel is a draw; 3 combat augments win it");
+
+// fairness: any board against its own mirror is a draw, whichever round (home/away order)
+{
+  const forms = PLAYABLE_IDS;
+  const items = ["powerchip", "guardplate", "turbodisk", "datalens", "manacore", "vampirecode", "lightningcoil", "spikeshell", "couragecrest", "ragechip", "sincerecrest", "lovecrest", "bluecard", "reliabilitycrest", "knowledgecrest", "holyring", "blackgear", "couragemental", "hopemental"];
+  let unfair = 0;
+  for (let i = 0; i < 300; i++) {
+    const n = 1 + Math.floor(rand() * 8);
+    const cells = new Set<string>();
+    const board = [];
+    while (board.length < n) {
+      const col = Math.floor(rand() * COLS);
+      const row = Math.floor(rand() * PLAYER_ROWS.length);
+      if (cells.has(`${col},${row}`)) continue;
+      cells.add(`${col},${row}`);
+      const its = rand() < 0.5 ? [items[Math.floor(rand() * items.length)]] : [];
+      board.push({ uid: `u${board.length}`, formId: forms[Math.floor(rand() * forms.length)], col, row, items: its });
+    }
+    for (const round of [3, 4]) {
+      const r = roundOutcomes(round, { round, pairs: [[0, 1]], ghost: null }, { 0: board, 1: board }, [0, 1]);
+      if (r.some((o) => o.won)) unfair++;
+    }
+  }
+  if (unfair) fail(`${unfair} of 600 mirror duels had a winner`);
+  console.log("fairness: 300 random boards × 2 rounds against their own mirror — all draws");
+}
 
 // the room's variant picks each boss round's boss: the same on every client, every
 // candidate in play, variant 0 (rooms from before) the classic one

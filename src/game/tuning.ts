@@ -70,10 +70,10 @@ export const WAVES = {
    *  one candidate per round, picked by its seed. Candidates are tuned to the same pass
    *  rate on the same 600 bot boards (`npm run runsim` prints "boss candidates"). */
   bosses: [
-    [{ id: "skullsatamon", hp: 1.58, atk: 1.0, adds: 2 }],
+    [{ id: "skullsatamon", hp: 1.63, atk: 1.0, adds: 2 }],
     [
-      { id: "machinedramon", hp: 1.2, atk: 0.82, adds: 3 },
-      { id: "mitamamon", hp: 1.06, atk: 0.6, adds: 3 },
+      { id: "machinedramon", hp: 1.23, atk: 0.83, adds: 3 },
+      { id: "mitamamon", hp: 1.1, atk: 0.61, adds: 3 },
     ],
     [
       { id: "diaboromon", hp: 3.05, atk: 1.4, adds: 4 },
@@ -193,13 +193,13 @@ export const VS = {
     [{ id: "skullsatamon", hp: 2.45, atk: 1.32, adds: 3, addCount: 2 }],
     [
       { id: "machinedramon", hp: 5.3, atk: 2.15, adds: 5, addCount: 2 },
-      { id: "mitamamon", hp: 4.8, atk: 1.58, adds: 5, addCount: 2 },
+      { id: "mitamamon", hp: 4.95, atk: 1.6, adds: 5, addCount: 2 },
     ],
     [
-      { id: "zeed", hp: 5.0, atk: 1.75, adds: 5, addCount: 2 },
+      { id: "zeed", hp: 4.85, atk: 1.72, adds: 5, addCount: 2 },
       { id: "apollomon", hp: 4.6, atk: 1.85, adds: 5, addCount: 2 },
     ],
-    [{ id: "gracenovamon", hp: 3.22, atk: 1.54, adds: 5, addCount: 3 }],
+    [{ id: "gracenovamon", hp: 3.3, atk: 1.56, adds: 5, addCount: 3 }],
   ] as BossSpec[][],
 };
 

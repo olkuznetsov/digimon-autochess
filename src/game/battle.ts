@@ -129,90 +129,72 @@ function brave(f: Fighter) {
   p.braved = Math.min(p.courageMax ?? 0, (p.braved ?? 0) + (p.courage ?? 0));
 }
 
+/** One hit of a tick, applied with all the others once every fighter has acted. */
+interface Hit {
+  src: Fighter;
+  tgt: Fighter;
+  /** after the target's damage reduction, before shields */
+  amount: number;
+  mult: number;
+  ability: boolean;
+  /** the attacker's lifesteal as it struck (a siphon raises it for its own hits) */
+  ls: number;
+}
+
+/**
+ * Everything a tick does, gathered while every fighter decides from the same state and
+ * applied together afterwards: no side ever acts "first" — the order fighters are listed in
+ * decides nothing, and a mirror match is a draw.
+ */
+interface Tick {
+  hits: Hit[];
+  shields: Map<Fighter, number>;
+  heals: Map<Fighter, number>;
+  stuns: Map<Fighter, number>;
+  /** attack multipliers (rally ultimates) */
+  buffs: Map<Fighter, number>;
+  /** Crest of Sincerity: healing for the most wounded ally, picked once the hits are in */
+  allyHeals: { src: Fighter; amount: number }[];
+  events?: CombatEvent[];
+}
+
+const add = (m: Map<Fighter, number>, f: Fighter, v: number) => m.set(f, (m.get(f) ?? 0) + v);
+
+/** Queue a hit; returns its damage (after the target's reduction). */
+function hit(t: Tick, src: Fighter, tgt: Fighter, raw: number, mult: number, ability: boolean): number {
+  const amount = raw * (1 - tgt.dmgReduction);
+  t.hits.push({ src, tgt, amount, mult, ability, ls: src.lifesteal });
+  return amount;
+}
+
 /** An item proc's visual: the archetype FX of a cast, with no name or Mega beat (stage 0). */
 function procFx(f: Fighter, at: Fighter, ult: UltFx, events?: CombatEvent[]) {
   events?.push({ kind: "cast", col: f.col, row: f.row, attr: f.attribute, ult, stage: 0, team: f.team, toCol: at.col, toRow: at.row });
 }
 
-/** Damage through shields with its FX events — nothing else (no lifesteal, mana or item
- *  reactions: thorns use this so they can't bounce back and forth). */
-function strike(src: Fighter, tgt: Fighter, amount: number, events: CombatEvent[] | undefined, mult: number, ability: boolean): boolean {
-  let dmg = amount;
-  if (tgt.shield > 0) {
-    const absorbed = Math.min(tgt.shield, dmg);
-    tgt.shield -= absorbed;
-    dmg -= absorbed;
-  }
-  const wasAlive = tgt.hp > 0;
-  tgt.hp -= dmg;
-  events?.push({
-    kind: "hit",
-    col: tgt.col,
-    row: tgt.row,
-    attr: src.attribute,
-    fromCol: src.col,
-    fromRow: src.row,
-    amount,
-    mult,
-    ranged: src.range > 1.5,
-    heavy: amount >= tgt.maxHp * 0.14,
-    ability,
-    src: src.uid,
-    tgt: tgt.uid,
-  });
-  // only on the killing blow: later hits in the same step land on a corpse
-  if (wasAlive && tgt.hp <= 0) events?.push({ kind: "death", col: tgt.col, row: tgt.row, attr: tgt.attribute });
-  return wasAlive;
-}
-
-/** Apply damage through shields, feed lifesteal + on-hit mana and the target's item
- *  reactions, emit FX events. Returns the damage dealt (before shields). */
-function dealDamage(src: Fighter, tgt: Fighter, raw: number, events?: CombatEvent[], mult = 1, ability = false): number {
-  const amount = raw * (1 - tgt.dmgReduction);
-  const wasAlive = strike(src, tgt, amount, events, mult, ability);
-  if (src.lifesteal > 0) heal(src, amount * src.lifesteal);
-  tgt.mana = Math.min(tgt.maxMana, tgt.mana + MANA_PER_HIT_TAKEN * tgt.manaMult);
-  if (src.procs?.wounding) tgt.wounded = Math.max(tgt.wounded ?? 0, src.procs.wounding);
-  const p = tgt.procs;
-  if (p && wasAlive) {
-    if (p.courage) brave(tgt);
-    if (p.rescue && tgt.hp > 0 && tgt.hp < tgt.maxHp * 0.4) {
-      tgt.shield += tgt.maxHp * p.rescue;
-      p.rescue = 0;
-      procFx(tgt, tgt, "guard", events);
-    }
-    if (p.reflect && !ability && src.hp > 0) strike(tgt, src, amount * p.reflect, events, 1, false);
-  }
-  return amount;
-}
-
-/** An attack's item procs on the attacker's side, after the hit landed for `dealt`. */
-function onAttack(fr: Fighter, target: Fighter, dealt: number, fighters: Fighter[], events?: CombatEvent[]) {
+/** An attack's item procs on the attacker's side: its own counters now, hits and heals queued. */
+function onAttack(fr: Fighter, target: Fighter, dealt: number, fighters: Fighter[], t: Tick) {
   const p = fr.procs!;
   p.attacks = (p.attacks ?? 0) + 1;
   if (p.courage) brave(fr);
   if (p.ramp) p.ramped = Math.min(p.rampMax ?? 0, (p.ramped ?? 0) + p.ramp);
-  if (p.allyHeal) {
-    let low: Fighter | null = null;
-    for (const a of fighters)
-      if (a.team === fr.team && a.hp > 0 && a.hp < a.maxHp && (!low || a.hp / a.maxHp < low.hp / low.maxHp)) low = a;
-    if (low) heal(low, dealt * p.allyHeal);
-  }
+  if (p.allyHeal) t.allyHeals.push({ src: fr, amount: dealt * p.allyHeal });
   if (p.chainEvery && p.attacks % p.chainEvery === 0) {
-    procFx(fr, target, "blast", events);
+    procFx(fr, target, "blast", t.events);
     for (const e of fighters) {
       if (e.team === fr.team || e.hp <= 0 || dist(e, target) > CHAIN_RADIUS) continue;
       const m = attributeMultiplier(fr.attribute, e.attribute);
-      dealDamage(fr, e, fr.attack * atkMult(fr) * (p.chainFactor ?? 1) * m, events, m, true);
+      hit(t, fr, e, fr.attack * atkMult(fr) * (p.chainFactor ?? 1) * m, m, true);
     }
   }
 }
 
 /** Cast a fighter's signature ultimate (per-form, role fallback). Auto-fires at full mana.
- *  Bumps castKey so the renderer plays the unit's special01 animation. */
-function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], events?: CombatEvent[]) {
+ *  Bumps castKey so the renderer plays the unit's special01 animation. Its effects queue
+ *  with the rest of the tick. */
+function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], t: Tick) {
   const ult = ultimateFor(fr.formId, fr.role);
-  events?.push({
+  t.events?.push({
     kind: "cast",
     col: fr.col,
     row: fr.row,
@@ -226,35 +208,135 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], events?:
     toRow: target.row,
   });
   fr.castKey++;
-  if (fr.castShield > 0) fr.shield += fr.maxHp * fr.castShield;
-  if (fr.procs?.castHeal) heal(fr, fr.maxHp * fr.procs.castHeal);
+  if (fr.castShield > 0) add(t.shields, fr, fr.maxHp * fr.castShield);
+  if (fr.procs?.castHeal) add(t.heals, fr, fr.maxHp * fr.procs.castHeal);
   const ctx: UltCtx = {
     caster: fr,
     target,
-    allies: fighters.filter((t) => t.team === fr.team && t.hp > 0),
-    enemies: fighters.filter((t) => t.team !== fr.team && t.hp > 0),
+    allies: fighters.filter((x) => x.team === fr.team && x.hp > 0),
+    enemies: fighters.filter((x) => x.team !== fr.team && x.hp > 0),
     deal: (tgt, factor) => {
       const m = attributeMultiplier(fr.attribute, tgt.attribute);
-      dealDamage(fr, tgt, fr.attack * atkMult(fr) * factor * m * (fr.procs?.ultPower ?? 1), events, m * factor, true);
+      hit(t, fr, tgt, fr.attack * atkMult(fr) * factor * m * (fr.procs?.ultPower ?? 1), m * factor, true);
     },
     stun: (tgt, seconds) => {
-      if ((tgt.procs?.ccImmune ?? 0) > 0) return; // Holy Ring
-      tgt.stunned = Math.max(tgt.stunned, seconds);
+      t.stuns.set(tgt, Math.max(t.stuns.get(tgt) ?? 0, seconds));
     },
+    shield: (f, amount) => add(t.shields, f, amount),
+    buff: (f, atkPct) => t.buffs.set(f, (t.buffs.get(f) ?? 1) * (1 + atkPct)),
     dist,
   };
   ult.cast(ctx);
 }
 
+/** Damage through shields — a tick's total for a target at once, so hit order can't matter. */
+function absorb(f: Fighter, total: number) {
+  let dmg = total;
+  if (f.shield > 0) {
+    const a = Math.min(f.shield, dmg);
+    f.shield -= a;
+    dmg -= a;
+  }
+  f.hp -= dmg;
+}
+
+const hitEvent = (h: { src: Fighter; tgt: Fighter; amount: number; mult: number; ability: boolean }): CombatEvent => ({
+  kind: "hit",
+  col: h.tgt.col,
+  row: h.tgt.row,
+  attr: h.src.attribute,
+  fromCol: h.src.col,
+  fromRow: h.src.row,
+  amount: h.amount,
+  mult: h.mult,
+  ranged: h.src.range > 1.5,
+  heavy: h.amount >= h.tgt.maxHp * 0.14,
+  ability: h.ability,
+  src: h.src.uid,
+  tgt: h.tgt.uid,
+});
+
+/** Apply a tick: shields, buffs and freezes first; then every hit at once (a lethal total
+ *  shares the target's remaining HP out among its hits, so overkill heals no one); thorns;
+ *  heals; Reliability's rescue; deaths. */
+function resolve(fighters: Fighter[], t: Tick) {
+  const { events } = t;
+  const alive = fighters.filter((f) => f.hp > 0);
+  for (const [f, s] of t.shields) f.shield += s;
+  for (const [f, m] of t.buffs) f.attack = Math.round(f.attack * m);
+  for (const [f, s] of t.stuns) if (!((f.procs?.ccImmune ?? 0) > 0)) f.stunned = Math.max(f.stunned, s); // Holy Ring
+
+  const taken = new Map<Fighter, number>();
+  for (const h of t.hits) add(taken, h.tgt, h.amount);
+  const share = new Map<Fighter, number>();
+  for (const [f, total] of taken) {
+    const room = f.shield + Math.max(0, f.hp);
+    share.set(f, total > room && total > 0 ? room / total : 1);
+    absorb(f, total);
+  }
+  for (const h of t.hits) {
+    events?.push(hitEvent(h));
+    h.tgt.mana = Math.min(h.tgt.maxMana, h.tgt.mana + MANA_PER_HIT_TAKEN * h.tgt.manaMult);
+    if (h.src.procs?.wounding) h.tgt.wounded = Math.max(h.tgt.wounded ?? 0, h.src.procs.wounding);
+    if (h.tgt.procs?.courage) brave(h.tgt);
+    if (h.ls > 0) add(t.heals, h.src, h.amount * share.get(h.tgt)! * h.ls);
+  }
+  // Spike Shell: attacks struck back after the hits (no lifesteal, no thorns on thorns)
+  for (const h of t.hits) {
+    const r = h.tgt.procs?.reflect;
+    if (!r || h.ability) continue;
+    const back = { src: h.tgt, tgt: h.src, amount: h.amount * r, mult: 1, ability: false };
+    absorb(back.tgt, back.amount);
+    events?.push(hitEvent(back));
+  }
+  // Crest of Sincerity: each picks the most wounded ally as the hits left them
+  const lows = t.allyHeals.map((a) => {
+    let low: Fighter | null = null;
+    for (const f of fighters)
+      if (f.team === a.src.team && f.hp > 0 && f.hp < f.maxHp && (!low || f.hp / f.maxHp < low.hp / low.maxHp)) low = f;
+    return low;
+  });
+  t.allyHeals.forEach((a, i) => lows[i] && add(t.heals, lows[i]!, a.amount));
+  for (const [f, v] of t.heals) heal(f, v);
+
+  for (const f of alive) {
+    const p = f.procs;
+    if (p?.rescue && f.hp > 0 && f.hp < f.maxHp * 0.4) {
+      f.shield += f.maxHp * p.rescue;
+      p.rescue = 0;
+      procFx(f, f, "guard", events);
+    }
+    if (f.hp <= 0) events?.push({ kind: "death", col: f.col, row: f.row, attr: f.attribute });
+  }
+}
+
+/** Positions live on a 2^-20 grid: a mirrored coordinate (COLS - 1 - x) is then exact, so
+ *  both sides of a mirror compute bit-identical distances and reach their targets on the
+ *  same tick. */
+const snap = (x: number) => Math.round(x * 1048576) / 1048576;
+
+/** Equal distances: the same choice on both sides of a mirror — each team judges from its
+ *  own end of the board (the other half is the 180° turn of it). */
+function preferred(fr: Fighter, a: Fighter, b: Fighter): boolean {
+  const flip = fr.team === "enemy";
+  const ac = flip ? COLS - 1 - a.col : a.col;
+  const bc = flip ? COLS - 1 - b.col : b.col;
+  if (Math.abs(ac - bc) > 1e-9) return ac < bc;
+  return (flip ? ROWS - 1 - a.row : a.row) < (flip ? ROWS - 1 - b.row : b.row);
+}
+
 /**
- * One combat tick: target acquisition, movement, attacks, mana + abilities.
- * Mutates fighters in place. Pure game logic — shared by the zustand store
+ * One combat tick: target acquisition, movement, attacks, mana + abilities. Every fighter
+ * decides from the state the tick began with; moves and effects land together at the end
+ * (see Tick). Mutates fighters in place. Pure game logic — shared by the zustand store
  * (browser) and the headless balance simulator (Node).
  */
 export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent[]): void {
+  const t: Tick = { hits: [], shields: new Map(), heals: new Map(), stuns: new Map(), buffs: new Map(), allyHeals: [], events };
+  const moves: { f: Fighter; col: number; row: number }[] = [];
   for (const fr of fighters) {
     if (fr.hp <= 0) continue;
-    if (fr.regen > 0) heal(fr, fr.maxHp * fr.regen * dt);
+    if (fr.regen > 0) add(t.heals, fr, fr.maxHp * fr.regen * dt);
     if (fr.wounded) fr.wounded = Math.max(0, fr.wounded - dt);
     if (fr.procs?.ccImmune) fr.procs.ccImmune = Math.max(0, fr.procs.ccImmune - dt);
     fr.cooldown = Math.max(0, fr.cooldown - dt);
@@ -267,17 +349,17 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
 
     // the nearest enemy; out of reach a clearly closer one takes over (no chasing one enemy
     // past another), in reach the unit sticks with its target
-    let target = fighters.find((t) => t.uid === fr.targetUid && t.hp > 0);
+    let target = fighters.find((x) => x.uid === fr.targetUid && x.hp > 0);
     const chasing = target ? dist(fr, target) : Infinity;
     if (chasing > fr.range + 0.05) {
       let best: Fighter | null = null;
       let bestD = Infinity;
-      for (const t of fighters) {
-        if (t.team === fr.team || t.hp <= 0) continue;
-        const d = dist(fr, t);
-        if (d < bestD) {
+      for (const x of fighters) {
+        if (x.team === fr.team || x.hp <= 0) continue;
+        const d = dist(fr, x);
+        if (d < bestD - 1e-9 || (best && d <= bestD + 1e-9 && preferred(fr, x, best))) {
           bestD = d;
-          best = t;
+          best = x;
         }
       }
       if (best && (!target || bestD < chasing - RETARGET_MARGIN)) {
@@ -292,12 +374,12 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
       fr.moving = false;
       if (fr.cooldown <= 0) {
         const mult = attributeMultiplier(fr.attribute, target.attribute);
-        const dealt = dealDamage(fr, target, fr.attack * atkMult(fr) * mult, events, mult);
-        if (fr.procs) onAttack(fr, target, dealt, fighters, events);
+        const dealt = hit(t, fr, target, fr.attack * atkMult(fr) * mult, mult, false);
+        if (fr.procs) onAttack(fr, target, dealt, fighters, t);
         fr.cooldown = 1 / (fr.attackSpeed * asMult(fr));
         fr.mana = Math.min(fr.maxMana, fr.mana + MANA_PER_ATTACK * fr.manaMult);
-        if (fr.mana >= fr.maxMana && fr.hp > 0) {
-          castAbility(fr, target, fighters, events);
+        if (fr.mana >= fr.maxMana) {
+          castAbility(fr, target, fighters, t);
           fr.mana = fr.maxMana * (fr.procs?.castRefund ?? 0);
         }
       }
@@ -305,7 +387,8 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
       fr.moving = true;
       let dx = (target.col - fr.col) / d;
       let dy = (target.row - fr.row) / d;
-      // separation: deterministic (fixed iteration order, sqrt only)
+      // separation: deterministic (fixed iteration order, sqrt only); everyone steers from
+      // where the others stood when the tick began
       let sx = 0;
       let sy = 0;
       for (const o of fighters) {
@@ -315,7 +398,9 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
         const dd = Math.sqrt(ox * ox + oy * oy);
         if (dd >= SEPARATION_RADIUS) continue;
         if (dd < 1e-6) {
-          sx += fr.uid < o.uid ? 0.5 : -0.5; // exact overlap: split by id
+          // exact overlap: split by id, toward each team's own left — the same on both
+          // sides of a mirror
+          sx += (fr.uid < o.uid ? 0.5 : -0.5) * (fr.team === "player" ? 1 : -1);
           continue;
         }
         const w = (SEPARATION_RADIUS - dd) / (SEPARATION_RADIUS * dd);
@@ -326,8 +411,16 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
       dy += sy * SEPARATION_WEIGHT;
       const len = Math.sqrt(dx * dx + dy * dy) || 1;
       const step = Math.min(MOVE_SPEED * dt, d);
-      fr.col = Math.max(0, Math.min(COLS - 1, fr.col + (dx / len) * step));
-      fr.row = Math.max(0, Math.min(ROWS - 1, fr.row + (dy / len) * step));
+      moves.push({
+        f: fr,
+        col: snap(Math.max(0, Math.min(COLS - 1, fr.col + (dx / len) * step))),
+        row: snap(Math.max(0, Math.min(ROWS - 1, fr.row + (dy / len) * step))),
+      });
     }
   }
+  for (const m of moves) {
+    m.f.col = m.col;
+    m.f.row = m.row;
+  }
+  resolve(fighters, t);
 }

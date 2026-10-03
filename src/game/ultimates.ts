@@ -6,9 +6,9 @@ import type { Fighter, Role } from "./types";
  * archetypes; rookies fall back to a generic role ability. Cast automatically when
  * mana fills — the renderer plays the unit's `special01` animation on cast.
  *
- * Effects mutate fighters through the context the battle loop provides (`deal`
- * routes shields / lifesteal / FX and attribute damage; `stun` freezes a target),
- * so all damage bookkeeping stays centralized in battle.ts.
+ * Effects act through the context the battle loop provides (`deal`, `stun`, `shield`,
+ * `buff`): they queue with the rest of the tick and land together (battle.ts), so all
+ * bookkeeping stays centralized there and no side ever acts first.
  */
 
 export interface UltCtx {
@@ -20,6 +20,10 @@ export interface UltCtx {
   deal: (tgt: Fighter, factor: number) => void;
   /** apply a stun (seconds), taking the longer of any existing stun */
   stun: (tgt: Fighter, seconds: number) => void;
+  /** add a shield (absolute HP) */
+  shield: (tgt: Fighter, amount: number) => void;
+  /** raise attack by a fraction for the rest of the battle */
+  buff: (tgt: Fighter, atkPct: number) => void;
   dist: (a: Fighter, b: Fighter) => number;
 }
 
@@ -77,7 +81,7 @@ const bulwark = (pct: number, team = false): Effect => ({
   fx: "guard",
   cast: (c) => {
     const targets = team ? c.allies : [c.caster];
-    for (const a of targets) a.shield += c.caster.maxHp * pct;
+    for (const a of targets) c.shield(a, c.caster.maxHp * pct);
   },
 });
 
@@ -123,7 +127,7 @@ const smite = (factor: number, splash: number, radius: number): Effect => ({
 const rally = (atkPct: number): Effect => ({
   fx: "buff",
   cast: (c) => {
-    for (const a of c.allies) a.attack = Math.round(a.attack * (1 + atkPct));
+    for (const a of c.allies) c.buff(a, atkPct);
   },
 });
 
@@ -159,7 +163,7 @@ export const ULTIMATES: Record<string, Ultimate> = {
   magnaangemon: u("Gate of Destiny", "⚔️", "Banishes a weakened foe — 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
   // Nature Spirits — Dracomon line
   coredramon: u("Blue Flare Breath", "🔥", "A dragon-fire blast for 255%.", bolt(2.55)),
-  breakdramon: u("Giga Drill", "🩸", "Braces behind a 6% team shield.", bulwark(0.06, true)),
+  breakdramon: u("Giga Drill", "🩸", "Braces behind a 5% team shield.", bulwark(0.05, true)),
   // Deep Savers — Keramon line
   infermon: u("Cable Crusher", "🕸️", "Three savage strikes (120% each).", barrage(3, 1.2)),
   diaboromon: u("Web Wrecker", "🕷️", "A viral nova (150%) around the target.", nova(1.5, 1.7)),
