@@ -51,7 +51,18 @@ export function Hud() {
   const [musicOn, setMusicOnUi] = useState(isMusicOn());
   const [showHelp, setShowHelp] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showPvp, setShowPvp] = useState(false);
+  // an invite link (?join=CODE) opens the VS window with the code filled in
+  const [invite] = useState(() => {
+    try {
+      const code = new URLSearchParams(location.search).get("join")?.toUpperCase() ?? "";
+      if (!/^[A-Z0-9]{4}$/.test(code)) return "";
+      history.replaceState(null, "", location.pathname); // a reload shouldn't reopen it
+      return code;
+    } catch {
+      return "";
+    }
+  });
+  const [showPvp, setShowPvp] = useState(!!invite);
   const [showLb, setShowLb] = useState(false);
   const ghost = useGame((s) => s.ghost);
   const ghostReturn = useGame((s) => s.ghostReturn);
@@ -383,7 +394,7 @@ export function Hud() {
         </div>
       )}
 
-      {(showPvp || stage === "lobby") && <LobbyModal onClose={() => setShowPvp(false)} />}
+      {(showPvp || stage === "lobby") && <LobbyModal initialCode={invite} onClose={() => setShowPvp(false)} />}
       {showLb && <LeaderboardModal onClose={() => setShowLb(false)} />}
 
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}

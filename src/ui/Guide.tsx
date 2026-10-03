@@ -87,6 +87,8 @@ function Basics() {
           <li>🧬 <b>3 copies</b> of the same Digimon merge into the next stage: Fresh → In-Training → Rookie → Champion → Mega.</li>
           <li>🔀 Most stages <b>branch</b> — you pick the evolution (3 Koromon: Agumon, Guilmon or Dracomon), and with it the attribute and family.</li>
           <li>🍼 <b>Babies</b> (Fresh, In-Training) have no attribute and no family: neutral to everyone, no synergies. Raise them into Rookies.</li>
+          <li>⭐ A <b>Mega</b> has nowhere to digivolve: three copies star it up — <b>★★</b> (×1.8 HP and attack), and three ★★ make <b>★★★</b> (×3.2, its ultimate +50%).</li>
+          <li>🪑 When a fight starts, empty board slots fill from your bench, first slot first — tanks to the front, ranged to the back.</li>
           <li>🎒 Items carry over: two stay on the new form, the rest go back to your tray.</li>
           <li>✨ The shop highlights what you're collecting: <b>×1 owned</b>, <b>⬆ Digivolve</b> (third copy), <b>→ Greymon</b> (it digivolves into one you have).</li>
         </ul>

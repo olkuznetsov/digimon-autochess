@@ -116,8 +116,9 @@ function PrepUnits() {
             formId={u.formId}
             position={pos}
             color={ATTR_COLOR[form.attribute]}
-            name={form.name}
+            name={form.name + (u.star ? ` ${"★".repeat(u.star)}` : "")}
             stage={form.stage}
+            star={u.star}
             shrink={u.placement.kind === "bench" && u.uid !== dragId ? 0.8 : 1}
             showHealth={false}
             evolveKey={evo && evo.uid === u.uid ? evo.key : undefined}
@@ -262,8 +263,9 @@ function BattleUnit({ uid }: { uid: string }) {
       formId={f0.formId}
       drive={drive}
       color={ATTR_COLOR[f0.attribute]}
-      name={form.name}
+      name={form.name + (f0.star ? ` ${"★".repeat(f0.star)}` : "")}
       stage={form.stage}
+      star={f0.star}
       team={team}
       boss={f0.boss}
       spawn

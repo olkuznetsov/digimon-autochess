@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useGame, pvpMe } from "../game/store";
-import { FORMS, ATTR_COLOR, DESCENDANTS, PLAYABLE_IDS, STAGE_NAME, TIER_COLOR, costOf, sellValue } from "../game/creatures";
+import { FORMS, ATTR_COLOR, DESCENDANTS, PLAYABLE_IDS, STAGE_NAME, TIER_COLOR, costOf, isTerminal, sellValue } from "../game/creatures";
 import { ECONOMY, SHOP_ODDS } from "../game/tuning";
 import { Portrait } from "./Portrait";
 import { FormTooltip } from "./FormTooltip";
@@ -57,7 +57,8 @@ export function Shop() {
           const cost = costOf(formId);
           const color = ATTR_COLOR[form.attribute];
           // what you're already collecting: copies owned, and whether this one digivolves them
-          const copies = units.filter((u) => u.formId === formId).length;
+          // a Mega merges with copies of its own star level (★): the third stars it up
+          const copies = units.filter((u) => u.formId === formId && (!isTerminal(formId) || !u.star)).length;
           // it digivolves into something you have: name the furthest of those
           const lead =
             copies === 0
@@ -81,7 +82,7 @@ export function Shop() {
               onPointerLeave={() => setHover((h) => (h === i ? null : h))}
             >
               {hover === i && !dragged && <FormTooltip formId={formId} />}
-              {copies >= 2 && <span className="card-badge up">⬆ Digivolve</span>}
+              {copies >= 2 && <span className="card-badge up">{isTerminal(formId) ? "⬆ ★★" : "⬆ Digivolve"}</span>}
               {copies === 1 && <span className="card-badge">×1 owned</span>}
               {line && (
                 <span className="card-badge line" title={`It digivolves into ${FORMS[lead!].name} — you have one`}>

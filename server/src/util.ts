@@ -1,4 +1,4 @@
-import { formOf, isPlayable } from "../../src/game/creatures";
+import { formOf, isPlayable, isTerminal } from "../../src/game/creatures";
 import { ITEMS } from "../../src/game/items";
 import { CLOSE_OUTDATED } from "../../src/game/lobby";
 import { COLS, FRONT_ROW } from "../../src/game/board";
@@ -37,6 +37,7 @@ export interface BoardUnit {
   col: number;
   row: number;
   items: string[];
+  star?: number;
 }
 
 /** A board must be real player forms (no bosses, no wild Digimon) on real player cells
@@ -53,7 +54,10 @@ export function cleanUnits(raw: unknown): BoardUnit[] | null {
     if (!isPlayable(formOf(formId))) return null;
     if (!Number.isInteger(col) || col < 0 || col >= COLS || !Number.isInteger(row) || row < 0 || row > FRONT_ROW) return null;
     if (items.length > 2 || items.some((i) => !ITEMS[i])) return null;
-    units.push({ uid: String(u?.uid ?? "").slice(0, 24), formId, col, row, items });
+    // stars only on a Mega (three copies of one), ★★ or ★★★
+    const star = u?.star === undefined ? 1 : Number(u.star);
+    if (![1, 2, 3].includes(star) || (star > 1 && !isTerminal(formId))) return null;
+    units.push({ uid: String(u?.uid ?? "").slice(0, 24), formId, col, row, items, ...(star > 1 ? { star } : {}) });
   }
   return units;
 }

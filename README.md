@@ -19,7 +19,8 @@ for model sources.*
   Breath, Positron Laser…).
 - **Tiers where the price is the stage**: ⛂1 Fresh … ⛂5 Mega, levels 1–10 with level-based shop odds (hover the
   odds over the shop for the detail), and **discovery**: a Champion or Mega shows up in your shop only once you've
-  raised one yourself that game. Raise or buy — that's the economy.
+  raised one yourself that game. Raise or buy — that's the economy. A Mega has nowhere to digivolve, so three
+  copies star it up: ★★, then ★★★ with a stronger ultimate.
 - **Teamfight Tactics' board**: 7 × 4 cells a side and a bench of 9 — room for level 10, Digivices and raising
   several lines at once.
 - **Synergies**: three attributes in a counter triangle and five families with two tiers each; babies have
@@ -36,7 +37,9 @@ for model sources.*
   (lowest HP picks first), three augment picks per match, a shared unit pool (what one player collects the
   others can't — a merged Digimon holds every copy that went into it), a boss every tenth round, loss damage that
   grows by stage, a planning timer, live scouting of any player's board, knockouts, places 1–8 and a rating.
-  Reconnects survive a phone switching apps; play again in the same room.
+  Reconnects survive a phone switching apps; play again in the same room. Copy the code or share an invite link
+  (`?join=CODE` opens the game with it filled in). Ticks resolve simultaneously, so neither side ever acts first —
+  a board against its own mirror is a draw.
 - **Leaderboard and ghost battles** against other players' saved boards — season 2 since the tier rules.
 - **Game feel**: hit-stop, camera shake, sparks, pooled damage numbers, a cinematic beat for Mega ultimates,
   "data deletion" deaths, a materialize-in at the start of every fight.

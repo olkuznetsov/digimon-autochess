@@ -183,23 +183,24 @@ export const VS = {
     5: [0, 1, 2, 0, 0],
     15: [0, 0, 1, 5, 0],
     25: [0, 0, 0, 3, 4],
-    35: [0, 0, 0, 3, 5],
+    35: [0, 0, 0, 0, 9],
+    45: [0, 0, 0, 0, 14],
   } as Record<number, Mix>,
   /** bosses of rounds 10, 20, 30, 40+ — a real check, getting harder: a typical board
-   *  beats them ~67% / 60% / 57% / 53% of the time (600 bot boards on the tier rules and
-   *  the 7 × 4 board, Oct 2026). A match meets one candidate per round, picked by the room's variant;
+   *  beats them ~67% / 60% / 57% / 52% of the time (600 bot boards on the tier rules, the
+   *  7 × 4 board and starred Megas — by round 30 nearly every board fields one, Oct 2026). A match meets one candidate per round, picked by the room's variant;
    *  candidates match. */
   bosses: [
     [{ id: "skullsatamon", hp: 2.45, atk: 1.32, adds: 3, addCount: 2 }],
     [
-      { id: "machinedramon", hp: 5.3, atk: 2.15, adds: 5, addCount: 2 },
-      { id: "mitamamon", hp: 4.95, atk: 1.6, adds: 5, addCount: 2 },
+      { id: "machinedramon", hp: 4.7, atk: 2.0, adds: 5, addCount: 2 },
+      { id: "mitamamon", hp: 4.6, atk: 1.55, adds: 5, addCount: 2 },
     ],
     [
-      { id: "zeed", hp: 4.85, atk: 1.72, adds: 5, addCount: 2 },
-      { id: "apollomon", hp: 4.6, atk: 1.85, adds: 5, addCount: 2 },
+      { id: "zeed", hp: 6.6, atk: 2.25, adds: 5, addCount: 2 },
+      { id: "apollomon", hp: 7.2, atk: 2.6, adds: 5, addCount: 2 },
     ],
-    [{ id: "gracenovamon", hp: 3.3, atk: 1.56, adds: 5, addCount: 3 }],
+    [{ id: "gracenovamon", hp: 10, atk: 3.1, adds: 5, addCount: 3 }],
   ] as BossSpec[][],
 };
 

@@ -2011,6 +2011,8 @@ html, body {
   font-size: 13px;
 }
 .pvp-code {
+  user-select: text;
+  -webkit-user-select: text;
   font-size: 44px;
   font-weight: 900;
   letter-spacing: 10px;
@@ -3017,4 +3019,28 @@ html, body {
   letter-spacing: 1px;
   text-transform: uppercase;
   color: #8893b5;
+}
+
+.up-star {
+  color: #ffd34d;
+  letter-spacing: 1px;
+}
+
+.pvp-share {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 6px;
+}
+.pvp-share .action {
+  font-size: 13px;
+  padding: 6px 12px;
+}
+.pvp-share-note {
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  color: #9be7a8;
 }

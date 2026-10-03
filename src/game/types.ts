@@ -50,6 +50,8 @@ export interface Unit {
   /** the shop copies merged into it (unset: one of its own form, as bought) — what it
    *  holds of the VS pool and what selling it returns */
   parts?: Record<string, number>;
+  /** a Mega's star level: three copies of a Mega star it up (unset: ★) */
+  star?: 2 | 3;
 }
 
 export type Placement =
@@ -110,6 +112,8 @@ export interface Fighter {
   procs?: Procs;
   /** seconds its healing stays halved (Black Gear) */
   wounded?: number;
+  /** a Mega's star level (stats baked in by makeFighter; the pips show it) */
+  star?: number;
 }
 
 /** Unique item mechanics on a fighter. Static knobs come from items.ts; the running

@@ -227,6 +227,13 @@ export const ROOKIE_IDS = PLAYABLE_IDS.filter((id) => FORMS[id].stage === 3);
 /** wild Digimon, met only in PvE waves */
 export const WILD_IDS = ALL_FORM_IDS.filter((id) => FORMS[id].wild);
 
+/** A form with nowhere to digivolve (a Mega): three copies star it up instead. */
+export const isTerminal = (formId: string) => !(FORMS[formId]?.evolvesTo?.length);
+/** HP and attack by star level (Teamfight Tactics' ×1.8 a star); a ★★★ Mega's ultimate
+ *  hits harder on top. */
+export const STAR_MULT = [1, 1, 1.8, 3.2];
+export const STAR3_ULT = 1.5;
+
 /** A form's shop price: its stage (Fresh 1 … Mega 5). */
 export const costOf = (formId: string): number => FORMS[formId]?.stage ?? 1;
 

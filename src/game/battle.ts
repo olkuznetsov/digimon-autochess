@@ -1,5 +1,5 @@
 import type { Attribute, Fighter } from "./types";
-import { FORMS, attributeMultiplier, statsFor } from "./creatures";
+import { FORMS, STAR3_ULT, STAR_MULT, attributeMultiplier, statsFor } from "./creatures";
 import { applyItems } from "./items";
 import { ultimateFor, type UltCtx, type UltFx } from "./ultimates";
 import { COLS, ROWS } from "./board";
@@ -66,18 +66,20 @@ export function makeFighter(
   row: number,
   hpScale = 1,
   items: string[] = [],
+  star = 1,
 ): Fighter {
   const form = FORMS[formId];
   const s = statsFor(form);
+  const sm = STAR_MULT[star] ?? 1;
   const f: Fighter = {
     uid,
     formId,
     team,
     attribute: form.attribute,
     role: form.role,
-    hp: Math.round(s.hp * HP_SCALE * hpScale),
-    maxHp: Math.round(s.hp * HP_SCALE * hpScale),
-    attack: s.attack,
+    hp: Math.round(s.hp * HP_SCALE * hpScale * sm),
+    maxHp: Math.round(s.hp * HP_SCALE * hpScale * sm),
+    attack: Math.round(s.attack * sm),
     attackSpeed: s.attackSpeed,
     range: s.range,
     col,
@@ -96,8 +98,10 @@ export function makeFighter(
     stunned: 0,
     castKey: 0,
     items,
+    ...(star > 1 ? { star } : {}),
   };
   applyItems(f, items);
+  if (star >= 3) (f.procs ??= {}).ultPower = (f.procs.ultPower ?? 1) * STAR3_ULT;
   return f;
 }
 

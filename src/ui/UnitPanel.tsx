@@ -25,7 +25,8 @@ export function UnitPanel() {
   const items = fighter?.items ?? unit?.items ?? [];
 
   // live fighter in battle; otherwise a preview with items applied
-  const stats = fighter ?? makeFighter(formId, "preview", "player", 0, 0, 1, items);
+  const star = fighter?.star ?? unit?.star ?? 1;
+  const stats = fighter ?? makeFighter(formId, "preview", "player", 0, 0, 1, items, star);
   const ability = ultimateFor(formId, form.role);
   const attr = ATTR_COLOR[form.attribute];
   const fam = FAMILY_COLOR[form.family];
@@ -35,7 +36,10 @@ export function UnitPanel() {
       <div className="up-head">
         <Portrait formId={formId} className="up-portrait" />
         <span className="up-title">
-          <span className="up-name">{form.name}</span>
+          <span className="up-name">
+            {form.name}
+            {star > 1 && <span className="up-star"> {"★".repeat(star)}</span>}
+          </span>
           <span className="up-stage">{STAGE_NAME[form.stage]}</span>
         </span>
         <button className="up-close" onClick={() => setInspected(null)}>

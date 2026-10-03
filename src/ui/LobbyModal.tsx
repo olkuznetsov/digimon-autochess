@@ -20,11 +20,12 @@ function savedName() {
 
 /** Create / join a VS lobby (2–8 players) and wait in it until the host starts —
  *  or find a public match through the matchmaking queue. */
-export function LobbyModal({ onClose }: { onClose: () => void }) {
+export function LobbyModal({ onClose, initialCode = "" }: { onClose: () => void; initialCode?: string }) {
   const pvp = useGame((s) => s.pvp);
   const pvpStart = useGame((s) => s.pvpStart);
   const [name, setName] = useState(savedName());
-  const [joinCode, setJoinCode] = useState("");
+  // an invite link (?join=CODE) opens this with the code already in
+  const [joinCode, setJoinCode] = useState(initialCode);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   // public matchmaking: null = not searching
@@ -195,6 +196,7 @@ export function LobbyModal({ onClose }: { onClose: () => void }) {
           <>
             <div className="pvp-code-label">Room code — send it to your friends:</div>
             <div className="pvp-code">{pvp.code}</div>
+            <ShareCode code={pvp.code} />
           </>
         )}
         <div className="lobby-seats">
@@ -233,6 +235,64 @@ export function LobbyModal({ onClose }: { onClose: () => void }) {
         </button>
         {pvp.selfOffline && <div className="pvp-error">📡 Reconnecting…</div>}
       </div>
+    </div>
+  );
+}
+
+/** The link that opens the game with this room's code filled in (on whichever address the
+ *  host plays — the workers.dev mirror shares mirror links). */
+export const inviteLink = (code: string) => `${location.origin}/?join=${code}`;
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // older browsers / no permission: a hidden textarea and the legacy copy command
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+}
+
+/** Copy the code, or share an invite link (the phone's share sheet; copied elsewhere). */
+function ShareCode({ code }: { code: string }) {
+  const [note, setNote] = useState<string | null>(null);
+  const flash = (text: string) => {
+    setNote(text);
+    setTimeout(() => setNote(null), 1800);
+  };
+  const share = async () => {
+    const url = inviteLink(code);
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Digimon Auto Chess", text: `Join my VS lobby — code ${code}`, url });
+        return;
+      } catch {
+        /* cancelled or unavailable: fall back to copying */
+      }
+    }
+    flash((await copyText(url)) ? "Link copied" : "Copy failed");
+  };
+  return (
+    <div className="pvp-share">
+      <button className="action ghost" onClick={async () => flash((await copyText(code)) ? "Code copied" : "Copy failed")}>
+        📋 Copy code
+      </button>
+      <button className="action ghost" onClick={share}>
+        🔗 Share link
+      </button>
+      {note && <span className="pvp-share-note">{note}</span>}
     </div>
   );
 }

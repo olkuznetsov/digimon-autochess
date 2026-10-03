@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types";
-import { FORMS, PLAYABLE_IDS, ROOKIE_IDS, costOf, mergeParts, sellValue } from "./creatures";
+import { FORMS, PLAYABLE_IDS, ROOKIE_IDS, costOf, isTerminal, mergeParts, sellValue } from "./creatures";
 import { makeFighter, stepCombat, SIM_DT, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
 import { BASE_ITEM_IDS, DIGIVICE, FUSED_ITEM_IDS, RARE_ITEM_IDS, fuseResult } from "./items";
@@ -19,7 +19,7 @@ import { duelFighters, ghostFighters, outcomesHash, pveFighters, roundOutcomes, 
 import { augmentOffer, isAugmentRound, MAX_AUGMENTS } from "./augments";
 import { XP_TO_NEXT, MAX_LEVEL } from "./xpView";
 import { sfx, battleSfx } from "../audio/sfx";
-import { BENCH_SLOTS, COLS, ROWS } from "./board";
+import { BENCH_SLOTS, COLS, PLAYER_ROWS, ROWS } from "./board";
 import { net } from "../net/bus";
 import { submitScore } from "../net/leaderboard";
 
@@ -160,11 +160,11 @@ const streakBonus = (streak: number) => {
 function resolveEvolutions(units: Unit[]): {
   units: Unit[];
   pending: PendingEvolution | null;
-  evolved: { from: string; to: string; uid: string }[];
+  evolved: { from: string; to: string; uid: string; star?: number }[];
   spill: string[];
 } {
   let current = units;
-  const evolved: { from: string; to: string; uid: string }[] = [];
+  const evolved: { from: string; to: string; uid: string; star?: number }[] = [];
   const spill: string[] = [];
   // guard against pathological loops
   for (let guard = 0; guard < 64; guard++) {
@@ -211,6 +211,31 @@ function resolveEvolutions(units: Unit[]): {
         spill,
       };
     }
+    if (!acted) {
+      // a Mega has nowhere to digivolve: three of the same star level star it up (★★, ★★★)
+      const stars = new Map<string, Unit[]>();
+      for (const u of current) {
+        if (!isTerminal(u.formId) || (u.star ?? 1) >= 3) continue;
+        const key = `${u.formId}|${u.star ?? 1}`;
+        stars.set(key, [...(stars.get(key) ?? []), u]);
+      }
+      for (const arr of stars.values()) {
+        if (arr.length < 3) continue;
+        const keep = arr.find((u) => u.placement.kind === "board") ?? arr[0];
+        const others = arr.filter((u) => u.uid !== keep.uid).slice(0, 2);
+        const consumed = new Set(others.map((u) => u.uid));
+        const items = [...(keep.items ?? []), ...others.flatMap((u) => u.items ?? [])];
+        spill.push(...items.slice(2));
+        const star = ((keep.star ?? 1) + 1) as 2 | 3;
+        const parts = mergeParts([keep, ...others]);
+        current = current
+          .filter((u) => !consumed.has(u.uid))
+          .map((u) => (u.uid === keep.uid ? { ...u, star, items: items.slice(0, 2), parts } : u));
+        evolved.push({ from: keep.formId, to: keep.formId, uid: keep.uid, star });
+        acted = true;
+        break;
+      }
+    }
     if (!acted) break;
   }
   return { units: current, pending: null, evolved, spill };
@@ -237,7 +262,7 @@ interface GameState {
   selectedItem: string | null;
   inspected: string | null;
   /** the latest digivolution — banner text and the 3D sequence on that unit */
-  evoFlash: { from: string; to: string; uid: string; key: number } | null;
+  evoFlash: { from: string; to: string; uid: string; key: number; star?: number } | null;
   pendingEvolution: PendingEvolution | null;
   phase: Phase;
   result: "win" | "lose" | null;
@@ -443,7 +468,7 @@ function initialState() {
     inventory: [] as string[],
     selectedItem: null as string | null,
     inspected: null as string | null,
-    evoFlash: null as { from: string; to: string; uid: string; key: number } | null,
+    evoFlash: null as { from: string; to: string; uid: string; key: number; star?: number } | null,
     pendingEvolution: null as PendingEvolution | null,
     phase: "prep" as Phase,
     result: null as "win" | "lose" | null,
@@ -481,6 +506,46 @@ function firstEmptyBench(units: Unit[]): number | null {
 }
 
 const boardCount = (units: Unit[]) => units.filter((u) => u.placement.kind === "board").length;
+/** Columns from the middle outwards. */
+const COL_ORDER = Array.from({ length: COLS }, (_, i) => i).sort((a, b) => Math.abs(a - (COLS - 1) / 2) - Math.abs(b - (COLS - 1) / 2) || a - b);
+
+/** Teamfight Tactics: a fight starts with every board slot filled — empty slots take bench
+ *  units, first slot first: tanks and bruisers to the front, assassins a row behind, ranged
+ *  and casters at the back, the middle columns first. */
+function autoFill(units: Unit[], level: number): Unit[] {
+  let out = units;
+  const taken = new Set(
+    units.filter((u) => u.placement.kind === "board").map((u) => {
+      const p = u.placement as { col: number; row: number };
+      return `${p.col},${p.row}`;
+    }),
+  );
+  const bench = units
+    .filter((u) => u.placement.kind === "bench")
+    .sort((a, b) => (a.placement as { slot: number }).slot - (b.placement as { slot: number }).slot);
+  for (const u of bench) {
+    if (boardCount(out) >= boardCap(out, level)) break;
+    const role = FORMS[u.formId].role;
+    const front = PLAYER_ROWS.length - 1;
+    const rows =
+      role === "tank" || role === "bruiser"
+        ? [front, front - 1, front - 2, front - 3]
+        : role === "assassin"
+          ? [front - 1, front, front - 2, front - 3]
+          : [0, 1, 2, 3];
+    let cell: { col: number; row: number } | null = null;
+    for (const row of rows) {
+      for (const col of COL_ORDER) if (!cell && !taken.has(`${col},${row}`)) cell = { col, row };
+      if (cell) break;
+    }
+    if (!cell) break;
+    taken.add(`${cell.col},${cell.row}`);
+    const placed = cell;
+    out = out.map((x) => (x.uid === u.uid ? { ...x, placement: { kind: "board", ...placed } } : x));
+  }
+  return out;
+}
+
 /** How many Digimon may fight: the level, plus one per Digivice on a fielded unit. */
 export const boardCap = (units: Unit[], level: number) =>
   level + units.filter((u) => u.placement.kind === "board").reduce((n, u) => n + (u.items ?? []).filter((i) => i === DIGIVICE).length, 0);
@@ -491,6 +556,7 @@ const wireToUnit = (uid: string, u: PvpBoardUnit): Unit => ({
   formId: u.formId,
   placement: { kind: "board", col: u.col, row: u.row },
   items: u.items ?? [],
+  ...(u.star === 2 || u.star === 3 ? { star: u.star } : {}),
 });
 
 /** Mirror a board cell to the other half (row 0 <-> row 5, col 0 <-> col 5). */
@@ -503,7 +569,7 @@ export function wireBoard(units: Unit[]): PvpBoardUnit[] {
     .filter((u) => u.placement.kind === "board")
     .map((u) => {
       const p = u.placement as { col: number; row: number };
-      return { uid: u.uid, formId: u.formId, col: p.col, row: p.row, items: u.items ?? [] };
+      return { uid: u.uid, formId: u.formId, col: p.col, row: p.row, items: u.items ?? [], ...(u.star ? { star: u.star } : {}) };
     });
 }
 
@@ -669,14 +735,16 @@ export const useGame = create<GameState>((set, get) => ({
   setDrag: (uid, pos) => set({ dragId: uid, dragPos: pos }),
 
   startBattle: () => {
-    const { units, round, runSeed, pendingEvolution } = get();
+    const { round, runSeed, pendingEvolution } = get();
     if (pendingEvolution) return;
+    // empty board slots take bench units, as in Teamfight Tactics
+    const units = autoFill(get().units, get().level);
     const onBoard = units.filter((u) => u.placement.kind === "board");
     if (onBoard.length === 0) return;
 
     const playerFighters: Fighter[] = onBoard.map((u) => {
       const p = u.placement as { col: number; row: number };
-      return makeFighter(u.formId, u.uid, "player", p.col, p.row, 1, u.items ?? []);
+      return makeFighter(u.formId, u.uid, "player", p.col, p.row, 1, u.items ?? [], u.star ?? 1);
     });
 
     applySynergies(playerFighters, onBoard);
@@ -689,6 +757,7 @@ export const useGame = create<GameState>((set, get) => ({
       meter: {},
       result: null,
       viewFlip: false,
+      units,
       boardSnapshot: units,
       fighters: [...playerFighters, ...makeEnemyWave(round, runSeed)],
       corpses: [],
@@ -1113,7 +1182,10 @@ export const useGame = create<GameState>((set, get) => ({
     const c = pvp.snap.carousel;
     const drafting = !!c && c.round === round && !c.done && !carouselPick(c, pvp.seat);
     if ((pendingEvolution || drafting || get().augmentOffer) && !force) return;
-    const board = wireBoard(units);
+    // empty board slots take bench units, as in Teamfight Tactics
+    const filled = autoFill(units, get().level);
+    if (filled !== units) set({ units: filled });
+    const board = wireBoard(filled);
     // an empty board can only go in when the planning timer forces it
     if (board.length === 0 && !force) return;
     net.send?.({ t: "ready", round, board });
@@ -1177,10 +1249,10 @@ export const useGame = create<GameState>((set, get) => ({
     const mine = wireBoard(state.units);
     if (mine.length === 0 || board.length === 0) return;
 
-    const myFighters = mine.map((u) => makeFighter(u.formId, `m_${u.uid}`, "player", u.col, u.row, 1, u.items));
+    const myFighters = mine.map((u) => makeFighter(u.formId, `m_${u.uid}`, "player", u.col, u.row, 1, u.items, u.star ?? 1));
     applySynergies(myFighters, mine.map((u) => wireToUnit(`m_${u.uid}`, u)));
     const ghostFighters = board.map((u, i) =>
-      makeFighter(u.formId, `g_${u.uid ?? i}`, "enemy", mirrorCol(u.col), mirrorRow(u.row), 1, u.items ?? []),
+      makeFighter(u.formId, `g_${u.uid ?? i}`, "enemy", mirrorCol(u.col), mirrorRow(u.row), 1, u.items ?? [], u.star ?? 1),
     );
     applySynergies(ghostFighters, board.map((u, i) => wireToUnit(`g_${u.uid ?? i}`, u)));
 

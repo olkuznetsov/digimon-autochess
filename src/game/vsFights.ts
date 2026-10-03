@@ -27,10 +27,11 @@ const asUnit = (uid: string, u: WireUnit): Unit => ({
   formId: u.formId,
   placement: { kind: "board", col: u.col, row: u.row },
   items: u.items ?? [],
+  ...(u.star === 2 || u.star === 3 ? { star: u.star } : {}),
 });
 
 /** One side of a fight: a board as fighters with its synergies and its player's
- *  combat augments; the away side is mirrored onto rows 3–5. */
+ *  combat augments; the away side is mirrored onto the far half. */
 function side(board: WireUnit[], prefix: string, team: "player" | "enemy", augments: string[] = []): Fighter[] {
   const away = team === "enemy";
   const fighters = board.map((u) =>
@@ -42,6 +43,7 @@ function side(board: WireUnit[], prefix: string, team: "player" | "enemy", augme
       away ? mirrorRow(u.row) : u.row,
       1,
       u.items ?? [],
+      u.star ?? 1,
     ),
   );
   applySynergies(fighters, board.map((u) => asUnit(`${prefix}${u.uid}`, u)));
@@ -49,8 +51,8 @@ function side(board: WireUnit[], prefix: string, team: "player" | "enemy", augme
   return fighters;
 }
 
-/** Two players: `home` on rows 0–2 as "player", `away` mirrored as "enemy". Who acts
- *  first alternates by round, so mirror matches don't always favour the same side. */
+/** Two players: `home` on the near half as "player", `away` mirrored as "enemy". Ticks
+ *  resolve simultaneously (battle.ts), so neither side acts first — a mirror is a draw. */
 export function duelFighters(
   round: number,
   home: number,

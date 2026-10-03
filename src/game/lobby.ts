@@ -300,6 +300,8 @@ export interface WireUnit {
   col: number;
   row: number;
   items: string[];
+  /** a starred Mega (★★ or ★★★) */
+  star?: number;
 }
 
 /** A seat as every client sees it. */

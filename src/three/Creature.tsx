@@ -8,6 +8,9 @@ import { modelFor, tweakFor } from "./models";
 import { angleDelta, newDrive, type UnitDrive } from "./unitDrive";
 import type { Stage } from "../game/types";
 
+/** pip colour by a Mega's star level */
+const STAR_PIP = ["", "#ffd34d", "#bfefff", "#ff7ad9"];
+
 /** model size by stage: the babies are small, a Mega towers */
 const STAGE_SCALE = [0.5, 0.6, 0.75, 1.02, 1.29];
 
@@ -27,6 +30,8 @@ interface CreatureProps {
   boss?: boolean;
   /** size multiplier (bench units sit a little smaller: the slots are tighter) */
   shrink?: number;
+  /** a Mega's star level: gold pips, platinum at ★★, prismatic at ★★★ */
+  star?: number;
   /** materialize in on mount */
   spawn?: boolean;
   /** changes when this unit just digivolved (evoFlash.key) → play the 3D sequence */
@@ -81,6 +86,7 @@ export function Creature({
   dragging = false,
   boss = false,
   shrink = 1,
+  star = 1,
   spawn = false,
   evolveKey,
   itemEmojis,
@@ -267,7 +273,7 @@ export function Creature({
         {Array.from({ length: pipCount }).map((_, i) => (
           <mesh key={i} position={[(i - (pipCount - 1) / 2) * 0.18, 1.2, 0]}>
             <octahedronGeometry args={[0.07]} />
-            <meshStandardMaterial color="#ffd34d" emissive="#ffd34d" emissiveIntensity={2} />
+            <meshStandardMaterial color={STAR_PIP[star] ?? STAR_PIP[1]} emissive={STAR_PIP[star] ?? STAR_PIP[1]} emissiveIntensity={2} />
           </mesh>
         ))}
       </group>
