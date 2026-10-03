@@ -228,6 +228,7 @@ export function Creature({
             depthWrite={false}
           />
         </mesh>
+        {star >= 2 && <StarAura star={star} />}
       </group>
 
       <Suspense fallback={body}>
@@ -417,6 +418,68 @@ function EvoSequence({ color }: { color: string }) {
       <mesh ref={pillar} geometry={pillarGeo} material={mats.pillar} />
       <mesh ref={ring} geometry={ringGeo} material={mats.ring} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.07, 0]} />
       <DataBurst color={color} spread={2.2} rise={1.4} />
+    </group>
+  );
+}
+
+/** A starred Mega's aura: a wide pulsing ring and sparks that circle and rise — platinum at
+ *  ★★; at ★★★ the colour runs through the rainbow and a column of light stands over it.
+ *  Lives in the ground group, so it fades with the unit's deletion. */
+function StarAura({ star }: { star: number }) {
+  const ring = useRef<THREE.MeshBasicMaterial>(null);
+  const column = useRef<THREE.MeshBasicMaterial>(null);
+  const sparks = useRef<THREE.Group>(null);
+  const prism = star >= 3;
+  const count = prism ? 6 : 3;
+  const color = useMemo(() => new THREE.Color(prism ? "#ff7ad9" : "#bfefff"), [prism]);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    if (prism) color.setHSL((t * 0.12) % 1, 0.9, 0.62);
+    if (ring.current) {
+      ring.current.color.copy(color).multiplyScalar(2.2);
+      ring.current.opacity = 0.55 + 0.3 * Math.sin(t * 3.2);
+    }
+    if (column.current) {
+      column.current.color.copy(color).multiplyScalar(1.6);
+      column.current.opacity = 0.12 + 0.06 * Math.sin(t * 2.1);
+    }
+    const g = sparks.current;
+    if (!g) return;
+    g.children.forEach((m, i) => {
+      const a = t * (prism ? 1.6 : 1.1) + (i / count) * Math.PI * 2;
+      const rise = (t * 0.45 + i / count) % 1;
+      m.position.set(Math.cos(a) * 0.55, 0.15 + rise * 1.3, Math.sin(a) * 0.55);
+      m.scale.setScalar(0.6 + 0.4 * Math.sin(rise * Math.PI));
+      ((m as THREE.Mesh).material as THREE.MeshBasicMaterial).color.copy(color).multiplyScalar(2.4);
+    });
+  });
+  return (
+    <group>
+      <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={3}>
+        <ringGeometry args={[0.5, 0.64, 48]} />
+        <meshBasicMaterial ref={ring} transparent depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+      </mesh>
+      {prism && (
+        <mesh position={[0, 1.1, 0]} renderOrder={3}>
+          <cylinderGeometry args={[0.32, 0.5, 2.2, 20, 1, true]} />
+          <meshBasicMaterial
+            ref={column}
+            transparent
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            blending={THREE.AdditiveBlending}
+            toneMapped={false}
+          />
+        </mesh>
+      )}
+      <group ref={sparks}>
+        {Array.from({ length: count }).map((_, i) => (
+          <mesh key={i}>
+            <octahedronGeometry args={[0.045]} />
+            <meshBasicMaterial transparent opacity={0.9} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+          </mesh>
+        ))}
+      </group>
     </group>
   );
 }

@@ -43,6 +43,8 @@ export interface CombatEvent {
   /** cast only: ability name and caster stage (Megas get a cinematic beat) */
   name?: string;
   stage?: number;
+  /** cast only: a starred Mega's star level (bigger, platinum / prismatic visuals) */
+  star?: number;
   /** cast only: who cast it and where their target stood (AoE visuals land there) */
   form?: string;
   team?: "player" | "enemy";
@@ -206,6 +208,7 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], t: Tick)
     ult: ult.fx,
     name: ult.name,
     stage: FORMS[fr.formId]?.stage,
+    ...(fr.star ? { star: fr.star } : {}),
     form: fr.formId,
     team: fr.team,
     toCol: target.col,

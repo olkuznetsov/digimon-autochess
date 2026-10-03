@@ -528,7 +528,9 @@ const hot = (c: string, k: number) => new THREE.Color(c).multiplyScalar(k).getSt
 function CastFxImpl({ fx }: { fx: Fx }) {
   const [cx, cz] = cellToWorld(fx.col, fx.row);
   const [tx, tz] = fx.toCol != null && fx.toRow != null ? cellToWorld(fx.toCol, fx.toRow) : [cx, cz];
-  const c = ATTR_COLOR[fx.attr];
+  // a starred Mega's ultimate: platinum at ★★, prismatic at ★★★
+  const star = fx.star ?? 1;
+  const c = star >= 3 ? "#ff7ad9" : star === 2 ? "#d9f6ff" : ATTR_COLOR[fx.attr];
   const b = useBorn();
   const mega = (fx.stage ?? 3) >= 5;
 
@@ -540,11 +542,11 @@ function CastFxImpl({ fx }: { fx: Fx }) {
     } else if (fx.stage === 4) {
       addTrauma(0.12);
     }
-    spawnSparks(tx, 0.7, tz, c, mega ? 22 : 10, mega ? 1.5 : 1.1);
+    spawnSparks(tx, 0.7, tz, c, (mega ? 22 : 10) * star, mega ? 1.5 : 1.1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const scale = mega ? 1.25 : 1;
+  const scale = (mega ? 1.25 : 1) * (1 + 0.22 * (star - 1));
   switch (fx.ult) {
     case "blast": // AoE nuke on the target — shockwave + light pillar + core flash
       return (
@@ -694,7 +696,8 @@ function UltCallouts({ host }: { host: HTMLDivElement }) {
       if (stage >= 5 && banner.current && now - lastBanner.current > 2.5) {
         lastBanner.current = now;
         const { root, who, name } = banner.current;
-        who.textContent = f.mine === false ? `Enemy ${formName}` : formName;
+        const stars = f.star ? ` ${"★".repeat(f.star)}` : "";
+        who.textContent = f.mine === false ? `Enemy ${formName}${stars}` : `${formName}${stars}`;
         name.textContent = f.name ?? "";
         root.style.setProperty("--accent", color);
         root.className = `ult-banner ${f.mine === false ? "foe" : "mine"}`;
