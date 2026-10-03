@@ -24,7 +24,9 @@ All Digimon models are ripped from Bandai games (primarily *Digimon Story: Cyber
   Renamon, Kyubimon, Taomon, Sakuyamon, Agunimon, BurningGreymon, KaiserGreymon, Lobomon,
   KendoGarurumon, MagnaGarurumon), **set 5** (Salamon, Gatomon, Angewomon, Ophanimon, Silphymon, Devimon,
   Myotismon, LadyDevimon) and the **babies** of the tiered rules (Botamon, Kuramon, Pabumon, Poyomon, Punimon,
-  Koromon, Wanyamon, Tsumemon, Motimon, Yokomon, Tanemon, Bukamon, Tokomon, Nyaromon, Tsunomon) — converted from
+  Koromon, Wanyamon, Tsumemon, Motimon, Yokomon, Tanemon, Bukamon, Tokomon, Nyaromon, Tsunomon) and **set 6** (Betamon,
+  Seadramon, MegaSeadramon, MetalSeadramon, Elecmon, Leomon, Panjyamon, SaberLeomon, Mushroomon, Woodmon, Cherrymon,
+  Puppetmon, Monodramon, Strikedramon, Cyberdramon, Justimon, Lunamon, Lekismon, Crescemon, Dianamon) — converted from
   a purchased copy of *Digimon Story Cyber Sleuth:
   Complete Edition* (Bandai Namco) with MVGLTools by SydMontague and the file readers of Pherakki's
   Blender-Tools-for-DSCS (`scripts/dscs_convert.py`).

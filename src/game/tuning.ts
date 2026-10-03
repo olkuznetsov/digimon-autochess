@@ -70,14 +70,14 @@ export const WAVES = {
    *  one candidate per round, picked by its seed. Candidates are tuned to the same pass
    *  rate on the same 600 bot boards (`npm run runsim` prints "boss candidates"). */
   bosses: [
-    [{ id: "skullsatamon", hp: 1.63, atk: 1.0, adds: 2 }],
+    [{ id: "skullsatamon", hp: 1.6, atk: 1.0, adds: 2 }],
     [
-      { id: "machinedramon", hp: 1.23, atk: 0.83, adds: 3 },
-      { id: "mitamamon", hp: 1.1, atk: 0.61, adds: 3 },
+      { id: "machinedramon", hp: 1.19, atk: 0.82, adds: 3 },
+      { id: "mitamamon", hp: 1.08, atk: 0.6, adds: 3 },
     ],
     [
-      { id: "diaboromon", hp: 3.05, atk: 1.4, adds: 4 },
-      { id: "apollomon", hp: 3.38, atk: 1.1, adds: 4 },
+      { id: "diaboromon", hp: 2.95, atk: 1.38, adds: 4 },
+      { id: "apollomon", hp: 3.27, atk: 1.08, adds: 4 },
     ],
   ] as Omit<BossSpec, "addCount">[][],
   /** endless mode: every 5th round the next of these, all with the same multipliers */

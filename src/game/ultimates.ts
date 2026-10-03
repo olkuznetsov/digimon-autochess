@@ -251,11 +251,32 @@ export const ULTIMATES: Record<string, Ultimate> = {
   angewomon: u("Celestial Arrow", "🏹", "An arrow of holy light for 400% attack.", bolt(4.0)),
   ophanimon: u("Eden's Javelin", "✨", "Javelins of light rain around the target — AoE 185%.", nova(1.85, 1.8)),
   silphymon: u("Static Force", "🌀", "A sphere of energy (290%) that bursts on nearby foes (100%).", smite(2.9, 1.0, 1.6)),
+  // ---- set 6
+  // Deep Savers — Betamon line
+  seadramon: u("Ice Arrow", "🧊", "Ice shards at the 3 nearest (130%).", volley(3, 1.3)),
+  megaseadramon: u("Thunder Javelin", "⚡", "Lightning from its horn crashes around the target — AoE 185%.", nova(1.85, 1.8)),
+  metalseadramon: u("River of Power", "🌊", "A beam from its nose cannon for 400% attack.", bolt(4.0)),
+  // Nature Spirits — Elecmon line
+  leomon: u("Fist of the Beast King", "🦁", "A lion-shaped blast for 260% attack.", bolt(2.6)),
+  panjyamon: u("Fist of the Ice Beast", "❄️", "An ice fist (290%) that chills the foes around (100%).", smite(2.9, 1.0, 1.6)),
+  saberleomon: u("Howling Crusher", "🐆", "A flurry of claws: five strikes (105% each).", barrage(5, 1.05)),
+  // Nightmare Soldiers — Mushroomon line
+  woodmon: u("Branch Drill", "🌳", "A spinning branch for 250% attack.", bolt(2.5)),
+  cherrymon: u("Cherry Bomb", "🍒", "Exploding cherries burst around the target — AoE 185%.", nova(1.85, 1.8)),
+  puppetmon: u("Bullet Hammer", "🔨", "Its hammer fires at the 3 nearest (150%).", volley(3, 1.5)),
+  // Dragon's Roar — Monodramon line
+  strikedramon: u("Strike Fang", "🔥", "A blazing tackle: three strikes (120% each).", barrage(3, 1.2)),
+  cyberdramon: u("Desolation Claw", "🐉", "A claw of pure force (300%) that tears through nearby foes (100%).", smite(3.0, 1.0, 1.6)),
+  justimon: u("Justice Kick", "🦵", "A finishing kick: 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
+  // Wind Guardians — Lunamon line
+  lekismon: u("Tear Arrow", "🏹", "Arrows of moonlit water at the 3 nearest (130%).", volley(3, 1.3)),
+  crescemon: u("Lunatic Dance", "🌙", "A dance of crescent blades: five strikes (105% each).", barrage(5, 1.05)),
+  dianamon: u("Good Night Moon", "🌕", "Moonlight lulls the area to sleep: AoE 120%, frozen for 1.2s.", freeze(1.2, 1.8, 1.2)),
   // Support rally on a couple of casters keeps team comps interesting
   candlemon: u("Ember Rally", "🕯️", "Ignites allies: +30% attack for the battle.", rally(0.3)),
   // rookies whose family synergies fit them badly (or too well) get their own moves
   gomamon: u("Marching Fishes", "🐟", "A school of fish rams the target twice (100% each).", barrage(2, 1.0)),
-  dracomon: u("Baby Breath", "🔥", "A breath of fire for 240% attack.", bolt(2.4)),
+  dracomon: u("Baby Breath", "🔥", "A breath of fire for 220% attack.", bolt(2.2)),
   gabumon: u("Blue Blaster", "🔵", "A blue flame for 290% attack.", bolt(2.9)),
   veemon: u("Vee Headbutt", "💢", "A charging headbutt for 290% attack.", bolt(2.9)),
 };

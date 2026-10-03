@@ -36,12 +36,12 @@ export const FORMS: Record<string, Form> = {
   wanyamon: baby("wanyamon", "Wanyamon", 2, "bruiser", ["dorumon", "gaomon"]),
   tsumemon: baby("tsumemon", "Tsumemon", 2, "assassin", ["keramon", "demidevimon"]),
   motimon: baby("motimon", "Motimon", 2, "caster", ["hagurumon", "tentomon"]),
-  yokomon: baby("yokomon", "Yokomon", 2, "caster", ["biyomon", "wormmon"]),
+  yokomon: baby("yokomon", "Yokomon", 2, "caster", ["biyomon", "wormmon", "elecmon", "mushroomon"]),
   tanemon: baby("tanemon", "Tanemon", 2, "tank", ["palmon", "renamon"]),
-  bukamon: baby("bukamon", "Bukamon", 2, "ranged", ["gomamon"]),
+  bukamon: baby("bukamon", "Bukamon", 2, "ranged", ["gomamon", "betamon"]),
   tokomon: baby("tokomon", "Tokomon", 2, "assassin", ["patamon", "falcomon"]),
-  nyaromon: baby("nyaromon", "Nyaromon", 2, "assassin", ["terriermon", "salamon"]),
-  tsunomon: baby("tsunomon", "Tsunomon", 2, "tank", ["gabumon", "veemon"]),
+  nyaromon: baby("nyaromon", "Nyaromon", 2, "assassin", ["terriermon", "salamon", "lunamon"]),
+  tsunomon: baby("tsunomon", "Tsunomon", 2, "tank", ["gabumon", "veemon", "monodramon"]),
 
   // ============ Agumon — Dragon's Roar (branch at Ultimate) ============
   agumon: f("agumon", "Agumon", 3, "Vaccine", "Dragon's Roar", "bruiser", { evolvesTo: ["greymon", "geogreymon"] }),
@@ -194,6 +194,39 @@ export const FORMS: Record<string, Form> = {
   angewomon: f("angewomon", "Angewomon", 5, "Vaccine", "Wind Guardians", "ranged"),
   ophanimon: f("ophanimon", "Ophanimon", 5, "Vaccine", "Wind Guardians", "caster"),
   silphymon: f("silphymon", "Silphymon", 5, "Data", "Wind Guardians", "bruiser"),
+
+  // ---- set 6: Cyber Sleuth's files again — a line for every family; attributes as the game
+  // has them, except Cyberdramon (Virus) for the triangle
+
+  // ============ Betamon — Deep Savers (Adventure's Seadramon) ============
+  betamon: f("betamon", "Betamon", 3, "Virus", "Deep Savers", "caster", { evolvesTo: ["seadramon"] }),
+  seadramon: f("seadramon", "Seadramon", 4, "Data", "Deep Savers", "ranged", { evolvesTo: ["megaseadramon", "metalseadramon"] }),
+  megaseadramon: f("megaseadramon", "MegaSeadramon", 5, "Data", "Deep Savers", "caster"),
+  metalseadramon: f("metalseadramon", "MetalSeadramon", 5, "Data", "Deep Savers", "ranged"),
+
+  // ============ Elecmon — Nature Spirits (Leomon) ============
+  elecmon: f("elecmon", "Elecmon", 3, "Data", "Nature Spirits", "bruiser", { evolvesTo: ["leomon"] }),
+  leomon: f("leomon", "Leomon", 4, "Vaccine", "Nature Spirits", "bruiser", { evolvesTo: ["panjyamon", "saberleomon"] }),
+  panjyamon: f("panjyamon", "Panjyamon", 5, "Vaccine", "Nature Spirits", "bruiser"),
+  saberleomon: f("saberleomon", "SaberLeomon", 5, "Data", "Nature Spirits", "assassin"),
+
+  // ============ Mushroomon — Nightmare Soldiers (the Dark Masters' Puppetmon) ============
+  mushroomon: f("mushroomon", "Mushroomon", 3, "Virus", "Nightmare Soldiers", "caster", { evolvesTo: ["woodmon"] }),
+  woodmon: f("woodmon", "Woodmon", 4, "Virus", "Nightmare Soldiers", "tank", { evolvesTo: ["cherrymon", "puppetmon"] }),
+  cherrymon: f("cherrymon", "Cherrymon", 5, "Virus", "Nightmare Soldiers", "caster"),
+  puppetmon: f("puppetmon", "Puppetmon", 5, "Virus", "Nightmare Soldiers", "ranged"),
+
+  // ============ Monodramon — Dragon's Roar (Tamers' Cyberdramon) ============
+  monodramon: f("monodramon", "Monodramon", 3, "Vaccine", "Dragon's Roar", "bruiser", { evolvesTo: ["strikedramon"] }),
+  strikedramon: f("strikedramon", "Strikedramon", 4, "Vaccine", "Dragon's Roar", "assassin", { evolvesTo: ["cyberdramon", "justimon"] }),
+  cyberdramon: f("cyberdramon", "Cyberdramon", 5, "Virus", "Dragon's Roar", "bruiser"),
+  justimon: f("justimon", "Justimon", 5, "Vaccine", "Dragon's Roar", "assassin"),
+
+  // ============ Lunamon — Wind Guardians (Olympos XII's Dianamon) ============
+  lunamon: f("lunamon", "Lunamon", 3, "Data", "Wind Guardians", "caster", { evolvesTo: ["lekismon"] }),
+  lekismon: f("lekismon", "Lekismon", 4, "Data", "Wind Guardians", "ranged", { evolvesTo: ["crescemon", "dianamon"] }),
+  crescemon: f("crescemon", "Crescemon", 5, "Data", "Wind Guardians", "assassin"),
+  dianamon: f("dianamon", "Dianamon", 5, "Data", "Wind Guardians", "caster"),
 
   // ============ bosses only ============
   zeed: f("zeed", "ZeedMillenniummon", 5, "Virus", "Nightmare Soldiers", "tank", { bossOnly: true }),

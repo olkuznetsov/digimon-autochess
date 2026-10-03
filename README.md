@@ -13,7 +13,7 @@ for model sources.*
 
 ## What's in it
 
-- **Digimon grow up from babies**: 108 forms on five stages — Fresh → In-Training → Rookie → Champion → Mega —
+- **Digimon grow up from babies**: 128 forms in 30 lines on five stages — Fresh → In-Training → Rookie → Champion → Mega —
   following Digimon Story Cyber Sleuth's own evolution trees, plus 3 wild Digimon in the enemy waves and 4
   boss-only villains. Every one is an animated 3D model, with 82 named signature ultimates (Terra Force, Cocytus
   Breath, Positron Laser…).

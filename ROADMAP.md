@@ -242,6 +242,12 @@ Herissmon, Agunimon, Lobomon) лишаються досяжними.
 
 ## 5. Журнал
 <!-- новіші записи зверху -->
+- **2026-10-03** — Set 6 (Саша: «поповнювати ростер»): п'ять ліній із Cyber Sleuth, по одній на родину, з
+  немовлятами з таблиці гри — Betamon → Seadramon → [MegaSeadramon | MetalSeadramon] (DS, від Bukamon), Elecmon → Leomon →
+  [Panjyamon | SaberLeomon] (NSp, від Yokomon), Mushroomon → Woodmon → [Cherrymon | Puppetmon] (NSo, Dark Masters, від
+  Yokomon), Monodramon → Strikedramon → [Cyberdramon | Justimon] (DR, від Tsunomon; Cyberdramon — Virus для трикутника),
+  Lunamon → Lekismon → [Crescemon | Dianamon] (WG, від Nyaromon — Data у WG). 30 ліній, 128 форм, 135 моделей, 15 ульт.
+  Трикутник rookie 10/10/10. Баланс: нові 46–57%, Dracomon 240→220%; соло з 30 лініями −8% HP босам → 50/46/43%.
 - **2026-10-03** — Зіркові Mega помітні (Саша): аура — пульсуюче кільце й іскри, що кружляють і здіймаються
   (★★ платина; ★★★ — райдужний перелив і світловий стовп), позначки платинові/райдужні, «★★» в імені; ульта
   зіркового — більша (+22% за зірку), платинова/райдужна, іскор ×зірки, банер ульти з «★★★» (`CombatEvent.star`).

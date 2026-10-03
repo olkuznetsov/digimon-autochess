@@ -1,4 +1,4 @@
-# Roster — 93 forms in 25 lines + 3 wild + 4 bosses, 100% real animated models
+# Roster — 128 forms in 30 lines (15 babies included) + 3 wild + 4 bosses, 100% real animated models
 
 Every form has an animated model: source `models-src/<formId>.glb`, shipped (optimized by `npm run optimize-models`) as `public/models/<formId>.glb` (idle/move/attack01… clips
 drive the combat state machine). The roster is deliberately shaped around sourceable models.
@@ -37,6 +37,11 @@ family. Fresh (⛂1): `botamon` → [`koromon` | `wanyamon`], `kuramon` → `tsu
 | Wormmon (3) | `wormmon`(V) | `stingmon`(V) | `banchostingmon`(V) | Wind Guardians |
 | Renamon (3) | `renamon`(D) | `kyubimon`(D) | **[`taomon`(D) \| `sakuyamon`(D)]** | Nature Spirits |
 | Salamon (3) | `salamon`(V) | `gatomon`(V) | **[`angewomon`(V) \| `ophanimon`(V) \| `silphymon`(D)]** | Wind Guardians |
+| Betamon | `betamon`(Vi) | `seadramon`(D) | **[`megaseadramon`(D) \| `metalseadramon`(D)]** | Deep Savers |
+| Elecmon | `elecmon`(D) | `leomon`(V) | **[`panjyamon`(V) \| `saberleomon`(D)]** | Nature Spirits |
+| Mushroomon | `mushroomon`(Vi) | `woodmon`(Vi) | **[`cherrymon`(Vi) \| `puppetmon`(Vi)]** | Nightmare Soldiers |
+| Monodramon | `monodramon`(V) | `strikedramon`(V) | **[`cyberdramon`(Vi) \| `justimon`(V)]** | Dragon's Roar |
+| Lunamon | `lunamon`(D) | `lekismon`(D) | **[`crescemon`(D) \| `dianamon`(D)]** | Wind Guardians |
 | Flamemon (3) | `flamemon`(D) | `aldamon`(D) | `susanoomon`(D) | Dragon's Roar |
 | Guilmon (4) | `guilmon`(Vi) | `growlmon`(Vi) | `gallantmon`(Vi) | Dragon's Roar |
 | Dorumon (4) | `dorumon`(D) | `dorugamon`(D) | `alphamon`(D) | Dragon's Roar |
