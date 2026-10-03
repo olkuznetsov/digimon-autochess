@@ -250,6 +250,8 @@ interface GameState {
   battleSeq: number;
   /** damage dealt / taken per fighter uid this battle */
   meter: Record<string, { dealt: number; taken: number }>;
+  /** the last battle's meter, for the prep view (null before the first battle) */
+  lastMeter: MeterRow[] | null;
   fx: Fx[];
   battleTime: number;
   tick: number;
@@ -360,6 +362,24 @@ function vsRewards(round: number, o: Outcome, streak: number) {
   };
 }
 
+/** One of your units in a damage meter. */
+export interface MeterRow {
+  uid: string;
+  formId: string;
+  dead: boolean;
+  dealt: number;
+  taken: number;
+}
+
+/** Your side of a battle, best damage first (the live meter and the last battle's). */
+export function meterRows(s: { fighters: Fighter[]; corpses: Fighter[]; meter: Record<string, { dealt: number; taken: number }>; viewFlip: boolean }): MeterRow[] {
+  const mine = s.viewFlip ? "enemy" : "player";
+  return [...s.fighters, ...s.corpses]
+    .filter((f) => f.team === mine)
+    .map((f) => ({ uid: f.uid, formId: f.formId, dead: f.hp <= 0, ...(s.meter[f.uid] ?? { dealt: 0, taken: 0 }) }))
+    .sort((a, b) => b.dealt - a.dealt);
+}
+
 /** Our seat in the room (HP, alive, place). */
 export const pvpMe = (pvp: PvpState | null) => pvp?.snap.seats.find((s) => s.seat === pvp.seat) ?? null;
 export const pvpName = (pvp: PvpState | null, seat: number | null | undefined) =>
@@ -432,6 +452,7 @@ function initialState() {
     corpses: [] as Fighter[],
     battleSeq: 0,
     meter: {} as Record<string, { dealt: number; taken: number }>,
+    lastMeter: null as MeterRow[] | null,
     fx: [] as Fx[],
     battleTime: 0,
     tick: 0,
@@ -850,9 +871,11 @@ export const useGame = create<GameState>((set, get) => ({
       !!pvpMe(state.pvp)?.alive &&
       isAugmentRound(state.round + 1) &&
       state.augments.length < MAX_AUGMENTS;
+    const last = meterRows(state);
     set({
       phase: "prep",
       result: null,
+      lastMeter: last.length ? last : state.lastMeter,
       fighters: [],
       corpses: [],
       fx: [],

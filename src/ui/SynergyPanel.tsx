@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from "react";
 import { useGame } from "../game/store";
 import { traitViews } from "../game/synergies";
 import { FORMS } from "../game/creatures";
+import { MeterRows } from "./DamageMeter";
 
 export function SynergyPanel() {
   const phase = useGame((s) => s.phase);
@@ -9,19 +10,40 @@ export function SynergyPanel() {
   // phones show only the active traits until the title is tapped
   const [open, setOpen] = useState(false);
   const [tip, setTip] = useState<string | null>(null);
+  // the same corner shows the last battle's damage on demand
+  const lastMeter = useGame((s) => s.lastMeter);
+  const [tab, setTab] = useState<"syn" | "dmg">("syn");
   if (phase !== "prep") return null;
 
   const views = traitViews(units);
-  if (views.length === 0) return null;
+  if (views.length === 0 && !lastMeter) return null;
   const hidden = views.filter((v) => v.activeIndex < 0).length;
+  const showDmg = tab === "dmg" && !!lastMeter;
 
   return (
-    <div className={`synergies${open ? " open" : ""}`}>
-      <button className="syn-title" onClick={() => setOpen((o) => !o)}>
-        Synergies
-        {hidden > 0 && <span className="syn-toggle">{open ? " ▾" : ` +${hidden} ▸`}</span>}
-      </button>
-      {views.map((v) => {
+    <div className={`synergies${open || showDmg ? " open" : ""}`}>
+      <div className="syn-tabs">
+        <button className={`syn-title${showDmg ? " off" : ""}`} onClick={() => (showDmg ? setTab("syn") : setOpen((o) => !o))}>
+          Synergies
+          {!showDmg && hidden > 0 && <span className="syn-toggle">{open ? " ▾" : ` +${hidden} ▸`}</span>}
+        </button>
+        {lastMeter && (
+          <button
+            className={`syn-title dmg${showDmg ? "" : " off"}`}
+            title="Damage in the last battle"
+            onClick={() => setTab(showDmg ? "syn" : "dmg")}
+          >
+            Damage
+          </button>
+        )}
+      </div>
+      {showDmg && (
+        <div className="syn-dmg">
+          <span className="syn-dmg-note">last battle</span>
+          <MeterRows rows={lastMeter!} />
+        </div>
+      )}
+      {!showDmg && views.map((v) => {
         const active = v.activeIndex >= 0;
         const tier = active ? v.def.tiers[v.activeIndex] : null;
         const nextTier = v.def.tiers.find((t) => t.need > v.count);

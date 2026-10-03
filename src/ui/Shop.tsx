@@ -63,7 +63,8 @@ export function Shop() {
             copies === 0
               ? units
                   .map((u) => u.formId)
-                  .filter((id) => DESCENDANTS[formId]?.has(id))
+                  // a form you're still raising: a finished evolution (Vikemon) needs nothing more
+                  .filter((id) => DESCENDANTS[formId]?.has(id) && (FORMS[id].evolvesTo?.length ?? 0) > 0)
                   .sort((a, b) => FORMS[b].stage - FORMS[a].stage)[0]
               : undefined;
           const line = !!lead;

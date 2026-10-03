@@ -2992,3 +2992,29 @@ html, body {
   color: #ffd34d;
   vertical-align: middle;
 }
+
+/* synergy panel tabs: Synergies | Damage (the last battle, in prep) */
+.syn-tabs {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+.syn-title.off {
+  opacity: 0.45;
+}
+.syn-tabs .syn-title {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.syn-dmg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 170px;
+}
+.syn-dmg-note {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #8893b5;
+}
