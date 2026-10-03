@@ -25,8 +25,10 @@ for model sources.*
   several lines at once.
 - **Synergies as in Cyber Sleuth**: three attributes in a counter triangle (Free babies stand outside it) and the
   game's eight elements — Fire, Water, Plant, Electric, Earth, Wind, Light, Dark — each fighting its own way:
-  attack, mana, regeneration, attack speed, HP, a damage guard, a shield at the start, lifesteal. Two tiers each;
-  Fresh babies have no element until a Digimental gives them one.
+  attack, mana, regeneration, attack speed, HP, a damage guard, a shield at the start, lifesteal. At four of an
+  element it gets a mechanic of its own: Fire burns, Water keeps mana after a cast, Plant grows thorns, Electric
+  chains lightning, Earth holds a last stand, Wind dodges every fourth attack, Light shields the most wounded ally
+  on every cast, Dark halves the enemy's healing. Fresh babies have no element until a Digimental gives them one.
 - **Items**: six base items and the rarer Digitama fuse in pairs — in the tray or right on a Digimon — into 28
   stronger ones: Adventure's Crests, Lightning Coil (every fifth attack strikes everything around the target),
   Spike Shell, Rage Chip, Blue Card…; Digitama + an item makes a **Digimental**, an emblem of an element, and two

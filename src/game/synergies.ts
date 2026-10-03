@@ -1,4 +1,4 @@
-import type { Fighter, Unit } from "./types";
+import type { Fighter, Procs, Unit } from "./types";
 import { FORMS, ATTR_COLOR, ELEMENT_COLOR, ELEMENT_ICON } from "./creatures";
 import { EMBLEM_ELEMENT } from "./items";
 
@@ -19,6 +19,8 @@ export interface TraitTier {
   shieldPct?: number;
   /** lifesteal */
   stealPct?: number;
+  /** the element's own mechanic at its top tier (stacks with the items' procs) */
+  procs?: Partial<Procs>;
 }
 
 export interface TraitDef {
@@ -56,8 +58,9 @@ const ATTRIBUTE_TRAITS: TraitDef[] = [
 
 // Element traits (Cyber Sleuth's elements, the origin axis): two tiers each — 2 different
 // members for a taste, 4 for the full bonus (a line's forms count separately). Each
-// element plays its own way; the common ones (Fire) give a little less, the rare one
-// (Earth) a little more.
+// element plays its own way, and at 4 it gets a mechanic of its own: Fire burns, Water
+// keeps mana, Plant has thorns, Electric chains lightning, Earth holds a last stand, Wind
+// dodges, Light shields an ally on every cast, Dark wounds healing.
 const el = (key: "Fire" | "Water" | "Plant" | "Electric" | "Earth" | "Wind" | "Light" | "Dark", tiers: TraitTier[]): TraitDef => ({
   key,
   name: `${ELEMENT_ICON[key]} ${key}`,
@@ -68,35 +71,45 @@ const el = (key: "Fire" | "Water" | "Plant" | "Electric" | "Earth" | "Wind" | "L
 const ELEMENT_TRAITS: TraitDef[] = [
   el("Fire", [
     { need: 2, desc: "+12% attack", atkPct: 0.12 },
-    { need: 4, desc: "+30% attack", atkPct: 0.3 },
+    { need: 4, desc: "+22% attack; attacks set the target burning: 10% of attack a second for 3 s", atkPct: 0.22, procs: { burn: 0.1 } },
   ]),
   el("Water", [
-    { need: 2, desc: "+30% mana gain", manaPct: 0.3 },
-    { need: 4, desc: "+70% mana gain", manaPct: 0.7 },
+    { need: 2, desc: "+20% mana gain", manaPct: 0.2 },
+    { need: 4, desc: "+24% mana gain; keeps 25% of its mana after casting", manaPct: 0.24, procs: { castRefund: 0.25 } },
   ]),
   el("Plant", [
     { need: 2, desc: "regenerate 1.5% max HP a second", regenPct: 0.015 },
-    { need: 4, desc: "regenerate 3.5% max HP a second", regenPct: 0.035 },
+    { need: 4, desc: "regenerate 2% max HP a second; thorns: attackers take 15% of the damage back", regenPct: 0.02, procs: { reflect: 0.15 } },
   ]),
   el("Electric", [
-    { need: 2, desc: "+18% attack speed", asPct: 0.18 },
-    { need: 4, desc: "+40% attack speed", asPct: 0.4 },
+    { need: 2, desc: "+15% attack speed", asPct: 0.15 },
+    {
+      need: 4,
+      desc: "+20% attack speed; every 4th attack, lightning strikes the target and the enemies around it (60%)",
+      asPct: 0.2,
+      procs: { chainEvery: 4, chainFactor: 0.6 },
+    },
   ]),
   el("Earth", [
-    { need: 2, desc: "+22% max HP", hpPct: 0.22 },
-    { need: 4, desc: "+48% max HP", hpPct: 0.48 },
+    { need: 2, desc: "+15% max HP", hpPct: 0.15 },
+    { need: 4, desc: "+16% max HP; the first time below 40% HP: a shield of 16% max HP", hpPct: 0.16, procs: { rescue: 0.16 } },
   ]),
   el("Wind", [
-    { need: 2, desc: "ignore 12% of incoming damage", guardPct: 0.12 },
-    { need: 4, desc: "ignore 26% of incoming damage", guardPct: 0.26 },
+    { need: 2, desc: "ignore 10% of incoming damage", guardPct: 0.1 },
+    { need: 4, desc: "ignore 14% of incoming damage; dodges every 4th attack", guardPct: 0.14, procs: { dodgeEvery: 4 } },
   ]),
   el("Light", [
-    { need: 2, desc: "a shield of 18% max HP when battle starts", shieldPct: 0.18 },
-    { need: 4, desc: "a shield of 40% max HP when battle starts", shieldPct: 0.4 },
+    { need: 2, desc: "a shield of 12% max HP when battle starts", shieldPct: 0.12 },
+    {
+      need: 4,
+      desc: "a shield of 16% max HP when battle starts; every cast shields the most wounded ally for 20% of its max HP",
+      shieldPct: 0.16,
+      procs: { blessing: 0.2 },
+    },
   ]),
   el("Dark", [
     { need: 2, desc: "15% lifesteal", stealPct: 0.15 },
-    { need: 4, desc: "32% lifesteal", stealPct: 0.32 },
+    { need: 4, desc: "18% lifesteal; its hits halve the target's healing for 5 s", stealPct: 0.18, procs: { wounding: 5 } },
   ]),
 ];
 
@@ -164,6 +177,22 @@ export function traitViews(units: Unit[]): TraitView[] {
     });
 }
 
+/** An element's mechanic onto a fighter, stacking sensibly with what its items gave it. */
+function addProcs(f: Fighter, add: Partial<Procs>) {
+  const p = (f.procs ??= {});
+  if (add.burn) p.burn = Math.max(p.burn ?? 0, add.burn);
+  if (add.castRefund) p.castRefund = Math.min(0.7, (p.castRefund ?? 0) + add.castRefund);
+  if (add.reflect) p.reflect = (p.reflect ?? 0) + add.reflect;
+  if (add.chainEvery) {
+    p.chainEvery = Math.min(p.chainEvery ?? Infinity, add.chainEvery);
+    p.chainFactor = Math.max(p.chainFactor ?? 0, add.chainFactor ?? 1);
+  }
+  if (add.rescue) p.rescue = Math.min(0.7, (p.rescue ?? 0) + add.rescue);
+  if (add.dodgeEvery) p.dodgeEvery = Math.min(p.dodgeEvery ?? Infinity, add.dodgeEvery);
+  if (add.blessing) p.blessing = (p.blessing ?? 0) + add.blessing;
+  if (add.wounding) p.wounding = Math.max(p.wounding ?? 0, add.wounding);
+}
+
 /** Apply active synergy buffs to the player's fighters (mutates them).
  *  A trait only buffs the units that belong to it (Vaccine buffs Vaccine units,
  *  Fire buffs Fire units) — so committing to a trait matters. */
@@ -186,6 +215,7 @@ export function applySynergies(fighters: Fighter[], units: Unit[]): void {
       if (t.regenPct) f.regen += t.regenPct;
       if (t.guardPct) f.dmgReduction = Math.min(0.5, f.dmgReduction + t.guardPct);
       if (t.stealPct) f.lifesteal += t.stealPct;
+      if (t.procs) addProcs(f, t.procs);
     }
   }
   for (const f of fighters) {

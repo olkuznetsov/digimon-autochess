@@ -862,6 +862,17 @@ body,
 .dmgn.heavy {
   -webkit-text-stroke: 4px rgba(8, 10, 22, 0.95);
 }
+/* Fire's burn ticking */
+.dmgn.burn {
+  color: #ff7a3d;
+  text-shadow: 0 0 8px rgba(255, 90, 30, 0.7), 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+/* Wind's dodge */
+.dmgn.miss {
+  color: #c8fff2;
+  font-style: italic;
+  letter-spacing: 0.04em;
+}
 
 .fx-flash {
   position: absolute;

@@ -119,6 +119,15 @@ export function battleSfx(e: CombatEvent) {
     if (allow("death", 140)) deletion();
     return;
   }
+  // Wind's dodge: a whoosh; Fire's burn: a soft crackle
+  if (e.tag === "miss") {
+    if (allow("miss", 140)) noise(0.06, { filter: "highpass", freq: 2600, vol: 0.05 });
+    return;
+  }
+  if (e.tag === "burn") {
+    if (allow("burn", 220)) noise(0.05, { filter: "bandpass", freq: 900, vol: 0.05 });
+    return;
+  }
   // an ultimate's own hits are carried by its stinger — just a light tick
   if (e.ability) {
     if (allow("ability", 90)) noise(0.05, { freq: 1600, vol: 0.1 });

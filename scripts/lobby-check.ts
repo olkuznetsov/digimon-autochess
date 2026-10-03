@@ -27,7 +27,7 @@ import { VS, isCarouselRound, makeVsWave, vsRoundKind, vsStageDamage } from "../
 import { ITEMS } from "../src/game/items";
 import { AUGMENT_IDS, augmentOffer } from "../src/game/augments";
 import { roundOutcomes } from "../src/game/vsFights";
-import { PLAYABLE_IDS } from "../src/game/creatures";
+import { FORMS, PLAYABLE_IDS } from "../src/game/creatures";
 import { COLS, PLAYER_ROWS } from "../src/game/board";
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.split("=")));
@@ -191,6 +191,38 @@ console.log("augments: a mirror duel is a draw; 3 combat augments win it");
   }
   if (unfair) fail(`${unfair} of 600 mirror duels had a winner`);
   console.log("fairness: 300 random boards × 2 rounds against their own mirror — all draws");
+
+  // element mechanics at their top tier (burns, dodges, blessings, thorns…) stay symmetric too
+  let unfairEl = 0;
+  const ELEMENTS = ["Fire", "Water", "Plant", "Electric", "Earth", "Wind", "Light", "Dark"];
+  for (const el of ELEMENTS) {
+    const mine = forms.filter((id) => FORMS[id].element === el && FORMS[id].stage >= 2);
+    for (let i = 0; i < 30; i++) {
+      const pool = [...mine];
+      const picked: string[] = [];
+      while (picked.length < 4 && pool.length) picked.push(pool.splice(Math.floor(rand() * pool.length), 1)[0]);
+      while (picked.length < 6) picked.push(forms[Math.floor(rand() * forms.length)]);
+      const cells = new Set<string>();
+      const board = [];
+      for (const formId of picked) {
+        let col = 0;
+        let row = 0;
+        do {
+          col = Math.floor(rand() * COLS);
+          row = Math.floor(rand() * PLAYER_ROWS.length);
+        } while (cells.has(`${col},${row}`));
+        cells.add(`${col},${row}`);
+        const its = rand() < 0.5 ? [items[Math.floor(rand() * items.length)]] : [];
+        board.push({ uid: `u${board.length}`, formId, col, row, items: its });
+      }
+      for (const round of [3, 4]) {
+        const r = roundOutcomes(round, { round, pairs: [[0, 1]], ghost: null }, { 0: board, 1: board }, [0, 1]);
+        if (r.some((o) => o.won)) unfairEl++;
+      }
+    }
+  }
+  if (unfairEl) fail(`${unfairEl} of 480 element-mechanic mirror duels had a winner`);
+  console.log("fairness: 240 boards with four of an element (their mechanics on) against their mirror — all draws");
 }
 
 // the room's variant picks each boss round's boss: the same on every client, every

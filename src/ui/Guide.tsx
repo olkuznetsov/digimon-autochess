@@ -389,8 +389,10 @@ function Synergies() {
         <h3>Synergies</h3>
         <p>
           Different Digimon of the same attribute or element on the board unlock a bonus (copies of one form count once).
-          The elements are Cyber Sleuth's eight, each with its own way to fight. Free babies count for no attribute, and
-          Fresh ones have no element yet — unless a Digimental gives them one.
+          The elements are Cyber Sleuth's eight, each with its own way to fight — and at 4 each gets a mechanic of its
+          own: Fire burns, Water keeps mana, Plant grows thorns, Electric chains lightning, Earth holds a last stand,
+          Wind dodges, Light shields a wounded ally, Dark wounds healing. Free babies count for no attribute, and Fresh
+          ones have no element yet — unless a Digimental gives them one.
         </p>
         <div className="syn-grid">
           {TRAITS.map((t) => {

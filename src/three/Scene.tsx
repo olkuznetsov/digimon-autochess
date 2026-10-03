@@ -249,6 +249,7 @@ function BattleUnit({ uid }: { uid: string }) {
       if (lost >= f.maxHp * 0.14) d.heavyHitKey++;
     }
     d.stunned = f.stunned > 0;
+    d.burning = (f.burnLeft ?? 0) > 0;
     d.dead = dead;
     d.win = s.phase === "result" && !dead;
     d.hpFrac = Math.max(0, f.hp) / f.maxHp;

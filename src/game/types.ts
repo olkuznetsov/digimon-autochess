@@ -107,6 +107,11 @@ export interface Fighter {
   procs?: Procs;
   /** seconds its healing stays halved (Black Gear) */
   wounded?: number;
+  /** Fire's burn on it: damage a second, seconds left, the burner's uid, time to the next pulse */
+  burnDps?: number;
+  burnLeft?: number;
+  burnSrc?: string;
+  burnPulse?: number;
   /** a Mega's star level (stats baked in by makeFighter; the pips show it) */
   star?: number;
 }
@@ -139,10 +144,17 @@ export interface Procs {
   ccImmune?: number;
   /** Black Gear: seconds of halved healing its hits leave */
   wounding?: number;
+  /** Fire: its attacks set the target burning for this share of its attack a second (3 s) */
+  burn?: number;
+  /** Wind: every dodgeEvery-th moment it's attacked, the attacks miss */
+  dodgeEvery?: number;
+  /** Light: every cast shields the most wounded ally for this share of its own max HP */
+  blessing?: number;
   // running state
   attacks?: number;
   ramped?: number;
   braved?: number;
+  dodgeCount?: number;
 }
 
 export type Phase = "prep" | "battle" | "result";

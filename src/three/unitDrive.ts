@@ -24,6 +24,8 @@ export interface UnitDrive {
   heavyHitKey: number;
   /** frozen by an ultimate */
   stunned: boolean;
+  /** set on fire (Fire's top tier) */
+  burning: boolean;
   dead: boolean;
   win: boolean;
   /** bump to play a materialize-in (battle start, digivolution) */
@@ -48,6 +50,7 @@ export function newDrive(x = 0, z = 0, yaw = 0): UnitDrive {
     hitKey: 0,
     heavyHitKey: 0,
     stunned: false,
+    burning: false,
     dead: false,
     win: false,
     spawnKey: 0,

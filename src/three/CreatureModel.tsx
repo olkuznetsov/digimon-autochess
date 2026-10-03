@@ -25,6 +25,7 @@ interface Props {
 const CONTACT = 0.4;
 const WHITE = new THREE.Color("#ffffff");
 const ICE = new THREE.Color("#7fe9ff");
+const EMBER = new THREE.Color("#ff5a1f");
 
 type Mode = "loco" | "attack" | "cast" | "hit" | "win" | "dead";
 
@@ -148,9 +149,12 @@ export function CreatureModel({ url, tweak, drive, color, spawnOnMount, onDissol
     flash.current = Math.max(0, flash.current - dt * 12);
     knock.current = Math.max(0, knock.current - dt * 9);
     sinceFlash.current += dt;
-    const tint = d.stunned && !d.dead ? 0.3 : 0;
+    // frozen: an icy tint; burning: a flickering ember glow
+    const ice = d.stunned && !d.dead ? 0.3 : 0;
+    const ember = !ice && d.burning && !d.dead ? 0.16 + 0.07 * Math.sin(juice.now * 9) : 0;
+    const tint = Math.max(ice, ember);
     const f = Math.max(flash.current * 0.45, tint);
-    const fc = flash.current * 0.45 >= tint ? WHITE : ICE;
+    const fc = flash.current * 0.45 >= tint ? WHITE : ice ? ICE : EMBER;
     if (dissolveDir.current !== 0) {
       dissolve.current = THREE.MathUtils.clamp(
         dissolve.current + dissolveDir.current * dt * (dissolveDir.current > 0 ? 1.35 : 2.2),

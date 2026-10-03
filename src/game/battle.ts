@@ -57,6 +57,8 @@ export interface CombatEvent {
   /** hit only: attacker and target uids (damage meter) */
   src?: string;
   tgt?: string;
+  /** hit only: a burn pulse (Fire) or a dodged attack (Wind) */
+  tag?: "burn" | "miss";
 }
 
 /** Build a combat-ready Fighter from a form. Used by the store and the balance sim. */
@@ -117,6 +119,9 @@ const dist = (a: Fighter, b: Fighter) => {
 const RETARGET_MARGIN = 0.5;
 /** Lightning Coil's reach around the struck target (cells). */
 const CHAIN_RADIUS = 1.6;
+/** Fire's burn: how long it lasts, and how often it bites (seconds). */
+const BURN_TIME = 3;
+const BURN_PULSE = 1;
 
 /** Item mechanics as multipliers at the moment of the hit, so they never fight other
  *  buffs over the stat itself (a rally ultimate raises `attack` mid-fight). */
@@ -145,6 +150,8 @@ interface Hit {
   ability: boolean;
   /** the attacker's lifesteal as it struck (a siphon raises it for its own hits) */
   ls: number;
+  /** a burn pulse: no mana, no on-hit effects */
+  tag?: "burn";
 }
 
 /**
@@ -217,6 +224,7 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], t: Tick)
   fr.castKey++;
   if (fr.castShield > 0) add(t.shields, fr, fr.maxHp * fr.castShield);
   if (fr.procs?.castHeal) add(t.heals, fr, fr.maxHp * fr.procs.castHeal);
+  if (fr.procs?.blessing) bless(fr, fr.procs.blessing, fighters, t);
   const ctx: UltCtx = {
     caster: fr,
     target,
@@ -236,6 +244,21 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], t: Tick)
   ult.cast(ctx);
 }
 
+/** Light: a shield for the most wounded ally (the caster too) as the tick began; equal
+ *  shares go the same way on both sides of a mirror. */
+function bless(fr: Fighter, share: number, fighters: Fighter[], t: Tick) {
+  let low: Fighter | null = null;
+  for (const f of fighters) {
+    if (f.team !== fr.team || f.hp <= 0) continue;
+    const r = f.hp / f.maxHp;
+    const lr = low ? low.hp / low.maxHp : Infinity;
+    if (r < lr - 1e-12 || (low && r <= lr + 1e-12 && preferred(fr, f, low))) low = f;
+  }
+  if (!low) return;
+  add(t.shields, low, fr.maxHp * share);
+  procFx(low, low, "guard", t.events);
+}
+
 /** Damage through shields — a tick's total for a target at once, so hit order can't matter. */
 function absorb(f: Fighter, total: number) {
   let dmg = total;
@@ -247,7 +270,7 @@ function absorb(f: Fighter, total: number) {
   f.hp -= dmg;
 }
 
-const hitEvent = (h: { src: Fighter; tgt: Fighter; amount: number; mult: number; ability: boolean }): CombatEvent => ({
+const hitEvent = (h: { src: Fighter; tgt: Fighter; amount: number; mult: number; ability: boolean; tag?: "burn" | "miss" }): CombatEvent => ({
   kind: "hit",
   col: h.tgt.col,
   row: h.tgt.row,
@@ -261,6 +284,7 @@ const hitEvent = (h: { src: Fighter; tgt: Fighter; amount: number; mult: number;
   ability: h.ability,
   src: h.src.uid,
   tgt: h.tgt.uid,
+  ...(h.tag ? { tag: h.tag } : {}),
 });
 
 /** Apply a tick: shields, buffs and freezes first; then every hit at once (a lethal total
@@ -273,6 +297,25 @@ function resolve(fighters: Fighter[], t: Tick) {
   for (const [f, m] of t.buffs) f.attack = Math.round(f.attack * m);
   for (const [f, s] of t.stuns) if (!((f.procs?.ccImmune ?? 0) > 0)) f.stunned = Math.max(f.stunned, s); // Holy Ring
 
+  // Wind: a dodger counts the moments it's attacked; every dodgeEvery-th, those attacks miss
+  const dodging = new Set<Fighter>();
+  for (const h of t.hits) {
+    const p = h.tgt.procs;
+    if (h.ability || h.tag || !p?.dodgeEvery || dodging.has(h.tgt) || h.tgt.hp <= 0) continue;
+    dodging.add(h.tgt);
+  }
+  for (const f of dodging) {
+    const p = f.procs!;
+    p.dodgeCount = (p.dodgeCount ?? 0) + 1;
+    if (p.dodgeCount % p.dodgeEvery! !== 0) dodging.delete(f);
+  }
+  if (dodging.size > 0)
+    t.hits = t.hits.filter((h) => {
+      if (h.ability || h.tag || !dodging.has(h.tgt)) return true;
+      events?.push(hitEvent({ ...h, amount: 0, tag: "miss" }));
+      return false;
+    });
+
   const taken = new Map<Fighter, number>();
   for (const h of t.hits) add(taken, h.tgt, h.amount);
   const share = new Map<Fighter, number>();
@@ -283,7 +326,19 @@ function resolve(fighters: Fighter[], t: Tick) {
   }
   for (const h of t.hits) {
     events?.push(hitEvent(h));
+    if (h.tag) continue; // a burn pulse: damage only
     h.tgt.mana = Math.min(h.tgt.maxMana, h.tgt.mana + MANA_PER_HIT_TAKEN * h.tgt.manaMult);
+    // Fire: an attack sets the target burning (the strongest burn holds; a new one renews it)
+    const burn = h.src.procs?.burn;
+    if (burn && !h.ability && h.tgt.hp > 0) {
+      const dps = h.src.attack * atkMult(h.src) * burn;
+      if (!((h.tgt.burnLeft ?? 0) > 0) || dps >= (h.tgt.burnDps ?? 0)) {
+        if (!((h.tgt.burnLeft ?? 0) > 0)) h.tgt.burnPulse = 0;
+        h.tgt.burnDps = dps;
+        h.tgt.burnSrc = h.src.uid;
+      }
+      h.tgt.burnLeft = BURN_TIME;
+    }
     if (h.src.procs?.wounding) h.tgt.wounded = Math.max(h.tgt.wounded ?? 0, h.src.procs.wounding);
     if (h.tgt.procs?.courage) brave(h.tgt);
     if (h.ls > 0) add(t.heals, h.src, h.amount * share.get(h.tgt)! * h.ls);
@@ -345,6 +400,15 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
     if (fr.hp <= 0) continue;
     if (fr.regen > 0) add(t.heals, fr, fr.maxHp * fr.regen * dt);
     if (fr.wounded) fr.wounded = Math.max(0, fr.wounded - dt);
+    if ((fr.burnLeft ?? 0) > 0) {
+      fr.burnLeft = Math.max(0, fr.burnLeft! - dt);
+      fr.burnPulse = (fr.burnPulse ?? 0) + dt;
+      if (fr.burnPulse >= BURN_PULSE - 1e-9) {
+        fr.burnPulse -= BURN_PULSE;
+        const src = fighters.find((x) => x.uid === fr.burnSrc) ?? fr;
+        t.hits.push({ src, tgt: fr, amount: fr.burnDps! * BURN_PULSE * (1 - fr.dmgReduction), mult: 1, ability: true, ls: 0, tag: "burn" });
+      }
+    }
     if (fr.procs?.ccImmune) fr.procs.ccImmune = Math.max(0, fr.procs.ccImmune - dt);
     fr.cooldown = Math.max(0, fr.cooldown - dt);
     // frozen units can't move, attack, or cast until the stun wears off

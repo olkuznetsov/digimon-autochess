@@ -162,7 +162,7 @@ export const ULTIMATES: Record<string, Ultimate> = {
   angemon: u("Hand of Fate", "🌟", "A holy beam at the 3 nearest (135%).", volley(3, 1.35)),
   magnaangemon: u("Gate of Destiny", "⚔️", "Banishes a weakened foe — 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
   // Dracomon line
-  coredramon: u("Blue Flare Breath", "🔥", "A dragon-fire blast for 255%.", bolt(2.55)),
+  coredramon: u("Blue Flare Breath", "🔥", "A dragon-fire blast for 240%.", bolt(2.4)),
   breakdramon: u("Giga Drill", "🩸", "Braces behind a 5% team shield.", bulwark(0.05, true)),
   // Keramon line
   infermon: u("Cable Crusher", "🕸️", "Three savage strikes that feed it (135% each, 35% lifesteal).", siphon(3, 1.35, 0.35)),
@@ -277,7 +277,7 @@ export const ULTIMATES: Record<string, Ultimate> = {
   candlemon: u("Ember Rally", "🕯️", "Ignites allies: +30% attack for the battle.", rally(0.3)),
   // rookies whose element synergies fit them badly (or too well) get their own moves
   gomamon: u("Marching Fishes", "🐟", "A school of fish rams the target twice (100% each).", barrage(2, 1.0)),
-  dracomon: u("Baby Breath", "🔥", "A breath of fire for 205% attack.", bolt(2.05)),
+  dracomon: u("Baby Breath", "🔥", "A breath of fire for 190% attack.", bolt(1.9)),
   gabumon: u("Blue Blaster", "🔵", "A blue flame for 290% attack.", bolt(2.9)),
   veemon: u("Vee Headbutt", "💢", "A charging headbutt for 290% attack.", bolt(2.9)),
 };

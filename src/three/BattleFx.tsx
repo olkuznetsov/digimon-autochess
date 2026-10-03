@@ -266,7 +266,7 @@ function DamageNumbers({ host }: { host: HTMLDivElement }) {
       const [x, z] = cellToWorld(f.col, f.row);
       const amount = Math.round(f.amount ?? 0);
       const mult = f.mult ?? 1;
-      const variant = f.ability ? "abil" : mult >= 1.1 ? "se" : mult <= 0.9 ? "res" : "";
+      const variant = f.tag ?? (f.ability ? "abil" : mult >= 1.1 ? "se" : mult <= 0.9 ? "res" : "");
       // simultaneous hits on one unit stack upward instead of printing over each other
       const bx = x + f.jx;
       const bz = z + f.jz;
@@ -280,9 +280,11 @@ function DamageNumbers({ host }: { host: HTMLDivElement }) {
       slot.y = 1.45 + Math.min(stack, 4) * 0.32;
       slot.z = bz;
       slot.drift = (Math.random() - 0.5) * 26;
-      slot.size = Math.min(2.1, (0.85 + Math.log10(Math.max(10, amount)) * 0.28) * (f.ability ? 1.3 : 1) * (f.heavy ? 1.12 : 1) * (variant === "res" ? 0.85 : 1));
+      slot.size = f.tag
+        ? 0.85
+        : Math.min(2.1, (0.85 + Math.log10(Math.max(10, amount)) * 0.28) * (f.ability ? 1.3 : 1) * (f.heavy ? 1.12 : 1) * (variant === "res" ? 0.85 : 1));
       slot.el.className = `dmgn ${variant}${f.heavy ? " heavy" : ""}`;
-      slot.el.textContent = variant === "se" ? `${amount}!` : `${amount}`;
+      slot.el.textContent = f.tag === "miss" ? "miss" : variant === "se" ? `${amount}!` : `${amount}`;
     }
     if (seen.current.size > 400) seen.current = new Set(fx.map((f) => f.id));
 
@@ -736,8 +738,20 @@ function UltCallouts({ host }: { host: HTMLDivElement }) {
   return null;
 }
 
+/** A burn pulse or a dodge: a few embers or wisps — no impact ring, no shot. */
+function TagSparks({ fx }: { fx: Fx }) {
+  useEffect(() => {
+    const [x, z] = cellToWorld(fx.col, fx.row);
+    if (fx.tag === "burn") spawnSparks(x + fx.jx * 0.4, 0.55, z + fx.jz * 0.4, "#ff6a3d", 4, 0.55);
+    else spawnSparks(x, 0.9, z, "#c8fff2", 3, 0.45);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+}
+
 const ShotM = memo(Shot);
 const ImpactM = memo(Impact);
+const TagSparksM = memo(TagSparks);
 const DeathRingM = memo(DeathRing);
 
 /** One DOM overlay for numbers, callouts and the flash, stacked over the canvas. */
@@ -765,7 +779,9 @@ export function BattleFx() {
       <UltCallouts host={host} />
       <ScreenFlash host={host} />
       {fx.map((f) =>
-        f.kind === "hit" ? (
+        f.kind === "hit" && f.tag ? (
+          <TagSparksM key={f.id} fx={f} />
+        ) : f.kind === "hit" ? (
           <group key={f.id}>
             {f.ranged && <ShotM fx={f} />}
             <ImpactM fx={f} />
