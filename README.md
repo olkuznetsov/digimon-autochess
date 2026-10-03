@@ -1,8 +1,9 @@
 # Digimon Auto Chess
 
-A browser auto battler in the Teamfight Tactics mould, themed on Digimon: buy rookies, merge three copies into a
-Champion and then a Mega — choosing the branch at each step — and watch your team fight in a neon Digital World.
-Plays on desktop and phones. **Live: <https://digimon-autochess.pages.dev>**
+A browser auto battler in the Teamfight Tactics mould, themed on Digimon: raise your partners from babies —
+Botamon → Koromon → Agumon, Guilmon or Dracomon → … — merging three copies into the next stage and choosing the
+branch at each step, then watch your team fight in a neon Digital World. Plays on desktop and phones.
+**Live: <https://digimon-autochess.pages.dev>**
 
 ![Five Mega Digimon on the holographic board](public/og.jpg)
 
@@ -11,30 +12,38 @@ for model sources.*
 
 ## What's in it
 
-- **Digimon grow up from babies**: 108 forms on five stages — Fresh → In-Training → Rookie → Champion → Mega,
-  straight from Cyber Sleuth's evolution trees (Botamon → Koromon → Agumon, Guilmon or Dracomon …) — plus 3 wild
-  Digimon in the enemy waves and 4 boss-only villains, every one an animated 3D model, with 82 named signature
-  ultimates (Terra Force, Cocytus Breath, Positron Laser…). Boss rounds draw from candidates, so runs differ.
-- **TFT-style tiers where the price is the stage** (⛂1 Fresh … ⛂5 Mega), levels 1–10 with level-based shop odds,
-  and **discovery**: a Champion or Mega shows up in your shop only once you've raised one yourself that game.
-- **Synergies** (three attributes in a counter triangle, five families with two tiers each), **items** that
-  fuse in pairs into 28 stronger ones (Adventure's Crests, Lightning Coil …; Digitama + an item = a Digimental, an emblem of a family; two Digitama = a Digivice, one more Digimon on the board) plus relics against freezes and healing, boss rounds, a 15-round run plus endless mode.
+- **Digimon grow up from babies**: 108 forms on five stages — Fresh → In-Training → Rookie → Champion → Mega —
+  following Digimon Story Cyber Sleuth's own evolution trees, plus 3 wild Digimon in the enemy waves and 4
+  boss-only villains. Every one is an animated 3D model, with 82 named signature ultimates (Terra Force, Cocytus
+  Breath, Positron Laser…).
+- **Tiers where the price is the stage**: ⛂1 Fresh … ⛂5 Mega, levels 1–10 with level-based shop odds (hover the
+  odds over the shop for the detail), and **discovery**: a Champion or Mega shows up in your shop only once you've
+  raised one yourself that game. Raise or buy — that's the economy.
+- **Synergies**: three attributes in a counter triangle and five families with two tiers each; babies have
+  neither until a Digimental gives them a family.
+- **Items**: six base items and the rarer Digitama fuse in pairs — in the tray or right on a Digimon — into 28
+  stronger ones: Adventure's Crests, Lightning Coil (every fifth attack strikes everything around the target),
+  Spike Shell, Rage Chip, Blue Card…; Digitama + an item makes a **Digimental**, an emblem of a family, and two
+  Digitama make a **Digivice**, one more Digimon on the board. Relics with no recipe counter freezes and healing.
+- **Solo run**: a boss every fifth round, drawn from candidates so runs differ; beat round 15 to win, then keep
+  going in endless mode.
 - **VS for 2–8 players** — with friends over a 4-letter room code, or with strangers through a public
   matchmaking queue — in Teamfight Tactics' round rhythm: a round-robin of opponents (a ghost copy of someone's
   board for the odd one out), stages of five rounds with wild-Digimon rounds, a carousel item draft every stage
   (lowest HP picks first), three augment picks per match, a shared unit pool (what one player collects the
-  others can't), a boss every tenth round, loss damage that grows by stage, a planning timer, live scouting of
-  any player's board, knockouts, places 1–8 and a rating. Reconnects survive a phone switching apps; play again
-  in the same room.
-- **Leaderboard and ghost battles** against other players' saved boards.
+  others can't — a merged Digimon holds every copy that went into it), a boss every tenth round, loss damage that
+  grows by stage, a planning timer, live scouting of any player's board, knockouts, places 1–8 and a rating.
+  Reconnects survive a phone switching apps; play again in the same room.
+- **Leaderboard and ghost battles** against other players' saved boards — season 2 since the tier rules.
 - **Game feel**: hit-stop, camera shake, sparks, pooled damage numbers, a cinematic beat for Mega ultimates,
   "data deletion" deaths, a materialize-in at the start of every fight.
 - **Sound with no audio files**: weighty hits, ultimate stingers and a procedural synthwave soundtrack that
   shifts between prep, battle and boss rounds.
-- **Tamer's Guide** (❓): the rules, every line with stats and ultimates, synergies, item recipes and VS —
-  generated from the game data, so it can't drift from the code.
-- Quality-of-life: 2× battle speed, shop lock, hotkeys, drag-to-sell, damage meter, next-wave preview,
-  tooltips, first-run tutorial, volume / graphics / reduced-motion settings.
+- **Tamer's Guide** (❓): the rules, the baby trees and every line with stats and ultimates, synergies, item
+  recipes and VS — generated from the game data, so it can't drift from the code.
+- Quality-of-life: 2× battle speed, shop lock, hotkeys, drag-to-sell, damage meter, next-wave preview, tooltips,
+  "→ Greymon" hints on shop cards that lead to a Digimon you have, a first-run tutorial, volume / graphics /
+  reduced-motion settings.
 
 ## How it's built
 
@@ -49,7 +58,7 @@ Design choices worth a look:
 
 - **One deterministic simulation everywhere.** `src/game/battle.ts` steps combat at a fixed 0.05 s, with stable
   iteration order and `Math.sqrt` instead of `Math.hypot` (whose rounding differs between engines). The browser,
-  every VS client and the balance bots run the exact same code.
+  every VS client and the balance bots run the exact same code — item mechanics included.
 - **A lobby with no game server.** In VS, every client simulates *every* fight of the round from the same boards
   and reports the outcomes; the room (`server/src/lobby.ts`) applies the first report and compares the rest.
   Pairings, ghosts, places and rating are pure rules in `src/game/lobby.ts`, shared by the worker and the
@@ -57,19 +66,23 @@ Design choices worth a look:
   of `src/game/` (`scripts/rules-version.mjs`, run by the site build and by the worker's build), and the worker
   lets a client into VS only on its own rules — a tab left open across an update reloads instead of simulating
   other fights, while a match already running when an update lands finishes on the rules it started with.
+- **A test channel for new rules.** A build with `VITE_CHANNEL=v3` talks to its own worker (its own lobbies,
+  queue and leaderboard), so a rules overhaul like the tiers was played on a separate address before it went live.
 - **Cosmetics never touch the sim.** Hit-stop, slow motion and 2× speed only change *when* fixed steps run in
   real time (`src/three/juice.ts`), so replays and PvP results stay identical.
 - **No per-tick React renders for units.** Each unit reads its fighter state in `useFrame` through a small mutable
   "drive" object; animation events (attack, cast, hit, death) are counters the model reacts to.
-- **Model pipeline.** `npm run optimize-models` turns the source rips (213 MB) into 46 MB of meshopt-compressed,
-  WebP-textured glTF with pruned animation clips, harmonized scale tracks and content-hashed URLs;
-  `npm run check-models` validates all 92. Conversion scripts fix what rips get wrong: baked black vertex colours,
-  3ds Max's default grey diffuse, effect meshes the original game drew with its own shaders.
+- **Models straight from the game files.** `scripts/dscs_setup.sh` unpacks a purchased copy of Digimon Story Cyber
+  Sleuth (the Windows game, fetched on a Mac with SteamCMD) with MVGLTools; `scripts/dscs_convert.py` turns a model
+  into glTF with its battle clips — no Blender: `scripts/dscs_to_glb.py` writes the glTF itself, baking the clips
+  against the bind pose. `npm run optimize-models` turns the 222 MB of sources into 50 MB of meshopt-compressed,
+  WebP-textured glTF with pruned clips, harmonized scale tracks and content-hashed URLs; `npm run check-models`
+  validates all 115.
 - **Rendered assets from the real scene.** Dev-only "studios" (`/?studio`, `/?studio=og`, `/?studio=icon`) render
-  the 92 portraits, the link-preview image and the app icons with the game's own lighting.
-- **Balance from data.** `npm run balance` runs thousands of scrims per form (every form wins 42–58%);
-  `npm run runsim` has a bot play complete runs through the real store (shop odds, merges, economy, waves,
-  bosses) to tune the difficulty curve — currently about 4 in 10 runs beat the round-15 boss.
+  the 115 portraits, the link-preview image and the app icons with the game's own lighting.
+- **Balance from data.** `npm run balance` runs thousands of scrims per form on all five stages (every form wins
+  42–58%); `npm run runsim` has a bot play complete runs through the real store (shop odds, discovery, merges,
+  economy, items, waves, bosses) to tune the difficulty curve — about half the runs beat each boss of the solo run.
 
 ## Run it
 
@@ -77,17 +90,20 @@ Design choices worth a look:
 npm install
 npm run dev            # Vite dev server
 npm run build          # type-check + production build
-npm run balance        # per-form win rates, role matrix, fight lengths
-npm run runsim         # bot full-run simulator (runs=300 seed=1 variant=current)
-npm run lobbycheck     # VS lobby rules: pairings, ghosts, knockouts, places (matches=2000)
+npm run balance        # per-form win rates on every stage, role matrix, stage value, fight lengths
+npm run runsim         # bot full-run simulator (runs=300 seed=1; dumpBoards=file for VS tuning)
+npm run lobbycheck     # VS lobby rules: pairings, ghosts, knockouts, places, the shared pool
 npm run optimize-models
 npm run check-models
 ```
 
-The worker lives in `server/` (`npx wrangler deploy --config server/wrangler.jsonc`).
+The worker lives in `server/` (`npx wrangler deploy --config server/wrangler.jsonc`). The test channel:
+`npm run deploy:worker:v3` and `npm run deploy:v3`.
 
 ## Project docs
 
 - [ROADMAP.md](ROADMAP.md) — audit, milestones and the work journal (in Ukrainian)
 - [PVP-DESIGN.md](PVP-DESIGN.md) — Teamfight Tactics analysis and the plan for lobby-based PvP (in Ukrainian)
-- [ASSETS.md](ASSETS.md), [MODELS_CHECKLIST.md](MODELS_CHECKLIST.md), [models-src/README.md](models-src/README.md) — model sourcing and pipeline
+- [MODELS_CHECKLIST.md](MODELS_CHECKLIST.md), [models-src/README.md](models-src/README.md), [ASSETS.md](ASSETS.md) —
+  the roster, model sourcing and the pipeline
+- [CREDITS.md](CREDITS.md) — where every model comes from
