@@ -19,5 +19,20 @@
     { "tag": "v3", "new_sqlite_classes": ["Lobby"] },
     { "tag": "v4", "new_sqlite_classes": ["Matchmaker"] }
   ],
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // the test channel's own worker (`npm run deploy:worker:v3`): the next rules (branch v3)
+  // with their own lobbies, queue and leaderboard — live players never meet test builds
+  "env": {
+    "v3": {
+      "name": "digimon-autochess-mp-v3",
+      "durable_objects": {
+        "bindings": [
+          { "name": "ROOM", "class_name": "MatchRoom" },
+          { "name": "LOBBY", "class_name": "Lobby" },
+          { "name": "QUEUE", "class_name": "Matchmaker" },
+          { "name": "LB", "class_name": "Leaderboard" }
+        ]
+      }
+    }
+  }
 }

@@ -174,31 +174,31 @@ export const VS = {
   planSeconds: 40,
   planSecondsTouch: 50,
   /** wild-Digimon rounds: [Fresh, In-Training, Rookie, Champion, Mega]; later stages repeat the last.
-   *  Tuned on 600 bot runs' boards (`npm run runsim -- dumpBoards=…`): a typical board wins
-   *  ~90% — loot rounds, but a weak board can trip. */
+   *  Tuned on 600 bot runs' boards (`npm run runsim -- maxRound=45 dumpBoards=…`): a typical board
+   *  wins ~86–93% — loot rounds, but a weak board can trip. */
   wild: {
     1: [2, 0, 0, 0, 0],
     2: [1, 2, 0, 0, 0],
     5: [0, 1, 2, 0, 0],
     15: [0, 0, 1, 5, 0],
-    25: [0, 0, 0, 4, 2],
-    35: [0, 0, 0, 4, 3],
+    25: [0, 0, 0, 2, 5],
+    35: [0, 0, 0, 3, 5],
   } as Record<number, Mix>,
   /** bosses of rounds 10, 20, 30, 40+ — a real check, getting harder: a typical board
-   *  beats them ~68% / 61% / 57% / 52% of the time (600 bot boards of the 24-line roster,
+   *  beats them ~67% / 60% / 57% / 53% of the time (600 bot boards on the tier rules,
    *  Oct 2026). A match meets one candidate per round, picked by the room's variant;
    *  candidates match. */
   bosses: [
-    [{ id: "skullsatamon", hp: 4.2, atk: 1.8, adds: 4, addCount: 2 }],
+    [{ id: "skullsatamon", hp: 2.7, atk: 1.4, adds: 3, addCount: 2 }],
     [
-      { id: "machinedramon", hp: 3.6, atk: 1.6, adds: 5, addCount: 2 },
-      { id: "mitamamon", hp: 3.2, atk: 1.1, adds: 5, addCount: 2 },
+      { id: "machinedramon", hp: 5.5, atk: 2.2, adds: 5, addCount: 2 },
+      { id: "mitamamon", hp: 5.0, atk: 1.6, adds: 5, addCount: 2 },
     ],
     [
-      { id: "zeed", hp: 3.5, atk: 1.45, adds: 5, addCount: 2 },
-      { id: "apollomon", hp: 4.2, atk: 1.45, adds: 5, addCount: 2 },
+      { id: "zeed", hp: 4.55, atk: 1.66, adds: 5, addCount: 2 },
+      { id: "apollomon", hp: 4.6, atk: 1.65, adds: 5, addCount: 2 },
     ],
-    [{ id: "gracenovamon", hp: 2.9, atk: 1.45, adds: 5, addCount: 3 }],
+    [{ id: "gracenovamon", hp: 3.1, atk: 1.52, adds: 5, addCount: 3 }],
   ] as BossSpec[][],
 };
 

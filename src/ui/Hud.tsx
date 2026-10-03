@@ -99,7 +99,7 @@ export function Hud() {
             DIGIMON <span>AUTO&nbsp;CHESS</span>
           </div>
           {TEST_CHANNEL && (
-            <span className="channel-badge" title="Test build of the next rules — scores aren't posted, VS comes later">
+            <span className="channel-badge" title="Test build of the next rules — its own VS lobbies and leaderboard">
               TEST {CHANNEL}
             </span>
           )}
@@ -133,7 +133,7 @@ export function Hud() {
           <button className="icon-btn" title="Tamer's Guide — how to play, every Digimon, items, VS" onClick={() => setShowHelp(true)}>
             ❓
           </button>
-          {!pvp && !TEST_CHANNEL && (
+          {!pvp && (
             <button className="icon-btn vs" title="VS lobby — 2 to 8 tamers" onClick={() => setShowPvp(true)}>
               ⚔ VS
             </button>

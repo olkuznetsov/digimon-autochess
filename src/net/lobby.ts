@@ -3,14 +3,14 @@ import { CLOSE_OUTDATED, heldCopies, type LobbyFight, type LobbySnapshot } from 
 import { RULES_VERSION } from "../game/rules-version";
 import { net } from "./bus";
 import { playerId } from "./leaderboard";
-import { TEST_CHANNEL } from "../channel";
+import { WORKER_HOST } from "../channel";
 
 /** WebSocket client for VS lobbies (2–8 players, the Lobby Durable Object).
  *  Survives drops: phones kill sockets when the player switches apps (e.g. to
  *  send the room code), so we reconnect to the same seat with its secret and
  *  catch up with the room instead of leaving the match. */
 
-const WS_BASE = "wss://digimon-autochess-mp.askuznetsov6996.workers.dev/lobby/";
+const WS_BASE = `wss://${WORKER_HOST}/lobby/`;
 /** What a tab is told when the server runs other rules than it (an update went out). */
 export const OUTDATED_MESSAGE = "The game was updated — reload the page to play VS.";
 /** how long we keep trying to get back in */
@@ -28,7 +28,6 @@ const sentLog: unknown[] = [];
 /** Lobby places move the leaderboard rating; dev builds stay off it like solo scores
  *  (localStorage "dac-dev-submit" opts in deliberately). */
 function rated(): boolean {
-  if (TEST_CHANNEL) return false;
   if (!import.meta.env.DEV) return true;
   try {
     return !!localStorage.getItem("dac-dev-submit");

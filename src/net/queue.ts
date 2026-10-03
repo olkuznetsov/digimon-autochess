@@ -3,8 +3,9 @@
 import { CLOSE_OUTDATED } from "../game/lobby";
 import { RULES_VERSION } from "../game/rules-version";
 import { OUTDATED_MESSAGE } from "./lobby";
+import { WORKER_HOST } from "../channel";
 
-const QUEUE_URL = "wss://digimon-autochess-mp.askuznetsov6996.workers.dev/queue";
+const QUEUE_URL = `wss://${WORKER_HOST}/queue`;
 
 export interface QueueStatus {
   /** tamers searching right now, us included */
