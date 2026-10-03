@@ -592,14 +592,21 @@ export const useGame = create<GameState>((set, get) => ({
     const { selectedItem, inventory, units } = get();
     if (!selectedItem) return;
     const unit = units.find((u) => u.uid === uid);
-    if (!unit || (unit.items ?? []).length >= 2) return;
+    if (!unit) return;
+    const held = unit.items ?? [];
+    // a base item onto a Digimon holding a base item fuses on the spot (TFT-style)
+    const partner = held.findIndex((it) => fuseResult(it, selectedItem) !== null);
+    if (partner < 0 && held.length >= 2) return;
     const idx = inventory.indexOf(selectedItem);
     if (idx < 0) return;
     const nextInv = [...inventory];
     nextInv.splice(idx, 1);
-    sfx.equip();
+    const items =
+      partner >= 0 ? held.map((it, i) => (i === partner ? fuseResult(it, selectedItem)! : it)) : [...held, selectedItem];
+    if (partner >= 0) sfx.evolve();
+    else sfx.equip();
     set({
-      units: units.map((u) => (u.uid === uid ? { ...u, items: [...(u.items ?? []), selectedItem] } : u)),
+      units: units.map((u) => (u.uid === uid ? { ...u, items } : u)),
       inventory: nextInv,
       selectedItem: null,
     });

@@ -272,6 +272,74 @@ body,
   white-space: nowrap;
   pointer-events: auto;
 }
+.shop-odds {
+  cursor: help;
+}
+.odds-pop {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  width: max-content;
+  max-width: min(440px, 92vw);
+  padding: 10px 12px;
+  border: 1px solid #2c3358;
+  border-radius: 12px;
+  background: rgba(8, 10, 24, 0.97);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+  font-family: var(--font-body, inherit);
+  font-size: 12px;
+  font-weight: 500;
+  color: #cfd8f0;
+  white-space: normal;
+  cursor: default;
+}
+.odds-pop-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 6px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #eef3ff;
+}
+.odds-pop-title span {
+  color: #8893b5;
+  font-weight: 600;
+}
+.odds-pop table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.odds-pop th {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #8893b5;
+  text-align: right;
+  padding: 2px 6px;
+}
+.odds-pop td {
+  text-align: right;
+  padding: 3px 6px;
+  font-variant-numeric: tabular-nums;
+}
+.odds-pop td:first-child {
+  text-align: left;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.odds-pop tr.off td {
+  opacity: 0.4;
+}
+.odds-pop-note {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #8893b5;
+  line-height: 1.35;
+}
 .odds-tier.dim {
   opacity: 0.4;
 }
@@ -2390,6 +2458,9 @@ html, body {
   border-color: #fff1b0;
 }
 .card-badge.line {
+  max-width: 112px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   border-color: rgba(122, 140, 255, 0.6);
   background: rgba(14, 18, 40, 0.95);
   color: #b9c6ff;

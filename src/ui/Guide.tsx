@@ -88,7 +88,7 @@ function Basics() {
           <li>🔀 Most stages <b>branch</b> — you pick the evolution (3 Koromon: Agumon, Guilmon or Dracomon), and with it the attribute and family.</li>
           <li>🍼 <b>Babies</b> (Fresh, In-Training) have no attribute and no family: neutral to everyone, no synergies. Raise them into Rookies.</li>
           <li>🎒 Items carry over: two stay on the new form, the rest go back to your tray.</li>
-          <li>✨ The shop highlights what you're collecting: <b>×1 owned</b>, <b>⬆ Digivolve</b> (third copy), <b>★ line</b>.</li>
+          <li>✨ The shop highlights what you're collecting: <b>×1 owned</b>, <b>⬆ Digivolve</b> (third copy), <b>→ Greymon</b> (it digivolves into one you have).</li>
         </ul>
       </section>
       <section className="guide-sec">
@@ -429,7 +429,11 @@ function Items() {
       </section>
       <section className="guide-sec">
         <h3>Fusion recipes</h3>
-        <p>Select an item, then a glowing partner in your tray: two base items fuse into one stronger item.</p>
+        <p>
+          Any two base items fuse into a stronger one: pick one, then a glowing partner in your tray — or put the second
+          on a Digimon that holds the first, and they fuse right there. The Crests, Lightning Coil, Spike Shell, Rage Chip
+          and Blue Card do something of their own in battle.
+        </p>
         <div className="fuse-wrap">
           <table className="guide-table fuse">
             <thead>

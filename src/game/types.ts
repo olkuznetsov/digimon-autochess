@@ -106,6 +106,38 @@ export interface Fighter {
   boss?: boolean;
   /** equipped item ids (cosmetic reference) */
   items: string[];
+  /** item mechanics of their own (the unique fused items), set by applyItems */
+  procs?: Procs;
+}
+
+/** Unique item mechanics on a fighter. Static knobs come from items.ts; the running
+ *  counters below them are kept by battle.ts during the fight. */
+export interface Procs {
+  /** Crest of Knowledge: ultimate damage multiplier */
+  ultPower?: number;
+  /** Spike Shell: share of an attack's damage struck back at the attacker */
+  reflect?: number;
+  /** Crest of Reliability: a shield (share of max HP) the first time HP drops below 40% */
+  rescue?: number;
+  /** Rage Chip: attack speed gained with every attack, up to rampMax (shares of the start) */
+  ramp?: number;
+  rampMax?: number;
+  /** Lightning Coil: every chainEvery-th attack also strikes every enemy near the target */
+  chainEvery?: number;
+  chainFactor?: number;
+  /** Blue Card: share of max mana kept after a cast */
+  castRefund?: number;
+  /** Crest of Sincerity: share of attack damage healed to the most wounded ally */
+  allyHeal?: number;
+  /** Crest of Love: heal on cast (share of max HP) */
+  castHeal?: number;
+  /** Crest of Courage: attack gained per hit dealt or taken, up to courageMax */
+  courage?: number;
+  courageMax?: number;
+  // running state
+  attacks?: number;
+  ramped?: number;
+  braved?: number;
 }
 
 export type Phase = "prep" | "battle" | "result";

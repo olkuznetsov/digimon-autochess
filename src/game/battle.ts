@@ -107,9 +107,30 @@ const dist = (a: Fighter, b: Fighter) => {
   return Math.sqrt(dx * dx + dy * dy); // not Math.hypot: its rounding differs between JS engines
 };
 
-/** Apply damage through shields, feed lifesteal + on-hit mana, emit FX events. */
-function dealDamage(src: Fighter, tgt: Fighter, raw: number, events?: CombatEvent[], mult = 1, ability = false) {
-  const amount = raw * (1 - tgt.dmgReduction);
+/** Out of reach, a unit turns to an enemy this much closer than the one it chases. */
+const RETARGET_MARGIN = 0.5;
+/** Lightning Coil's reach around the struck target (cells). */
+const CHAIN_RADIUS = 1.6;
+
+/** Item mechanics as multipliers at the moment of the hit, so they never fight other
+ *  buffs over the stat itself (a rally ultimate raises `attack` mid-fight). */
+const atkMult = (f: Fighter) => 1 + (f.procs?.braved ?? 0);
+const asMult = (f: Fighter) => 1 + (f.procs?.ramped ?? 0);
+
+/** Crest of Courage: one more stack per hit dealt or taken. */
+function brave(f: Fighter) {
+  const p = f.procs!;
+  p.braved = Math.min(p.courageMax ?? 0, (p.braved ?? 0) + (p.courage ?? 0));
+}
+
+/** An item proc's visual: the archetype FX of a cast, with no name or Mega beat (stage 0). */
+function procFx(f: Fighter, at: Fighter, ult: UltFx, events?: CombatEvent[]) {
+  events?.push({ kind: "cast", col: f.col, row: f.row, attr: f.attribute, ult, stage: 0, team: f.team, toCol: at.col, toRow: at.row });
+}
+
+/** Damage through shields with its FX events — nothing else (no lifesteal, mana or item
+ *  reactions: thorns use this so they can't bounce back and forth). */
+function strike(src: Fighter, tgt: Fighter, amount: number, events: CombatEvent[] | undefined, mult: number, ability: boolean): boolean {
   let dmg = amount;
   if (tgt.shield > 0) {
     const absorbed = Math.min(tgt.shield, dmg);
@@ -118,8 +139,6 @@ function dealDamage(src: Fighter, tgt: Fighter, raw: number, events?: CombatEven
   }
   const wasAlive = tgt.hp > 0;
   tgt.hp -= dmg;
-  if (src.lifesteal > 0) src.hp = Math.min(src.maxHp, src.hp + amount * src.lifesteal);
-  tgt.mana = Math.min(tgt.maxMana, tgt.mana + MANA_PER_HIT_TAKEN * tgt.manaMult);
   events?.push({
     kind: "hit",
     col: tgt.col,
@@ -137,6 +156,49 @@ function dealDamage(src: Fighter, tgt: Fighter, raw: number, events?: CombatEven
   });
   // only on the killing blow: later hits in the same step land on a corpse
   if (wasAlive && tgt.hp <= 0) events?.push({ kind: "death", col: tgt.col, row: tgt.row, attr: tgt.attribute });
+  return wasAlive;
+}
+
+/** Apply damage through shields, feed lifesteal + on-hit mana and the target's item
+ *  reactions, emit FX events. Returns the damage dealt (before shields). */
+function dealDamage(src: Fighter, tgt: Fighter, raw: number, events?: CombatEvent[], mult = 1, ability = false): number {
+  const amount = raw * (1 - tgt.dmgReduction);
+  const wasAlive = strike(src, tgt, amount, events, mult, ability);
+  if (src.lifesteal > 0) src.hp = Math.min(src.maxHp, src.hp + amount * src.lifesteal);
+  tgt.mana = Math.min(tgt.maxMana, tgt.mana + MANA_PER_HIT_TAKEN * tgt.manaMult);
+  const p = tgt.procs;
+  if (p && wasAlive) {
+    if (p.courage) brave(tgt);
+    if (p.rescue && tgt.hp > 0 && tgt.hp < tgt.maxHp * 0.4) {
+      tgt.shield += tgt.maxHp * p.rescue;
+      p.rescue = 0;
+      procFx(tgt, tgt, "guard", events);
+    }
+    if (p.reflect && !ability && src.hp > 0) strike(tgt, src, amount * p.reflect, events, 1, false);
+  }
+  return amount;
+}
+
+/** An attack's item procs on the attacker's side, after the hit landed for `dealt`. */
+function onAttack(fr: Fighter, target: Fighter, dealt: number, fighters: Fighter[], events?: CombatEvent[]) {
+  const p = fr.procs!;
+  p.attacks = (p.attacks ?? 0) + 1;
+  if (p.courage) brave(fr);
+  if (p.ramp) p.ramped = Math.min(p.rampMax ?? 0, (p.ramped ?? 0) + p.ramp);
+  if (p.allyHeal) {
+    let low: Fighter | null = null;
+    for (const a of fighters)
+      if (a.team === fr.team && a.hp > 0 && a.hp < a.maxHp && (!low || a.hp / a.maxHp < low.hp / low.maxHp)) low = a;
+    if (low) low.hp = Math.min(low.maxHp, low.hp + dealt * p.allyHeal);
+  }
+  if (p.chainEvery && p.attacks % p.chainEvery === 0) {
+    procFx(fr, target, "blast", events);
+    for (const e of fighters) {
+      if (e.team === fr.team || e.hp <= 0 || dist(e, target) > CHAIN_RADIUS) continue;
+      const m = attributeMultiplier(fr.attribute, e.attribute);
+      dealDamage(fr, e, fr.attack * atkMult(fr) * (p.chainFactor ?? 1) * m, events, m, true);
+    }
+  }
 }
 
 /** Cast a fighter's signature ultimate (per-form, role fallback). Auto-fires at full mana.
@@ -158,6 +220,7 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], events?:
   });
   fr.castKey++;
   if (fr.castShield > 0) fr.shield += fr.maxHp * fr.castShield;
+  if (fr.procs?.castHeal) fr.hp = Math.min(fr.maxHp, fr.hp + fr.maxHp * fr.procs.castHeal);
   const ctx: UltCtx = {
     caster: fr,
     target,
@@ -165,7 +228,7 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], events?:
     enemies: fighters.filter((t) => t.team !== fr.team && t.hp > 0),
     deal: (tgt, factor) => {
       const m = attributeMultiplier(fr.attribute, tgt.attribute);
-      dealDamage(fr, tgt, fr.attack * factor * m, events, m * factor, true);
+      dealDamage(fr, tgt, fr.attack * atkMult(fr) * factor * m * (fr.procs?.ultPower ?? 1), events, m * factor, true);
     },
     stun: (tgt, seconds) => {
       tgt.stunned = Math.max(tgt.stunned, seconds);
@@ -192,8 +255,11 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
       continue;
     }
 
+    // the nearest enemy; out of reach a clearly closer one takes over (no chasing one enemy
+    // past another), in reach the unit sticks with its target
     let target = fighters.find((t) => t.uid === fr.targetUid && t.hp > 0);
-    if (!target) {
+    const chasing = target ? dist(fr, target) : Infinity;
+    if (chasing > fr.range + 0.05) {
       let best: Fighter | null = null;
       let bestD = Infinity;
       for (const t of fighters) {
@@ -204,8 +270,10 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
           best = t;
         }
       }
-      target = best ?? undefined;
-      fr.targetUid = best?.uid ?? null;
+      if (best && (!target || bestD < chasing - RETARGET_MARGIN)) {
+        target = best;
+        fr.targetUid = best.uid;
+      }
     }
     if (!target) continue;
 
@@ -214,12 +282,13 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
       fr.moving = false;
       if (fr.cooldown <= 0) {
         const mult = attributeMultiplier(fr.attribute, target.attribute);
-        dealDamage(fr, target, fr.attack * mult, events, mult);
-        fr.cooldown = 1 / fr.attackSpeed;
+        const dealt = dealDamage(fr, target, fr.attack * atkMult(fr) * mult, events, mult);
+        if (fr.procs) onAttack(fr, target, dealt, fighters, events);
+        fr.cooldown = 1 / (fr.attackSpeed * asMult(fr));
         fr.mana = Math.min(fr.maxMana, fr.mana + MANA_PER_ATTACK * fr.manaMult);
-        if (fr.mana >= fr.maxMana) {
+        if (fr.mana >= fr.maxMana && fr.hp > 0) {
           castAbility(fr, target, fighters, events);
-          fr.mana = 0;
+          fr.mana = fr.maxMana * (fr.procs?.castRefund ?? 0);
         }
       }
     } else {

@@ -269,7 +269,7 @@ export function Creature({
         ))}
       </group>
 
-      <Html center position={[0, 1.55, 0]} distanceFactor={9} zIndexRange={[10, 0]}>
+      <Html center position={[0, 1.55, 0]} distanceFactor={9} zIndexRange={[4, 0]}>
         {/* battle shows bars only (names are prep information) — bosses keep their title */}
         <div ref={label} className={`unit-label ${team}${showHealth ? " battle" : ""}${boss ? " boss" : ""}`}>
           <span className="unit-name">

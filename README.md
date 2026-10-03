@@ -15,7 +15,7 @@ for model sources.*
   every one an animated 3D model — with branching digivolutions and 82 named signature ultimates (Terra Force,
   Cocytus Breath, Positron Laser…). Boss rounds draw from candidates, so runs and matches differ.
 - **Synergies** (three attributes in a counter triangle, five families with two tiers each), **items** that
-  fuse in pairs into 12 stronger ones, boss rounds, a 15-round run plus endless mode.
+  fuse in pairs into 21 stronger ones (nine with mechanics of their own — Adventure's Crests, Lightning Coil …), boss rounds, a 15-round run plus endless mode.
 - **VS for 2–8 players** — with friends over a 4-letter room code, or with strangers through a public
   matchmaking queue — in Teamfight Tactics' round rhythm: a round-robin of opponents (a ghost copy of someone's
   board for the odd one out), stages of five rounds with wild-Digimon rounds, a carousel item draft every stage
