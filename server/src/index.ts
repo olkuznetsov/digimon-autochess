@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { cleanBoard, cleanName } from "./util";
+import { cleanBoard, cleanName, LB_SEASON } from "./util";
 import { Lobby } from "./lobby";
 import { Matchmaker } from "./queue";
 
@@ -351,7 +351,7 @@ export default {
       return stub.fetch(request);
     }
 
-    const lb = env.LB.getByName("global");
+    const lb = env.LB.getByName(LB_SEASON);
     if (url.pathname === "/lb/top" && request.method === "GET") {
       return json(await lb.top(url.searchParams.get("by") === "rating" ? "rating" : "best"));
     }

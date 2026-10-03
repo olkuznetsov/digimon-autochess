@@ -11,9 +11,12 @@ for model sources.*
 
 ## What's in it
 
-- **93 forms in 25 evolution lines**, plus 3 wild Digimon that roam the enemy waves and 4 boss-only villains —
-  every one an animated 3D model — with branching digivolutions and 82 named signature ultimates (Terra Force,
-  Cocytus Breath, Positron Laser…). Boss rounds draw from candidates, so runs and matches differ.
+- **Digimon grow up from babies**: 108 forms on five stages — Fresh → In-Training → Rookie → Champion → Mega,
+  straight from Cyber Sleuth's evolution trees (Botamon → Koromon → Agumon, Guilmon or Dracomon …) — plus 3 wild
+  Digimon in the enemy waves and 4 boss-only villains, every one an animated 3D model, with 82 named signature
+  ultimates (Terra Force, Cocytus Breath, Positron Laser…). Boss rounds draw from candidates, so runs differ.
+- **TFT-style tiers where the price is the stage** (⛂1 Fresh … ⛂5 Mega), levels 1–10 with level-based shop odds,
+  and **discovery**: a Champion or Mega shows up in your shop only once you've raised one yourself that game.
 - **Synergies** (three attributes in a counter triangle, five families with two tiers each), **items** that
   fuse in pairs into 21 stronger ones (nine with mechanics of their own — Adventure's Crests, Lightning Coil …), boss rounds, a 15-round run plus endless mode.
 - **VS for 2–8 players** — with friends over a 4-letter room code, or with strangers through a public

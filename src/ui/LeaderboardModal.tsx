@@ -44,7 +44,9 @@ export function LeaderboardModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="help-overlay" onClick={onClose}>
       <div className="help-modal lb" onClick={(ev) => ev.stopPropagation()}>
-        <div className="help-title">🏆 Leaderboard</div>
+        <div className="help-title">
+          🏆 Leaderboard <span className="lb-season">Season 2 · tier rules</span>
+        </div>
         <div className="lb-tabs">
           <button className={`lb-tab${tab === "best" ? " on" : ""}`} onClick={() => setTab("best")}>
             Best runs

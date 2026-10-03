@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./index";
-import { cleanName, cleanUnits, outdatedSocket, type BoardUnit } from "./util";
+import { cleanName, cleanUnits, outdatedSocket, type BoardUnit, LB_SEASON } from "./util";
 import { RULES_VERSION } from "../../src/game/rules-version";
 import {
   applyOutcomes,
@@ -632,7 +632,7 @@ export class Lobby extends DurableObject<Env> {
 
   /** Placed players' rating goes straight to the leaderboard (rated players only). */
   private async rate(room: Room, placed: Seat[]) {
-    const lb = this.env.LB.getByName("global");
+    const lb = this.env.LB.getByName(LB_SEASON);
     for (const s of placed) {
       if (!s.lb || s.placement === null) continue;
       try {
