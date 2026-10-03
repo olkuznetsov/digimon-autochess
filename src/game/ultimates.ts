@@ -159,7 +159,7 @@ export const ULTIMATES: Record<string, Ultimate> = {
   magnaangemon: u("Gate of Destiny", "⚔️", "Banishes a weakened foe — 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
   // Nature Spirits — Dracomon line
   coredramon: u("Blue Flare Breath", "🔥", "A dragon-fire blast for 255%.", bolt(2.55)),
-  breakdramon: u("Giga Drill", "🩸", "Braces behind a 7% team shield.", bulwark(0.07, true)),
+  breakdramon: u("Giga Drill", "🩸", "Braces behind a 6% team shield.", bulwark(0.06, true)),
   // Deep Savers — Keramon line
   infermon: u("Cable Crusher", "🕸️", "Three savage strikes (120% each).", barrage(3, 1.2)),
   diaboromon: u("Web Wrecker", "🕷️", "A viral nova (150%) around the target.", nova(1.5, 1.7)),

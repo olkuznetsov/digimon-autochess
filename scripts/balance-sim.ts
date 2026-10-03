@@ -13,6 +13,8 @@ import type { Attribute, Fighter, Form, Role, Stage, Unit } from "../src/game/ty
 import { FORMS, PLAYABLE_IDS as ALL_FORM_IDS, statsFor } from "../src/game/creatures";
 import { applySynergies } from "../src/game/synergies";
 import { makeFighter, stepCombat, SIM_DT, HP_SCALE } from "../src/game/battle";
+import { COLS, FRONT_ROW } from "../src/game/board";
+const ALL_COLS = Array.from({ length: COLS }, (_, i) => i);
 
 const DT = SIM_DT;
 const MAX_TICKS = Math.round(120 / DT); // 120s cap → draw
@@ -32,10 +34,11 @@ const sample = <T,>(arr: T[], n: number): T[] => shuffled(arr).slice(0, n);
 
 // ---------- battle harness ----------
 function place(formIds: string[], team: "player" | "enemy"): { fighters: Fighter[]; units: Unit[] } {
-  const front = team === "player" ? 2 : 3;
-  const back = team === "player" ? 1 : 4;
-  const frontCols = shuffled([0, 1, 2, 3, 4, 5]);
-  const backCols = shuffled([0, 1, 2, 3, 4, 5]);
+  // front rows meet at the midline, the backline one row behind (as on the 6×3 board)
+  const front = team === "player" ? FRONT_ROW : FRONT_ROW + 1;
+  const back = team === "player" ? FRONT_ROW - 1 : FRONT_ROW + 2;
+  const frontCols = shuffled(ALL_COLS);
+  const backCols = shuffled(ALL_COLS);
   let fi = 0;
   let bi = 0;
   const fighters: Fighter[] = [];
@@ -71,10 +74,10 @@ function runForms(a: string[], b: string[], synergies: boolean): { result: "a" |
 }
 
 function syntheticTeam(role: Role, stage: Stage, attribute: Attribute, team: "player" | "enemy", n = 4): Fighter[] {
-  const front = team === "player" ? 2 : 3;
-  const back = team === "player" ? 1 : 4;
+  const front = team === "player" ? FRONT_ROW : FRONT_ROW + 1;
+  const back = team === "player" ? FRONT_ROW - 1 : FRONT_ROW + 2;
   const s = statsFor({ role, stage } as Form);
-  return sample([0, 1, 2, 3, 4, 5], n).map((col, i) => ({
+  return sample(ALL_COLS, n).map((col, i) => ({
     uid: `${team}s${i}`,
     formId: `syn-${role}`,
     team,

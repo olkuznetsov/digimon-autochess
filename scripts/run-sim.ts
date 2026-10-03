@@ -187,17 +187,19 @@ function rollDown() {
   }
 }
 
-const FRONT = [2, 3, 1, 4, 0, 5];
+/** columns from the middle outwards */
+const FRONT = [3, 2, 4, 1, 5, 0, 6];
 /** Field the strongest `level` units: tanks/bruisers in front, assassins mid, ranged/casters back. */
 function arrange() {
   resolvePending();
   const { units, level } = S();
   const ranked = [...units].sort((a, b) => power(b) + synergyFit(b.formId, units) * 4 - (power(a) + synergyFit(a.formId, units) * 4));
   const fielded = ranked.slice(0, boardCap(ranked.slice(0, level).map((u) => ({ ...u, placement: { kind: "board", col: 0, row: 0 } as Placement })), level));
-  const rows: Record<number, number> = { 2: 0, 1: 0, 0: 0 };
+  const rows: Record<number, number> = { 3: 0, 2: 0, 1: 0, 0: 0 };
   const rowFor = (u: Unit) => {
     const role = FORMS[u.formId].role;
-    const pref = role === "tank" || role === "bruiser" ? [2, 1, 0] : role === "assassin" ? [1, 2, 0] : [0, 1, 2];
+    // tanks and bruisers up front, assassins a row behind, ranged and casters at the back
+    const pref = role === "tank" || role === "bruiser" ? [3, 2, 1, 0] : role === "assassin" ? [2, 3, 1, 0] : [0, 1, 2, 3];
     return pref.find((r) => rows[r] < COLS) ?? 0;
   };
   const byRole = [...fielded].sort((a, b) => order(FORMS[a.formId].role) - order(FORMS[b.formId].role));

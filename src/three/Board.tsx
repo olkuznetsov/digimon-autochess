@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { COLS, ROWS, CELL, BENCH_SLOTS, BENCH_Z } from "../game/board";
+import { COLS, ROWS, CELL, BENCH_SLOTS, BENCH_STEP, BENCH_Z } from "../game/board";
 
 interface BoardProps {
   /** highlight player cells (during drag) */
@@ -86,8 +86,11 @@ function GridSurface({
   hovered,
   drag,
   y = 0.012,
+  cell = CELL,
 }: {
   y?: number;
+  /** cell size (the bench packs its slots closer) */
+  cell?: number;
   cols: number;
   rows: number;
   centerZ: number;
@@ -104,8 +107,8 @@ function GridSurface({
         fragmentShader: FRAG,
         uniforms: {
           uTime: { value: 0 },
-          uOrigin: { value: new THREE.Vector2((-cols / 2) * CELL, centerZ - (rows / 2) * CELL) },
-          uCell: { value: CELL },
+          uOrigin: { value: new THREE.Vector2((-cols / 2) * cell, centerZ - (rows / 2) * cell) },
+          uCell: { value: cell },
           uSplit: { value: split },
           uColorA: { value: colorA.clone() },
           uColorB: { value: colorB.clone() },
@@ -113,7 +116,7 @@ function GridSurface({
           uDrag: { value: 0 },
         },
       }),
-    [cols, rows, centerZ, split, colorA, colorB],
+    [cols, rows, centerZ, split, colorA, colorB, cell],
   );
 
   useFrame((state, dt) => {
@@ -126,7 +129,7 @@ function GridSurface({
 
   return (
     <mesh position={[0, y, centerZ]} rotation={[-Math.PI / 2, 0, 0]} material={material}>
-      <planeGeometry args={[cols * CELL, rows * CELL]} />
+      <planeGeometry args={[cols * cell, rows * cell]} />
     </mesh>
   );
 }
@@ -186,7 +189,7 @@ export function Board({ highlight = false, hovered = null }: BoardProps) {
       </mesh>
 
       {/* the bench strip slightly overlaps the board's front edge — sit it just below */}
-      <GridSurface cols={BENCH_SLOTS} rows={1} centerZ={BENCH_Z} y={0.008} split={1} colorA={BENCH} colorB={BENCH} />
+      <GridSurface cols={BENCH_SLOTS} rows={1} centerZ={BENCH_Z} y={0.008} split={1} colorA={BENCH} colorB={BENCH} cell={BENCH_STEP} />
     </group>
   );
 }

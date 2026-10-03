@@ -20,6 +20,8 @@ for model sources.*
 - **Tiers where the price is the stage**: ⛂1 Fresh … ⛂5 Mega, levels 1–10 with level-based shop odds (hover the
   odds over the shop for the detail), and **discovery**: a Champion or Mega shows up in your shop only once you've
   raised one yourself that game. Raise or buy — that's the economy.
+- **Teamfight Tactics' board**: 7 × 4 cells a side and a bench of 9 — room for level 10, Digivices and raising
+  several lines at once.
 - **Synergies**: three attributes in a counter triangle and five families with two tiers each; babies have
   neither until a Digimental gives them a family.
 - **Items**: six base items and the rarer Digitama fuse in pairs — in the tray or right on a Digimon — into 28

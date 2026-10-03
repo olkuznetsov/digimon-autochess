@@ -1,11 +1,17 @@
 // Board geometry shared by the store and the 3D scene.
 
-export const COLS = 6;
-export const ROWS = 6; // rows 0..2 = player half, rows 3..5 = enemy half
-export const PLAYER_ROWS = [0, 1, 2];
-export const BENCH_SLOTS = 6;
+// Teamfight Tactics' board size: 7 × 4 per side (28 cells — room for level 10 and
+// Digivices, and a real backline) and a bench of 9.
+export const COLS = 7;
+export const ROWS = 8; // rows 0..3 = player half, rows 4..7 = enemy half
+export const PLAYER_ROWS = [0, 1, 2, 3];
+/** the player's front row (next to the midline) */
+export const FRONT_ROW = PLAYER_ROWS.length - 1;
+export const BENCH_SLOTS = 9;
 
 export const CELL = 1.1; // world size of one cell
+/** bench slots sit closer than board cells: all nine span the board's width (phones) */
+export const BENCH_STEP = (COLS * CELL) / BENCH_SLOTS;
 
 /** Convert a board cell to a world XZ position (y handled by caller). */
 export function cellToWorld(col: number, row: number): [number, number] {
@@ -20,7 +26,7 @@ export const BENCH_Z = -((ROWS - 1) / 2) * CELL - CELL * 0.95;
 /** Bench sits in front of the player half (toward the camera). The camera looks along
  *  +z, so world +x is screen-left — slot 0 (where purchases land) sits at +x, leftmost. */
 export function benchToWorld(slot: number): [number, number] {
-  const x = ((BENCH_SLOTS - 1) / 2 - slot) * CELL;
+  const x = ((BENCH_SLOTS - 1) / 2 - slot) * BENCH_STEP;
   return [x, BENCH_Z];
 }
 
@@ -33,11 +39,11 @@ export function worldToPlayerCell(x: number, z: number): { col: number; row: num
   const row = Math.round(z / CELL + (ROWS - 1) / 2);
   return {
     col: Math.max(0, Math.min(COLS - 1, col)),
-    row: Math.max(0, Math.min(2, row)), // player half only
+    row: Math.max(0, Math.min(FRONT_ROW, row)), // player half only
   };
 }
 
 export function worldToBenchSlot(x: number): number {
-  const slot = Math.round((BENCH_SLOTS - 1) / 2 - x / CELL);
+  const slot = Math.round((BENCH_SLOTS - 1) / 2 - x / BENCH_STEP);
   return Math.max(0, Math.min(BENCH_SLOTS - 1, slot));
 }

@@ -25,6 +25,8 @@ interface CreatureProps {
   dragging?: boolean;
   /** oversized boss styling (boss rounds) */
   boss?: boolean;
+  /** size multiplier (bench units sit a little smaller: the slots are tighter) */
+  shrink?: number;
   /** materialize in on mount */
   spawn?: boolean;
   /** changes when this unit just digivolved (evoFlash.key) → play the 3D sequence */
@@ -78,6 +80,7 @@ export function Creature({
   showHealth = true,
   dragging = false,
   boss = false,
+  shrink = 1,
   spawn = false,
   evolveKey,
   itemEmojis,
@@ -85,7 +88,7 @@ export function Creature({
   onPointerDown,
 }: CreatureProps) {
   // visible digivolution growth: Fresh 0.5 -> In-Training 0.6 -> Rookie 0.75 -> Champion 1.02 -> Mega 1.29
-  const scale = STAGE_SCALE[stage - 1] * (boss ? 1.5 : 1);
+  const scale = STAGE_SCALE[stage - 1] * (boss ? 1.5 : 1) * shrink;
   const pipCount = Math.max(0, stage - 2);
   const url = modelFor(formId);
 

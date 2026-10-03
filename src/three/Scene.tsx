@@ -57,14 +57,16 @@ function CameraRig() {
     }
     // prep frames board + bench above the shop panel; battle tilts up onto the board
     // and eases in a little (portrait already fills the width — pushing in would crop)
+    // framed for the 7 × 4 board and its 9-slot bench (portrait is width-bound: the bench
+    // spans the board's 7.7 units)
     if (portrait) {
-      pos.set(0, 8.2, -10.6);
-      look.set(0, 0.4, 3.4);
-      battleLook.set(0, 0.55, 3.4);
+      pos.set(0, 11.0, -13.6);
+      look.set(0, 0.4, 2.2);
+      battleLook.set(0, 0.55, 2.6);
     } else {
-      pos.set(0, 6.6, -9.2);
-      look.set(0, 0.3, 0.9);
-      battleLook.set(0, 0.45, 2.9);
+      pos.set(0, 8.4, -11.8);
+      look.set(0, 0.0, 0.6);
+      battleLook.set(0, 0.3, 2.4);
     }
     const phase = useGame.getState().phase;
     const target = phase === "prep" ? 0 : 1;
@@ -116,6 +118,7 @@ function PrepUnits() {
             color={ATTR_COLOR[form.attribute]}
             name={form.name}
             stage={form.stage}
+            shrink={u.placement.kind === "bench" && u.uid !== dragId ? 0.8 : 1}
             showHealth={false}
             evolveKey={evo && evo.uid === u.uid ? evo.key : undefined}
             dragging={u.uid === dragId}
@@ -458,7 +461,7 @@ export function Scene() {
   const low = useSettings((s) => s.quality === "low");
   return (
     // no shadow maps: models ground themselves with contact-shadow blobs (Creature.tsx)
-    <Canvas camera={{ position: [0, 6.6, -9.2], fov: 55 }} dpr={low ? 1 : [1, 2]}>
+    <Canvas camera={{ position: [0, 8.4, -11.8], fov: 55 }} dpr={low ? 1 : [1, 2]}>
       <SceneContents />
     </Canvas>
   );

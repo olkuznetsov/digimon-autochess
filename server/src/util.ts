@@ -1,6 +1,7 @@
 import { formOf, isPlayable } from "../../src/game/creatures";
 import { ITEMS } from "../../src/game/items";
 import { CLOSE_OUTDATED } from "../../src/game/lobby";
+import { COLS, FRONT_ROW } from "../../src/game/board";
 
 /** Turn away a client running other rules. The socket is accepted just to say so: a
  *  refused handshake reaches the browser without its status, as a bare "closed". It's
@@ -50,7 +51,7 @@ export function cleanUnits(raw: unknown): BoardUnit[] | null {
     const row = Number(u?.row);
     const items = Array.isArray(u?.items) ? (u.items as unknown[]).map(String) : [];
     if (!isPlayable(formOf(formId))) return null;
-    if (!Number.isInteger(col) || col < 0 || col > 5 || !Number.isInteger(row) || row < 0 || row > 2) return null;
+    if (!Number.isInteger(col) || col < 0 || col >= COLS || !Number.isInteger(row) || row < 0 || row > FRONT_ROW) return null;
     if (items.length > 2 || items.some((i) => !ITEMS[i])) return null;
     units.push({ uid: String(u?.uid ?? "").slice(0, 24), formId, col, row, items });
   }

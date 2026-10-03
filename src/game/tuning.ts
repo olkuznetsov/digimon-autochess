@@ -1,7 +1,7 @@
 import type { Fighter, Stage } from "./types";
 import { FORMS, PLAYABLE_IDS, WILD_IDS } from "./creatures";
 import { makeFighter } from "./battle";
-import { COLS } from "./board";
+import { COLS, ROWS } from "./board";
 
 /**
  * Solo-run difficulty and economy knobs in one place. Tuned with the full-run bot
@@ -70,14 +70,14 @@ export const WAVES = {
    *  one candidate per round, picked by its seed. Candidates are tuned to the same pass
    *  rate on the same 600 bot boards (`npm run runsim` prints "boss candidates"). */
   bosses: [
-    [{ id: "skullsatamon", hp: 1.68, atk: 1.0, adds: 2 }],
+    [{ id: "skullsatamon", hp: 1.58, atk: 1.0, adds: 2 }],
     [
-      { id: "machinedramon", hp: 1.35, atk: 0.85, adds: 3 },
-      { id: "mitamamon", hp: 1.13, atk: 0.61, adds: 3 },
+      { id: "machinedramon", hp: 1.2, atk: 0.82, adds: 3 },
+      { id: "mitamamon", hp: 1.06, atk: 0.6, adds: 3 },
     ],
     [
-      { id: "diaboromon", hp: 3.45, atk: 1.48, adds: 4 },
-      { id: "apollomon", hp: 3.82, atk: 1.15, adds: 4 },
+      { id: "diaboromon", hp: 3.05, atk: 1.4, adds: 4 },
+      { id: "apollomon", hp: 3.38, atk: 1.1, adds: 4 },
     ],
   ] as Omit<BossSpec, "addCount">[][],
   /** endless mode: every 5th round the next of these, all with the same multipliers */
@@ -122,10 +122,11 @@ function buildWave(round: number, hpScale: number, boss: BossSpec | null, mix: M
     return pool[(round * 3 + i * WAVE_STEP[stage - 1]) % pool.length];
   };
   const minion = (stage: Stage, i: number) => ROSTER[stage - 1][(round * 3 + i * 5) % ROSTER[stage - 1].length];
-  const at = (i: number) => ({ col: i % COLS, row: 5 - Math.floor(i / COLS) });
+  const at = (i: number) => ({ col: i % COLS, row: ROWS - 1 - Math.floor(i / COLS) });
 
   if (boss) {
-    const b = makeFighter(boss.id, prefix === "e" ? "boss" : `${prefix}boss`, "enemy", 2, 4, hpScale);
+    // the boss stands mid-board on the enemy's second row
+    const b = makeFighter(boss.id, prefix === "e" ? "boss" : `${prefix}boss`, "enemy", Math.floor(COLS / 2), ROWS / 2 + 1, hpScale);
     // one huge focused threat instead of a wall: big HP, harder hits, boss flag
     b.hp = Math.round(b.hp * boss.hp);
     b.maxHp = b.hp;
@@ -181,24 +182,24 @@ export const VS = {
     2: [1, 2, 0, 0, 0],
     5: [0, 1, 2, 0, 0],
     15: [0, 0, 1, 5, 0],
-    25: [0, 0, 0, 2, 5],
+    25: [0, 0, 0, 3, 4],
     35: [0, 0, 0, 3, 5],
   } as Record<number, Mix>,
   /** bosses of rounds 10, 20, 30, 40+ — a real check, getting harder: a typical board
-   *  beats them ~67% / 60% / 57% / 53% of the time (600 bot boards on the tier rules,
-   *  Oct 2026). A match meets one candidate per round, picked by the room's variant;
+   *  beats them ~67% / 60% / 57% / 53% of the time (600 bot boards on the tier rules and
+   *  the 7 × 4 board, Oct 2026). A match meets one candidate per round, picked by the room's variant;
    *  candidates match. */
   bosses: [
-    [{ id: "skullsatamon", hp: 2.7, atk: 1.4, adds: 3, addCount: 2 }],
+    [{ id: "skullsatamon", hp: 2.45, atk: 1.32, adds: 3, addCount: 2 }],
     [
-      { id: "machinedramon", hp: 5.5, atk: 2.2, adds: 5, addCount: 2 },
-      { id: "mitamamon", hp: 5.0, atk: 1.6, adds: 5, addCount: 2 },
+      { id: "machinedramon", hp: 5.3, atk: 2.15, adds: 5, addCount: 2 },
+      { id: "mitamamon", hp: 4.8, atk: 1.58, adds: 5, addCount: 2 },
     ],
     [
-      { id: "zeed", hp: 4.55, atk: 1.66, adds: 5, addCount: 2 },
-      { id: "apollomon", hp: 4.6, atk: 1.65, adds: 5, addCount: 2 },
+      { id: "zeed", hp: 5.0, atk: 1.75, adds: 5, addCount: 2 },
+      { id: "apollomon", hp: 4.6, atk: 1.85, adds: 5, addCount: 2 },
     ],
-    [{ id: "gracenovamon", hp: 3.1, atk: 1.52, adds: 5, addCount: 3 }],
+    [{ id: "gracenovamon", hp: 3.22, atk: 1.54, adds: 5, addCount: 3 }],
   ] as BossSpec[][],
 };
 
