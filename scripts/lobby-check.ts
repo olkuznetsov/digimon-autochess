@@ -156,12 +156,14 @@ const duelPlan: RoundPlan = { round: 3, pairs: [[0, 1]], ghost: null };
 const unit = (uid: string, formId: string, col: number) => ({ uid, formId, col, row: 0, items: [] as string[] });
 const duelBoards = { 0: [unit("a", "greymon", 2), unit("b", "garurumon", 3)], 1: [unit("c", "greymon", 2), unit("d", "garurumon", 3)] };
 const plain = roundOutcomes(3, duelPlan, duelBoards, [0, 1]);
-// round 3 is odd: the home side acts first and takes the plain mirror — boost the away side
-const boosted = { 1: ["overclock", "firewall", "dragonheart"] };
+// a mirror is decided by who acts first (and, with an odd column count, by where the
+// mirrored units stand) — boost whichever side lost it, and it must win
+const loser = plain.find((o) => !o.won)?.seat ?? 1;
+const boosted = { [loser]: ["overclock", "firewall", "dragonheart"] };
 const withAugs = roundOutcomes(3, duelPlan, duelBoards, [0, 1], boosted);
 if (JSON.stringify(withAugs) !== JSON.stringify(roundOutcomes(3, duelPlan, duelBoards, [0, 1], boosted))) fail("augmented fight not deterministic");
-if (!plain[0].won || !withAugs[1].won) fail(`3 combat augments should flip a mirror fight: plain ${JSON.stringify(plain)}, boosted ${JSON.stringify(withAugs)}`);
-console.log("augments: a mirror duel the home side wins flips to the away side with 3 combat augments");
+if (!withAugs.find((o) => o.seat === loser)?.won) fail(`3 combat augments should flip a mirror fight: plain ${JSON.stringify(plain)}, boosted ${JSON.stringify(withAugs)}`);
+console.log(`augments: a mirror duel seat ${loser} loses flips to it with 3 combat augments`);
 
 // the room's variant picks each boss round's boss: the same on every client, every
 // candidate in play, variant 0 (rooms from before) the classic one
