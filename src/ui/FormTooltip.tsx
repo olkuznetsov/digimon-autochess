@@ -1,4 +1,4 @@
-import { FORMS, ATTR_COLOR, FAMILY_COLOR, STAGE_NAME, statsFor } from "../game/creatures";
+import { FORMS, ATTR_COLOR, ELEMENT_COLOR, ELEMENT_ICON, STAGE_NAME, statsFor } from "../game/creatures";
 import { ultimateFor } from "../game/ultimates";
 import { HP_SCALE } from "../game/battle";
 import type { Attribute } from "../game/types";
@@ -28,8 +28,8 @@ export function FormTooltip({ formId }: { formId: string }) {
             <span className="tip-tag" style={{ background: attr }}>
               {form.attribute}
             </span>
-            <span className="tip-tag fam" style={{ color: FAMILY_COLOR[form.family], borderColor: FAMILY_COLOR[form.family] }}>
-              {form.family}
+            <span className="tip-tag fam" style={{ color: ELEMENT_COLOR[form.element], borderColor: ELEMENT_COLOR[form.element] }}>
+              {ELEMENT_ICON[form.element]} {form.element}
             </span>
           </span>
         </div>
@@ -41,7 +41,7 @@ export function FormTooltip({ formId }: { formId: string }) {
             <b style={{ color: ATTR_COLOR[LOSES[form.attribute]!] }}>{LOSES[form.attribute]}</b>
           </>
         ) : (
-          <>◇ a baby: no attribute, no family — neutral against everyone</>
+          <>◇ Free: a baby, neutral against every attribute</>
         )}
       </div>
       <div className="tip-stats">

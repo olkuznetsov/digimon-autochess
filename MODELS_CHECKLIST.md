@@ -5,48 +5,49 @@ drive the combat state machine). The roster is deliberately shaped around source
 To add a form: convert with `python3 scripts/convert_model.py <src.fbx> <formid>` and add it
 to `src/game/creatures.ts` — the model registry picks it up by convention.
 
-Legend: (V)accine (D)ata (Vi)rus · **[a | b]** = player chooses a branch.
+Legend: (V)accine (D)ata (Vi)rus · **[a | b]** = player chooses a branch · Elements: Cyber Sleuth's, the synergy
+axis since Oct 2026 (the line's main one first, then any form that differs).
 
-V3 (branch `v3`, M10): **babies** below Rookie, straight from Cyber Sleuth's evolution table — no attribute, no
-family. Fresh (⛂1): `botamon` → [`koromon` | `wanyamon`], `kuramon` → `tsumemon`, `pabumon` → [`motimon` | `yokomon` |
+V3 (branch `v3`, M10): **babies** below Rookie, straight from Cyber Sleuth's evolution table — attribute Free;
+Fresh are Neutral, In-Training carry an element as in the game. Fresh (⛂1): `botamon` → [`koromon` | `wanyamon`], `kuramon` → `tsumemon`, `pabumon` → [`motimon` | `yokomon` |
 `tanemon`], `poyomon` → [`bukamon` | `tokomon`], `punimon` → [`nyaromon` | `tsunomon`]. In-Training (⛂2): `koromon` →
 [`agumon` | `guilmon` | `dracomon`], `wanyamon` → [`dorumon` | `gaomon`], `tsumemon` → [`keramon` | `demidevimon`],
 `motimon` → [`hagurumon` | `tentomon`], `yokomon` → [`biyomon` | `wormmon`], `tanemon` → [`palmon` | `renamon`],
 `bukamon` → `gomamon`, `tokomon` → [`patamon` | `falcomon`], `nyaromon` → [`terriermon` | `salamon`], `tsunomon` →
 [`gabumon` | `veemon`]. Candlemon, Flamemon, Herissmon, Agunimon and Lobomon start at Rookie (no babies in the game).
 
-| Line (cost) | Rookie | Champion | Ultimate | Family |
+| Line (cost) | Rookie | Champion | Ultimate | Elements |
 |---|---|---|---|---|
-| Agumon (1) | `agumon`(V) | **[`greymon`(V) \| `geogreymon`(V)]** | `greymon` → **[`wargreymon`(V) \| `blitzgreymon`(Vi)]**, `geogreymon` → **[`rizegreymon`(Vi) \| `shinegreymon`(V)]** | Dragon's Roar |
-| Tentomon (1) | `tentomon`(V) | `kabuterimon`(V) | **[`megakabuterimon`(D) \| `herculeskabuterimon`(V)]** | Wind Guardians |
-| Biyomon (1) | `biyomon`(V) | `birdramon`(V) | **[`garudamon`(V) \| `hououmon`(V)]** | Wind Guardians |
-| Terriermon (1) | `terriermon`(V) | `gargomon`(V) | **[`rapidmon`(V) \| `megagargomon`(V)]** | Deep Savers |
-| Gabumon (1) | `gabumon`(D) | `garurumon`(D) | **[`metalgarurumon`(D) \| `cresgarurumon`(V)]** | Nature Spirits |
-| DemiDevimon (1) | `demidevimon`(Vi) | **[`skullsatamon`(Vi) \| `devimon`(Vi)]** | `skullsatamon` → `belzemon`(Vi), `devimon` → **[`myotismon`(Vi) \| `ladydevimon`(Vi)]** | Nightmare Soldiers |
-| Hagurumon (2) | `hagurumon`(Vi) | `guardromon`(Vi) | `machinedramon`(Vi) | Nightmare Soldiers |
-| Patamon (2) | `patamon`(V) | `angemon`(V) | `magnaangemon`(V) | Wind Guardians |
-| Dracomon (2) | `dracomon`(D) | `coredramon`(D) | `breakdramon`(D) | Nature Spirits |
-| Keramon (2) | `keramon`(Vi) | `infermon`(Vi) | `diaboromon`(Vi) | Deep Savers |
-| Candlemon (2) | `candlemon`(Vi) | `meramon`(Vi) | `gankoomon`(Vi) | Nightmare Soldiers |
-| Palmon (3) | `palmon`(D) | `togemon`(D) | **[`rosemon`(D) \| `rosemonbm`(Vi)]** | Nature Spirits |
-| Gomamon (3) | `gomamon`(V) | `ikkakumon`(V) | `vikemon`(V) | Deep Savers |
-| Veemon (3) | `veemon`(V) | **[`exveemon`(V) \| `paildramon`(D)]** | `imperialdramon`(V) | Wind Guardians |
-| Gaomon (2) | `gaomon`(D) | `gaogamon`(D) | **[`machgaogamon`(D) \| `miragegaogamon`(D)]** | Deep Savers |
-| Falcomon (2) | `falcomon`(Vi) | `peckmon`(Vi) | **[`crowmon`(D) \| `ravemon`(Vi)]** | Nightmare Soldiers |
-| Herissmon (2) | `herissmon`(D) | `filmon`(D) | `rasenmon`(D) | Nightmare Soldiers |
-| Wormmon (3) | `wormmon`(V) | `stingmon`(V) | `banchostingmon`(V) | Wind Guardians |
-| Renamon (3) | `renamon`(D) | `kyubimon`(D) | **[`taomon`(D) \| `sakuyamon`(D)]** | Nature Spirits |
-| Salamon (3) | `salamon`(V) | `gatomon`(V) | **[`angewomon`(V) \| `ophanimon`(V) \| `silphymon`(D)]** | Wind Guardians |
-| Betamon | `betamon`(Vi) | `seadramon`(D) | **[`megaseadramon`(D) \| `metalseadramon`(D)]** | Deep Savers |
-| Elecmon | `elecmon`(D) | `leomon`(V) | **[`panjyamon`(V) \| `saberleomon`(D)]** | Nature Spirits |
-| Mushroomon | `mushroomon`(Vi) | `woodmon`(Vi) | **[`cherrymon`(Vi) \| `puppetmon`(Vi)]** | Nightmare Soldiers |
-| Monodramon | `monodramon`(V) | `strikedramon`(V) | **[`cyberdramon`(Vi) \| `justimon`(V)]** | Dragon's Roar |
-| Lunamon | `lunamon`(D) | `lekismon`(D) | **[`crescemon`(D) \| `dianamon`(D)]** | Wind Guardians |
-| Flamemon (3) | `flamemon`(D) | `aldamon`(D) | `susanoomon`(D) | Dragon's Roar |
-| Guilmon (4) | `guilmon`(Vi) | `growlmon`(Vi) | `gallantmon`(Vi) | Dragon's Roar |
-| Dorumon (4) | `dorumon`(D) | `dorugamon`(D) | `alphamon`(D) | Dragon's Roar |
-| Agunimon (4) | `agunimon`(Vi) | `burninggreymon`(Vi) | `kaisergreymon`(Vi) | Dragon's Roar |
-| Lobomon (4) | `lobomon`(Vi) | `kendogarurumon`(Vi) | `magnagarurumon`(Vi) | Nature Spirits |
+| Agumon (1) | `agumon`(V) | **[`greymon`(V) \| `geogreymon`(V)]** | `greymon` → **[`wargreymon`(V) \| `blitzgreymon`(Vi)]**, `geogreymon` → **[`rizegreymon`(Vi) \| `shinegreymon`(V)]** | 🔥 Fire |
+| Tentomon (1) | `tentomon`(V) | `kabuterimon`(V) | **[`megakabuterimon`(D) \| `herculeskabuterimon`(V)]** | 🌿 Plant |
+| Biyomon (1) | `biyomon`(V) | `birdramon`(V) | **[`garudamon`(V) \| `hououmon`(V)]** | 🌪️ Wind, 🔥 Fire (birdramon) |
+| Terriermon (1) | `terriermon`(V) | `gargomon`(V) | **[`rapidmon`(V) \| `megagargomon`(V)]** | 🌪️ Wind, ⚡ Electric (gargomon) |
+| Gabumon (1) | `gabumon`(D) | `garurumon`(D) | **[`metalgarurumon`(D) \| `cresgarurumon`(V)]** | 🔥 Fire, 💧 Water (metalgarurumon) |
+| DemiDevimon (1) | `demidevimon`(Vi) | **[`skullsatamon`(Vi) \| `devimon`(Vi)]** | `skullsatamon` → `belzemon`(Vi), `devimon` → **[`myotismon`(Vi) \| `ladydevimon`(Vi)]** | 🌑 Dark |
+| Hagurumon (2) | `hagurumon`(Vi) | `guardromon`(Vi) | `machinedramon`(Vi) | ⚡ Electric |
+| Patamon (2) | `patamon`(V) | `angemon`(V) | `magnaangemon`(V) | 🌪️ Wind, ✨ Light (angemon) |
+| Dracomon (2) | `dracomon`(D) | `coredramon`(D) | `breakdramon`(D) | 🔥 Fire, ⛰️ Earth (breakdramon) |
+| Keramon (2) | `keramon`(Vi) | `infermon`(Vi) | `diaboromon`(Vi) | 🌑 Dark |
+| Candlemon (2) | `candlemon`(Vi) | `meramon`(Vi) | `gankoomon`(Vi) | 🔥 Fire |
+| Palmon (3) | `palmon`(D) | `togemon`(D) | **[`rosemon`(D) \| `rosemonbm`(Vi)]** | 🌿 Plant |
+| Gomamon (3) | `gomamon`(V) | `ikkakumon`(V) | `vikemon`(V) | 💧 Water |
+| Veemon (3) | `veemon`(V) | **[`exveemon`(V) \| `paildramon`(D)]** | `imperialdramon`(V) | ⚡ Electric |
+| Gaomon (2) | `gaomon`(D) | `gaogamon`(D) | **[`machgaogamon`(D) \| `miragegaogamon`(D)]** | 🌪️ Wind |
+| Falcomon (2) | `falcomon`(Vi) | `peckmon`(Vi) | **[`crowmon`(D) \| `ravemon`(Vi)]** | 🌪️ Wind |
+| Herissmon (2) | `herissmon`(D) | `filmon`(D) | `rasenmon`(D) | ⚡ Electric |
+| Wormmon (3) | `wormmon`(V) | `stingmon`(V) | `banchostingmon`(V) | 🌿 Plant |
+| Renamon (3) | `renamon`(D) | `kyubimon`(D) | **[`taomon`(D) \| `sakuyamon`(D)]** | 🌿 Plant, 🔥 Fire (kyubimon), 🌑 Dark (taomon) |
+| Salamon (3) | `salamon`(V) | `gatomon`(V) | **[`angewomon`(V) \| `ophanimon`(V) \| `silphymon`(D)]** | ✨ Light |
+| Betamon | `betamon`(Vi) | `seadramon`(D) | **[`megaseadramon`(D) \| `metalseadramon`(D)]** | 💧 Water |
+| Elecmon | `elecmon`(D) | `leomon`(V) | **[`panjyamon`(V) \| `saberleomon`(D)]** | ⚡ Electric, ⛰️ Earth (leomon), 💧 Water (panjyamon) |
+| Mushroomon | `mushroomon`(Vi) | `woodmon`(Vi) | **[`cherrymon`(Vi) \| `puppetmon`(Vi)]** | 🌿 Plant |
+| Monodramon | `monodramon`(V) | `strikedramon`(V) | **[`cyberdramon`(Vi) \| `justimon`(V)]** | ⛰️ Earth, 🌑 Dark (cyberdramon) |
+| Lunamon | `lunamon`(D) | `lekismon`(D) | **[`crescemon`(D) \| `dianamon`(D)]** | 💧 Water |
+| Flamemon (3) | `flamemon`(D) | `aldamon`(D) | `susanoomon`(D) | 🔥 Fire, ✨ Light (susanoomon) |
+| Guilmon (4) | `guilmon`(Vi) | `growlmon`(Vi) | `gallantmon`(Vi) | 🔥 Fire, ✨ Light (gallantmon) |
+| Dorumon (4) | `dorumon`(D) | `dorugamon`(D) | `alphamon`(D) | ⛰️ Earth |
+| Agunimon (4) | `agunimon`(Vi) | `burninggreymon`(Vi) | `kaisergreymon`(Vi) | 🔥 Fire |
+| Lobomon (4) | `lobomon`(Vi) | `kendogarurumon`(Vi) | `magnagarurumon`(Vi) | ✨ Light |
 
 Removed early on (no animated rips existed then): GeoGreymon/RizeGreymon, Tyrannomon/MetalTyrannomon,
 Gaogamon/MachGaogamon, WereGarurumon, Devimon/IceDevimon/Myotismon, Pegasusmon,
@@ -54,12 +55,12 @@ Woodmon/Cherrymon, Dolphmon. Cyber Sleuth's files have them all: GeoGreymon/Rize
 and Devimon/Myotismon are back since sets 4–5.
 
 Boss-only (`bossOnly`: never in the shop, wild waves or scrims) — boss rounds draw from candidates:
-| Form | Attr / family | Where |
+| Form | Attr / element | Where |
 |---|---|---|
-| `zeed` ZeedMillenniummon | Vi, Nightmare Soldiers | VS R30 (or Apollomon), endless |
-| `gracenovamon` Gracenovamon | D, Dragon's Roar | VS R40+, endless |
-| `apollomon` Apollomon | V, Dragon's Roar | solo R15 (or Diaboromon), VS R30, endless |
-| `mitamamon` Mitamamon | V, Wind Guardians | solo R10 (or Machinedramon), VS R20, endless |
+| `zeed` ZeedMillenniummon | Vi, Dark | VS R30 (or Apollomon), endless |
+| `gracenovamon` Gracenovamon | D, Light | VS R40+, endless |
+| `apollomon` Apollomon | V, Fire | solo R15 (or Diaboromon), VS R30, endless |
+| `mitamamon` Mitamamon | V, Electric | solo R10 (or Machinedramon), VS R20, endless |
 
 Wild Digimon (`wild`: met in PvE waves, never recruited): `coronamon`(V), `tapirmon`(V) rookies; `piximon`(D) champion.
 

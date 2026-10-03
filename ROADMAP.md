@@ -242,6 +242,19 @@ Herissmon, Agunimon, Lobomon) лишаються досяжними.
 
 ## 5. Журнал
 <!-- новіші записи зверху -->
+- **2026-10-03** — Стихії замість родин (Саша: «синергії як у грі», DSCS — база знань, TFT — база геймплею): п'ять
+  вигаданих родин → вісім стихій Cyber Sleuth — Fire, Water, Plant, Electric, Earth, Wind, Light, Dark (колонка
+  `attribute` у `digimon_common_para` = індекс `element.mbe`; кілька правок за лором: Veemon-лінія Electric, Dorumon/
+  Monodramon Earth тощо). Кожна грає по-своєму, рівні 2/4: Fire атака 12/30%, Water мана 30/70%, Plant регенерація
+  1.5/3.5% HP за с, Electric швидкість атаки 18/40%, Earth HP 22/48%, Wind ігнорує 12/26% урону, Light щит 18/40% HP на
+  старті, Dark вампіризм 15/32%. Немовлята — атрибут Free (поза трикутником); Fresh — Neutral, In-Training уже мають
+  стихію (як у грі) і рахуються в синергіях. Стихія може мінятися вздовж лінії (Elecmon Electric → Leomon Earth →
+  Panjyamon Water) — ще одне рішення при гілці. Дігіментали — емблеми стихій (Courage Fire, Friendship Electric, Love
+  Wind, Reliability Water, Kindness Dark; Hope подвоює свою); аугменти — по одному на стихію (нові Tidal Flow, Thunder
+  Surge, Bedrock, Holy Aura). Guide: фільтр ліній за стихіями, стихія на картках, у синергіях — усі дігімони стихії.
+  Баланс: 8 стихій проти 5 родин → синергії збираються рідше (соло-боси 50/44/38 → підсилено рівні, R10/R15 −4% →
+  49/53/39%, було 48/48/41; VS-боси −6% HP → 67/40/52/69%, було 67/39/50/70); форми 42–58% (Dracomon, Garurumon −; Kabuterimon, HerculesKabuterimon +; Lobomon
+  отримав «Lobo Kendo», Infermon — «Cable Crusher» з вампіризмом).
 - **2026-10-03** — Set 6 (Саша: «поповнювати ростер»): п'ять ліній із Cyber Sleuth, по одній на родину, з
   немовлятами з таблиці гри — Betamon → Seadramon → [MegaSeadramon | MetalSeadramon] (DS, від Bukamon), Elecmon → Leomon →
   [Panjyamon | SaberLeomon] (NSp, від Yokomon), Mushroomon → Woodmon → [Cherrymon | Puppetmon] (NSo, Dark Masters, від

@@ -1,5 +1,5 @@
 import { useGame } from "../game/store";
-import { FORMS, ATTR_COLOR, FAMILY_COLOR, STAGE_NAME } from "../game/creatures";
+import { FORMS, ATTR_COLOR, ELEMENT_COLOR, ELEMENT_ICON, STAGE_NAME } from "../game/creatures";
 import { Portrait } from "./Portrait";
 
 export function EvolutionChoice() {
@@ -28,15 +28,15 @@ export function EvolutionChoice() {
                   <span className="evo-tag" style={{ background: attr }}>
                     {form.attribute}
                   </span>
-                  <span className="evo-tag fam" style={{ color: FAMILY_COLOR[form.family], borderColor: FAMILY_COLOR[form.family] }}>
-                    {form.family}
+                  <span className="evo-tag fam" style={{ color: ELEMENT_COLOR[form.element], borderColor: ELEMENT_COLOR[form.element] }}>
+                    {ELEMENT_ICON[form.element]} {form.element}
                   </span>
                 </span>
               </button>
             );
           })}
         </div>
-        <div className="evo-hint">Choose an evolution — branches change your attribute &amp; family synergies.</div>
+        <div className="evo-hint">Choose an evolution — branches change your attribute &amp; element synergies.</div>
       </div>
     </div>
   );

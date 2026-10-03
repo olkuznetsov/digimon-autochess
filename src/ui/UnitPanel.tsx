@@ -1,5 +1,5 @@
 import { useGame } from "../game/store";
-import { FORMS, ATTR_COLOR, FAMILY_COLOR, STAGE_NAME, sellValue } from "../game/creatures";
+import { FORMS, ATTR_COLOR, ELEMENT_COLOR, ELEMENT_ICON, STAGE_NAME, sellValue } from "../game/creatures";
 import { ultimateFor } from "../game/ultimates";
 import { makeFighter } from "../game/battle";
 import { ITEMS } from "../game/items";
@@ -29,7 +29,7 @@ export function UnitPanel() {
   const stats = fighter ?? makeFighter(formId, "preview", "player", 0, 0, 1, items, star);
   const ability = ultimateFor(formId, form.role);
   const attr = ATTR_COLOR[form.attribute];
-  const fam = FAMILY_COLOR[form.family];
+  const fam = ELEMENT_COLOR[form.element];
 
   return (
     <div className="unit-panel">
@@ -51,7 +51,7 @@ export function UnitPanel() {
           {form.attribute}
         </span>
         <span className="up-tag fam" style={{ color: fam, borderColor: fam }}>
-          {form.family}
+          {ELEMENT_ICON[form.element]} {form.element}
         </span>
         <span className="up-tag role">{form.role}</span>
       </div>

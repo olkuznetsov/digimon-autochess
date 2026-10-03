@@ -1,6 +1,6 @@
 import { useGame } from "../game/store";
 import { AUGMENTS, MAX_AUGMENTS } from "../game/augments";
-import { FAMILY_COLOR } from "../game/creatures";
+import { ELEMENT_COLOR, ELEMENT_ICON } from "../game/creatures";
 
 const KIND_LABEL = { instant: "now", economy: "every round", combat: "every fight" } as const;
 
@@ -26,14 +26,14 @@ export function AugmentChoice() {
           {offer.map((id) => {
             const def = AUGMENTS[id];
             if (!def) return null;
-            const famColor = def.family ? FAMILY_COLOR[def.family] : undefined;
+            const famColor = def.element ? ELEMENT_COLOR[def.element] : undefined;
             return (
               <button key={id} className={`evo-card augment-card ${def.kind}`} onClick={() => pick(id)}>
                 <span className="aug-emoji">{def.emoji}</span>
                 <span className="evo-name">{def.name}</span>
                 <span className="aug-desc">{def.desc}</span>
                 <span className="evo-stage" style={famColor ? { color: famColor } : undefined}>
-                  {def.family ?? KIND_LABEL[def.kind]}
+                  {def.element ? `${ELEMENT_ICON[def.element]} ${def.element}` : KIND_LABEL[def.kind]}
                 </span>
               </button>
             );

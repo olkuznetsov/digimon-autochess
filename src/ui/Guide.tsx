@@ -6,7 +6,8 @@ import {
   PLAYABLE_IDS,
   WILD_IDS,
   ATTR_COLOR,
-  FAMILY_COLOR,
+  ELEMENT_COLOR,
+  ELEMENT_ICON,
   STAGE_NAME,
   isPlayable,
   statsFor,
@@ -20,7 +21,7 @@ import { AUGMENTS, AUGMENT_IDS, AUGMENT_ROUNDS } from "../game/augments";
 import { ECONOMY, SHOP_ODDS, VS, WAVES } from "../game/tuning";
 import { MAX_LEVEL } from "../game/xpView";
 import { POOL_COPIES, ratingDelta } from "../game/lobby";
-import type { Family, Role } from "../game/types";
+import type { Element, Role } from "../game/types";
 import { Portrait } from "./Portrait";
 
 /**
@@ -37,7 +38,7 @@ const TABS: [Tab, string][] = [
   ["vs", "VS"],
 ];
 const ROLE_ICON: Record<Role, string> = { tank: "🛡️", bruiser: "💪", assassin: "🗡️", ranged: "🏹", caster: "✨" };
-const FAMILIES = (Object.keys(FAMILY_COLOR) as Family[]).filter((f) => f !== "Baby");
+const ELEMENTS = (Object.keys(ELEMENT_COLOR) as Element[]).filter((e) => e !== "Neutral");
 
 export function Guide({ onClose, initial = "basics" }: { onClose: () => void; initial?: Tab }) {
   const [tab, setTab] = useState<Tab>(initial);
@@ -85,8 +86,8 @@ function Basics() {
         <h3>Digivolve</h3>
         <ul>
           <li>🧬 <b>3 copies</b> of the same Digimon merge into the next stage: Fresh → In-Training → Rookie → Champion → Mega.</li>
-          <li>🔀 Most stages <b>branch</b> — you pick the evolution (3 Koromon: Agumon, Guilmon or Dracomon), and with it the attribute and family.</li>
-          <li>🍼 <b>Babies</b> (Fresh, In-Training) have no attribute and no family: neutral to everyone, no synergies. Raise them into Rookies.</li>
+          <li>🔀 Most stages <b>branch</b> — you pick the evolution (3 Koromon: Agumon, Guilmon or Dracomon), and with it the attribute and element.</li>
+          <li>🍼 <b>Babies</b> (Fresh, In-Training) are <b>Free</b>: neutral to every attribute. Fresh have no element yet; In-Training already carry one, as in Cyber Sleuth. Raise them into Rookies.</li>
           <li>⭐ A <b>Mega</b> has nowhere to digivolve: three copies star it up — <b>★★</b> (×1.8 HP and attack), and three ★★ make <b>★★★</b> (×3.2, its ultimate +50%).</li>
           <li>🪑 When a fight starts, empty board slots fill from your bench, first slot first — tanks to the front, ranged to the back.</li>
           <li>🎒 Items carry over: two stay on the new form, the rest go back to your tray.</li>
@@ -179,7 +180,11 @@ function FormCard({ id, next = false }: { id: string; next?: boolean }) {
       <div className="dex-info">
         <span className="dex-name">{form.name}</span>
         <span className="dex-meta">
-          <span style={{ color: ATTR_COLOR[form.attribute] }}>{form.attribute}</span> · {ROLE_ICON[form.role]} {form.role}
+          <span style={{ color: ATTR_COLOR[form.attribute] }}>{form.attribute}</span> ·{" "}
+          <span style={{ color: ELEMENT_COLOR[form.element] }}>
+            {ELEMENT_ICON[form.element]} {form.element}
+          </span>{" "}
+          · {ROLE_ICON[form.role]} {form.role}
         </span>
         <span className="dex-stats">
           ❤️{Math.round(s.hp * HP_SCALE)} ⚔️{s.attack} ⚡{s.attackSpeed.toFixed(2)} 🎯{s.range}
@@ -206,7 +211,7 @@ function Babies() {
     <section className="dex-line">
       <div className="dex-line-head">
         <b>Babies</b>
-        <span className="dex-note">⛂1 Fresh and ⛂2 In-Training — no attribute, no family; three of a kind digivolve</span>
+        <span className="dex-note">⛂1 Fresh and ⛂2 In-Training — Free, neutral to every attribute; In-Training have an element; three of a kind digivolve</span>
       </div>
       <div className="dex-tree">
         {([1, 2] as const).map((stage) => (
@@ -238,8 +243,8 @@ function bossRounds(id: string): string {
 }
 
 /** The Digimon you meet but can't recruit: wild ones in the waves, and the bosses. */
-function Bestiary({ family }: { family: Family | null }) {
-  const of = (ids: string[]) => ids.filter((id) => !family || FORMS[id].family === family);
+function Bestiary({ element }: { element: Element | null }) {
+  const of = (ids: string[]) => ids.filter((id) => !element || FORMS[id].element === element);
   const wild = of(WILD_IDS);
   const bosses = of(BOSS_IDS);
   return (
@@ -285,7 +290,7 @@ function Bestiary({ family }: { family: Family | null }) {
 }
 
 function Digimon() {
-  const [family, setFamily] = useState<Family | null>(null);
+  const [element, setElement] = useState<Element | null>(null);
   // lines by name: rookie → its champions → their megas
   const lines = useMemo(
     () =>
@@ -309,26 +314,26 @@ function Digimon() {
       <p className="guide-intro">
         {lines.length} lines from {BABY_IDS.length} babies, {PLAYABLE_IDS.length} forms to collect — plus {WILD_IDS.length}{" "}
         wild Digimon and {BOSS_IDS.length} bosses you can only fight. Stats are per role and stage; what sets a Digimon
-        apart is its attribute, family and ultimate.
+        apart is its attribute, element and ultimate.
       </p>
       <div className="guide-chips">
-        <button className={`guide-chip${family === null ? " on" : ""}`} onClick={() => setFamily(null)}>
+        <button className={`guide-chip${element === null ? " on" : ""}`} onClick={() => setElement(null)}>
           All
         </button>
-        {FAMILIES.map((f) => (
+        {ELEMENTS.map((e) => (
           <button
-            key={f}
-            className={`guide-chip${family === f ? " on" : ""}`}
-            style={{ color: FAMILY_COLOR[f] }}
-            onClick={() => setFamily(family === f ? null : f)}
+            key={e}
+            className={`guide-chip${element === e ? " on" : ""}`}
+            style={{ color: ELEMENT_COLOR[e] }}
+            onClick={() => setElement(element === e ? null : e)}
           >
-            {f}
+            {ELEMENT_ICON[e]} {e}
           </button>
         ))}
       </div>
-      {!family && <Babies />}
+      {!element && <Babies />}
       {lines
-        .filter((l) => !family || [l.rookie, ...l.champions, ...l.megas].some((id) => FORMS[id].family === family))
+        .filter((l) => !element || [l.rookie, ...l.champions, ...l.megas].some((id) => FORMS[id].element === element))
         .map((l) => (
           <section key={l.rookie} className="dex-line">
             <div className="dex-line-head">
@@ -336,7 +341,9 @@ function Digimon() {
               <span className="dex-note">
                 {BABY_OF[l.rookie] ? `from ${BABY_OF[l.rookie].map((b) => FORMS[b].name).join(" / ")}` : "starts at Rookie"}
               </span>
-              <span style={{ color: FAMILY_COLOR[FORMS[l.rookie].family] }}>{FORMS[l.rookie].family}</span>
+              <span style={{ color: ELEMENT_COLOR[FORMS[l.rookie].element] }}>
+                {ELEMENT_ICON[FORMS[l.rookie].element]} {FORMS[l.rookie].element}
+              </span>
               {(l.champions.length > 1 || l.megas.length > 1) && <span className="dex-branch">🔀 branches</span>}
             </div>
             <div className="dex-tree">
@@ -358,7 +365,7 @@ function Digimon() {
             </div>
           </section>
         ))}
-      <Bestiary family={family} />
+      <Bestiary element={element} />
     </>
   );
 }
@@ -381,13 +388,18 @@ function Synergies() {
       <section className="guide-sec">
         <h3>Synergies</h3>
         <p>
-          Different Digimon of the same attribute or family on the board unlock a bonus (copies of one form count once).
-          Babies count for none — unless a Digimental gives them a family.
+          Different Digimon of the same attribute or element on the board unlock a bonus (copies of one form count once).
+          The elements are Cyber Sleuth's eight, each with its own way to fight. Free babies count for no attribute, and
+          Fresh ones have no element yet — unless a Digimental gives them one.
         </p>
         <div className="syn-grid">
           {TRAITS.map((t) => {
+            // attributes: their rookies; elements: every Digimon of theirs, In-Training to Mega
             const members = Object.values(FORMS)
-              .filter((f) => isPlayable(f) && f.stage === 3 && (f.attribute === t.key || f.family === t.key))
+              .filter((f) =>
+                t.kind === "attribute" ? isPlayable(f) && f.stage === 3 && f.attribute === t.key : isPlayable(f) && f.element === t.key,
+              )
+              .sort((a, b) => a.stage - b.stage)
               .map((f) => f.id);
             return (
               <div key={t.key} className="syn-card" style={{ borderColor: t.color }}>
@@ -407,7 +419,7 @@ function Synergies() {
             );
           })}
         </div>
-        <p className="guide-note">Portraits show the rookies; a branch can change attribute or family when it evolves.</p>
+        <p className="guide-note">Attributes show their rookies, elements every Digimon of theirs; a branch can change attribute or element when it evolves.</p>
       </section>
     </>
   );
@@ -438,7 +450,7 @@ function Items() {
           Any two base items fuse into a stronger one: pick one, then a glowing partner in your tray — or put the second
           on a Digimon that holds the first, and they fuse right there. The Crests, Lightning Coil, Spike Shell, Rage Chip
           and Blue Card do something of their own in battle. A <b>Digimental</b> (Digitama + a base item) makes its holder
-          count for a family — a baby too; two Digitama make a <b>Digivice</b>: one more Digimon on the board.
+          count for an element — a baby too; two Digitama make a <b>Digivice</b>: one more Digimon on the board.
         </p>
         <div className="fuse-wrap">
           <table className="guide-table fuse">
@@ -550,7 +562,7 @@ function Versus() {
                 <span className="item-emoji">{a.emoji}</span>
                 <b>{a.name}</b>
                 <span>{a.desc}</span>
-                <span className="item-from">{a.family ?? a.kind}</span>
+                <span className="item-from">{a.element ?? a.kind}</span>
               </div>
             );
           })}

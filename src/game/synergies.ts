@@ -1,6 +1,6 @@
 import type { Fighter, Unit } from "./types";
-import { FORMS, ATTR_COLOR, FAMILY_COLOR } from "./creatures";
-import { EMBLEM_FAMILY } from "./items";
+import { FORMS, ATTR_COLOR, ELEMENT_COLOR, ELEMENT_ICON } from "./creatures";
+import { EMBLEM_ELEMENT } from "./items";
 
 export interface TraitTier {
   need: number;
@@ -9,12 +9,22 @@ export interface TraitTier {
   atkPct?: number;
   asPct?: number; // attack-speed %
   rangedOnly?: boolean;
+  /** mana gain % */
+  manaPct?: number;
+  /** regeneration, % of max HP per second */
+  regenPct?: number;
+  /** share of incoming damage ignored */
+  guardPct?: number;
+  /** a shield at the start of battle, % of max HP */
+  shieldPct?: number;
+  /** lifesteal */
+  stealPct?: number;
 }
 
 export interface TraitDef {
   key: string;
   name: string;
-  kind: "attribute" | "family";
+  kind: "attribute" | "element";
   color: string;
   tiers: TraitTier[]; // ascending by need
 }
@@ -44,60 +54,66 @@ const ATTRIBUTE_TRAITS: TraitDef[] = [
   },
 ];
 
-// Family traits (origin/class axis): two tiers each — 2 different members for a
-// taste, 4 for the full bonus (a line's forms count separately: Agumon + Greymon is 2)
-const FAMILY_TRAITS: TraitDef[] = [
-  {
-    key: "Dragon's Roar", name: "Dragon's Roar", kind: "family", color: FAMILY_COLOR["Dragon's Roar"],
-    tiers: [
-      { need: 2, desc: "+15% attack", atkPct: 0.15 },
-      { need: 4, desc: "+32% attack", atkPct: 0.32 },
-    ],
-  },
-  {
-    key: "Nature Spirits", name: "Nature Spirits", kind: "family", color: FAMILY_COLOR["Nature Spirits"],
-    tiers: [
-      { need: 2, desc: "+12% max HP", hpPct: 0.12 },
-      { need: 4, desc: "+30% max HP", hpPct: 0.3 },
-    ],
-  },
-  {
-    key: "Wind Guardians", name: "Wind Guardians", kind: "family", color: FAMILY_COLOR["Wind Guardians"],
-    tiers: [
-      { need: 2, desc: "+15% attack speed", asPct: 0.15 },
-      { need: 4, desc: "+35% attack speed", asPct: 0.35 },
-    ],
-  },
-  {
-    key: "Nightmare Soldiers", name: "Nightmare Soldiers", kind: "family", color: FAMILY_COLOR["Nightmare Soldiers"],
-    tiers: [
-      { need: 2, desc: "+14% damage", atkPct: 0.14 },
-      { need: 4, desc: "+28% damage", atkPct: 0.28 },
-    ],
-  },
-  {
-    key: "Deep Savers", name: "Deep Savers", kind: "family", color: FAMILY_COLOR["Deep Savers"],
-    tiers: [
-      { need: 2, desc: "+20% max HP", hpPct: 0.2 },
-      { need: 4, desc: "+36% max HP", hpPct: 0.36 },
-    ],
-  },
+// Element traits (Cyber Sleuth's elements, the origin axis): two tiers each — 2 different
+// members for a taste, 4 for the full bonus (a line's forms count separately). Each
+// element plays its own way; the common ones (Fire) give a little less, the rare one
+// (Earth) a little more.
+const el = (key: "Fire" | "Water" | "Plant" | "Electric" | "Earth" | "Wind" | "Light" | "Dark", tiers: TraitTier[]): TraitDef => ({
+  key,
+  name: `${ELEMENT_ICON[key]} ${key}`,
+  kind: "element",
+  color: ELEMENT_COLOR[key],
+  tiers,
+});
+const ELEMENT_TRAITS: TraitDef[] = [
+  el("Fire", [
+    { need: 2, desc: "+12% attack", atkPct: 0.12 },
+    { need: 4, desc: "+30% attack", atkPct: 0.3 },
+  ]),
+  el("Water", [
+    { need: 2, desc: "+30% mana gain", manaPct: 0.3 },
+    { need: 4, desc: "+70% mana gain", manaPct: 0.7 },
+  ]),
+  el("Plant", [
+    { need: 2, desc: "regenerate 1.5% max HP a second", regenPct: 0.015 },
+    { need: 4, desc: "regenerate 3.5% max HP a second", regenPct: 0.035 },
+  ]),
+  el("Electric", [
+    { need: 2, desc: "+18% attack speed", asPct: 0.18 },
+    { need: 4, desc: "+40% attack speed", asPct: 0.4 },
+  ]),
+  el("Earth", [
+    { need: 2, desc: "+22% max HP", hpPct: 0.22 },
+    { need: 4, desc: "+48% max HP", hpPct: 0.48 },
+  ]),
+  el("Wind", [
+    { need: 2, desc: "ignore 12% of incoming damage", guardPct: 0.12 },
+    { need: 4, desc: "ignore 26% of incoming damage", guardPct: 0.26 },
+  ]),
+  el("Light", [
+    { need: 2, desc: "a shield of 18% max HP when battle starts", shieldPct: 0.18 },
+    { need: 4, desc: "a shield of 40% max HP when battle starts", shieldPct: 0.4 },
+  ]),
+  el("Dark", [
+    { need: 2, desc: "15% lifesteal", stealPct: 0.15 },
+    { need: 4, desc: "32% lifesteal", stealPct: 0.32 },
+  ]),
 ];
 
-export const TRAITS: TraitDef[] = [...ATTRIBUTE_TRAITS, ...FAMILY_TRAITS];
+export const TRAITS: TraitDef[] = [...ATTRIBUTE_TRAITS, ...ELEMENT_TRAITS];
 
-/** The families a unit counts as: its own, plus any its Digimentals add (a baby too). */
-export function familiesOf(formId: string, items: string[] = []): string[] {
-  const out = [FORMS[formId].family as string];
+/** The elements a unit counts as: its own, plus any its Digimentals add (a Neutral one too). */
+export function elementsOf(formId: string, items: string[] = []): string[] {
+  const out = [FORMS[formId].element as string];
   for (const it of items) {
-    const fam = EMBLEM_FAMILY[it];
-    if (fam && !out.includes(fam)) out.push(fam);
+    const e = EMBLEM_ELEMENT[it];
+    if (e && !out.includes(e)) out.push(e);
   }
   return out;
 }
 
 /** Count UNIQUE creature types on the board per trait (duplicates don't double-count).
- *  Digimentals add their family to the holder; Hope makes its own family count twice. */
+ *  Digimentals add their element to the holder; Hope makes its own element count twice. */
 export function traitCounts(units: Unit[]): Map<string, number> {
   const seen = new Set<string>();
   const counts = new Map<string, number>();
@@ -110,8 +126,8 @@ export function traitCounts(units: Unit[]): Map<string, number> {
     if (u.placement.kind !== "board") continue;
     const form = FORMS[u.formId];
     add(form.attribute, `${form.attribute}|${u.formId}`);
-    for (const fam of familiesOf(u.formId, u.items)) add(fam, `${fam}|${u.formId}`);
-    if (u.items?.includes("hopemental")) add(form.family, `hope|${u.formId}`);
+    for (const e of elementsOf(u.formId, u.items)) add(e, `${e}|${u.formId}`);
+    if (u.items?.includes("hopemental")) add(form.element, `hope|${u.formId}`);
   }
   return counts;
 }
@@ -150,7 +166,7 @@ export function traitViews(units: Unit[]): TraitView[] {
 
 /** Apply active synergy buffs to the player's fighters (mutates them).
  *  A trait only buffs the units that belong to it (Vaccine buffs Vaccine units,
- *  Nature Spirits buffs Nature Spirits units) — so committing to a trait matters. */
+ *  Fire buffs Fire units) — so committing to a trait matters. */
 export function applySynergies(fighters: Fighter[], units: Unit[]): void {
   const counts = traitCounts(units);
   for (const def of TRAITS) {
@@ -160,17 +176,28 @@ export function applySynergies(fighters: Fighter[], units: Unit[]): void {
     for (const f of fighters) {
       const cform = FORMS[f.formId];
       const belongs =
-        def.kind === "attribute" ? cform.attribute === def.key : familiesOf(f.formId, f.items).includes(def.key);
+        def.kind === "attribute" ? cform.attribute === def.key : elementsOf(f.formId, f.items).includes(def.key);
       if (!belongs) continue;
       if (t.rangedOnly && f.range < 2) continue;
       if (t.hpPct) f.maxHp *= 1 + t.hpPct;
       if (t.atkPct) f.attack *= 1 + t.atkPct;
       if (t.asPct) f.attackSpeed *= 1 + t.asPct;
+      if (t.manaPct) f.manaMult *= 1 + t.manaPct;
+      if (t.regenPct) f.regen += t.regenPct;
+      if (t.guardPct) f.dmgReduction = Math.min(0.5, f.dmgReduction + t.guardPct);
+      if (t.stealPct) f.lifesteal += t.stealPct;
     }
   }
   for (const f of fighters) {
     f.maxHp = Math.round(f.maxHp);
     f.attack = Math.round(f.attack);
     f.hp = f.maxHp;
+  }
+  // Light: a shield when battle starts (sized on the final max HP)
+  for (const def of TRAITS) {
+    const a = activeTier(def, counts.get(def.key) ?? 0);
+    if (!a?.tier.shieldPct) continue;
+    for (const f of fighters)
+      if (def.kind === "element" && elementsOf(f.formId, f.items).includes(def.key)) f.shield += Math.round(f.maxHp * a.tier.shieldPct);
   }
 }

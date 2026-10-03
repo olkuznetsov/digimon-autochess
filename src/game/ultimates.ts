@@ -144,53 +144,53 @@ const ROLE_ULT: Record<Role, Ultimate> = {
 
 // ---------- signature ultimates (Champions + Megas) ----------
 export const ULTIMATES: Record<string, Ultimate> = {
-  // Dragon's Roar — Agumon line
+  // Agumon line
   greymon: u("Nova Blast", "🔥", "Hurls a fireball for 260% attack.", bolt(2.6)),
   wargreymon: u("Terra Force", "☄️", "Gathers a sun and slams it down — AoE 175%.", nova(1.75, 1.9)),
   blitzgreymon: u("Giga Destroyer", "💥", "Missiles at the 3 nearest foes (145%).", volley(3, 1.45)),
-  // Nature Spirits — Gabumon line
-  garurumon: u("Howling Blaster", "❄️", "A freezing blast for 250% attack.", bolt(2.5)),
+  // Gabumon line
+  garurumon: u("Howling Blaster", "❄️", "A freezing blast for 240% attack.", bolt(2.4)),
   metalgarurumon: u("Cocytus Breath", "🧊", "Absolute-zero breath: AoE 120% and freezes for 1.2s.", freeze(1.2, 1.7, 1.2)),
   cresgarurumon: u("Crescent Edge", "🌙", "A blinding slash flurry (4×110%).", barrage(4, 1.1)),
-  // Nightmare Soldiers — DemiDevimon line
+  // DemiDevimon line
   skullsatamon: u("Nightmare Wave", "💀", "Three cursed strikes (120% each).", barrage(3, 1.2)),
   belzemon: u("Corona Blaster", "🔫", "A point-blank blast at the 2 nearest (200%).", volley(2, 2.0)),
-  // Nightmare Soldiers — Hagurumon line
+  // Hagurumon line
   guardromon: u("Guardian Barrage", "🛡️", "Shields self for 21% max HP.", bulwark(0.21)),
   machinedramon: u("Giga Cannon", "🎯", "One annihilating shot for 420% attack.", bolt(4.2)),
-  // Wind Guardians — Patamon line
+  // Patamon line
   angemon: u("Hand of Fate", "🌟", "A holy beam at the 3 nearest (135%).", volley(3, 1.35)),
   magnaangemon: u("Gate of Destiny", "⚔️", "Banishes a weakened foe — 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
-  // Nature Spirits — Dracomon line
+  // Dracomon line
   coredramon: u("Blue Flare Breath", "🔥", "A dragon-fire blast for 255%.", bolt(2.55)),
   breakdramon: u("Giga Drill", "🩸", "Braces behind a 5% team shield.", bulwark(0.05, true)),
-  // Deep Savers — Keramon line
-  infermon: u("Cable Crusher", "🕸️", "Three savage strikes (120% each).", barrage(3, 1.2)),
+  // Keramon line
+  infermon: u("Cable Crusher", "🕸️", "Three savage strikes that feed it (135% each, 35% lifesteal).", siphon(3, 1.35, 0.35)),
   diaboromon: u("Web Wrecker", "🕷️", "A viral nova (150%) around the target.", nova(1.5, 1.7)),
-  // Nightmare Soldiers — Candlemon line
+  // Candlemon line
   meramon: u("Burning Fist", "🔥", "A flaming punch for 250%.", bolt(2.5)),
   gankoomon: u("Tekken Seisai", "👊", "The Hinukamuy fist crushes for 300%.", bolt(3.0)),
-  // Nature Spirits — Palmon line
+  // Palmon line
   togemon: u("Needle Spray", "🌵", "Showers needles in an AoE (140%).", nova(1.4, 1.6)),
   rosemon: u("Thorn Whip", "🌹", "Five lashes that heal her (75% each, 20% lifesteal).", siphon(5, 0.75, 0.2)),
   rosemonbm: u("Danger Thorn", "🥀", "A toxic bloom detonates — AoE 185%.", nova(1.85, 1.8)),
-  // Deep Savers — Gomamon line
+  // Gomamon line
   ikkakumon: u("Harpoon Torpedo", "🐚", "Braces behind a 17% shield.", bulwark(0.17)),
   vikemon: u("Arctic Blizzard", "🧊", "A polar storm: AoE 110% and freezes for 1s.", freeze(1.1, 1.8, 1.0)),
-  // Wind Guardians — Veemon line
+  // Veemon line
   exveemon: u("Vee-Laser", "⚡", "An X-shaped beam for 250%.", bolt(2.5)),
   paildramon: u("Desperado Blaster", "🔫", "Rapid fire at the 2 nearest (105%).", volley(2, 1.05)),
   imperialdramon: u("Positron Laser", "🌌", "A galaxy-splitting shot for 400%.", bolt(4.0)),
-  // Wind Guardians — Wormmon line
+  // Wormmon line
   stingmon: u("Spiking Strike", "🗡️", "Three piercing thrusts (120% each).", barrage(3, 1.2)),
   banchostingmon: u("Bancho Spear", "🥇", "A relentless five-hit combo (105% each).", barrage(5, 1.05)),
-  // Dragon's Roar — Guilmon line
+  // Guilmon line
   growlmon: u("Pyro Blaster", "🔥", "A blazing blast for 260%.", bolt(2.6)),
   gallantmon: u("Lightning Joust", "⚔️", "A lance strike (280%) that splashes (100%).", smite(2.8, 1.0, 1.6)),
-  // Dragon's Roar — Dorumon line
+  // Dorumon line
   dorugamon: u("Power Metal", "⚙️", "Fires an iron sphere for 255%.", bolt(2.55)),
   alphamon: u("Seiken Gradalpha", "👑", "The Royal Knight's blade erupts — AoE 185%.", nova(1.85, 2.0)),
-  // Dragon's Roar — Flamemon line (set 2)
+  // Flamemon line (set 2)
   flamemon: u("Pyro Punch", "🔥", "A blazing punch for 270% attack.", bolt(2.7)),
   aldamon: u("Atomic Inferno", "☀️", "Fireballs rain on the target's area — AoE 155%.", nova(1.55, 1.7)),
   susanoomon: u("Amaterasu", "⚔️", "A sword of light (300%) that sweeps nearby foes (110%).", smite(3.0, 1.1, 1.8)),
@@ -203,80 +203,81 @@ export const ULTIMATES: Record<string, Ultimate> = {
   coronamon: u("Corona Flame", "🔥", "A ball of fire for 260% attack.", bolt(2.6)),
   tapirmon: u("Nightmare Syndrome", "💤", "Releases its captured nightmares — AoE 140%.", nova(1.4, 1.6)),
   piximon: u("Bit Bomb", "💣", "A bat-shaped virus bomb bursts on the target — AoE 150%.", nova(1.5, 1.6)),
-  // Nightmare Soldiers — Herissmon line (Digimon ReArise)
+  // Herissmon line (Digimon ReArise)
   herissmon: u("Lightning Fur", "⚡", "Lightning-coated quills at the 3 nearest (120%).", volley(3, 1.2)),
   filmon: u("Crimson Slash", "🩸", "Claws that don't stop: three slashes (120% each).", barrage(3, 1.2)),
   rasenmon: u("Spiral Vanish", "🌀", "Spines fuse into a giant drill (300%) that tears through nearby foes (100%).", smite(3.0, 1.0, 1.6)),
   // ---- set 4 (Cyber Sleuth's files)
-  // Dragon's Roar — Agumon's Data Squad branch
+  // Agumon's Data Squad branch
   geogreymon: u("Mega Burst", "💥", "A blast from its mouth for 260% attack.", bolt(2.6)),
   rizegreymon: u("Trident Revolver", "🔫", "Its arm cannon fires at the 3 nearest (150%).", volley(3, 1.5)),
   shinegreymon: u("Glorious Burst", "☀️", "A sun of fire bursts around the target — AoE 180%.", nova(1.8, 2.0)),
-  // Wind Guardians — Tentomon line
-  kabuterimon: u("Electro Shocker", "⚡", "Lightning arcs to the 3 nearest (130%).", volley(3, 1.3)),
+  // Tentomon line
+  kabuterimon: u("Electro Shocker", "⚡", "Lightning arcs to the 3 nearest (140%).", volley(3, 1.4)),
   megakabuterimon: u("Horn Buster", "🪲", "A charging horn and a shockwave — AoE 150%.", nova(1.5, 1.7)),
-  herculeskabuterimon: u("Giga Blaster", "🌩️", "A storm of lightning around the target — AoE 185%.", nova(1.85, 1.8)),
-  // Wind Guardians — Biyomon line
+  herculeskabuterimon: u("Giga Blaster", "🌩️", "A storm of lightning around the target — AoE 200%.", nova(2.0, 1.8)),
+  // Biyomon line
   birdramon: u("Meteor Wing", "☄️", "Fireballs rain on the 3 nearest (135%).", volley(3, 1.35)),
   garudamon: u("Wing Blade", "🦅", "A blade of fire (290%) that scorches nearby foes (100%).", smite(2.9, 1.0, 1.6)),
   hououmon: u("Starlight Explosion", "🌟", "A burst of holy starlight around the target — AoE 185%.", nova(1.85, 1.8)),
-  // Deep Savers — Terriermon line
+  // Terriermon line
   gargomon: u("Gargo Laser", "🔫", "Its gatling arms: three bursts (120% each).", barrage(3, 1.2)),
   rapidmon: u("Rapid Fire", "🚀", "Homing missiles at the 3 nearest (150%).", volley(3, 1.5)),
   megagargomon: u("Mega Barrage", "💣", "Every missile at once — AoE 150%.", nova(1.5, 1.8)),
-  // Deep Savers — Gaomon line
+  // Gaomon line
   gaogamon: u("Spiral Blow", "🌀", "A spinning dash for 255% attack.", bolt(2.55)),
   machgaogamon: u("Winning Knuckle", "🥊", "A rocket-powered punch for 300% attack.", bolt(3.0)),
   miragegaogamon: u("Full Moon Blaster", "🌕", "Moonlight from its chest at the 2 nearest (200%).", volley(2, 2.0)),
-  // Nightmare Soldiers — Falcomon line
+  // Falcomon line
   peckmon: u("Kunai Wing", "🪶", "Feather kunai: three hits (120% each).", barrage(3, 1.2)),
   crowmon: u("Sunshine Beam", "🔆", "A beam from its mirror — AoE 185%.", nova(1.85, 1.8)),
   ravemon: u("Blackwing", "🗡️", "A finishing slash: 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
-  // Nature Spirits — Renamon line
+  // Renamon line
   kyubimon: u("Fox Tail Inferno", "🦊", "Blue fox-fire around the target — AoE 145%.", nova(1.45, 1.6)),
   taomon: u("Talisman of Light", "📜", "Talismans seal the area: AoE 120%, frozen for 1.2s.", freeze(1.2, 1.8, 1.2)),
   sakuyamon: u("Spirit Strike", "🌸", "Four fox spirits and her staff: five strikes (105% each).", barrage(5, 1.05)),
-  // Dragon's Roar — Agunimon line
+  // Agunimon line
   burninggreymon: u("Wildfire Tsunami", "🔥", "Flames from its arm cannons at the 3 nearest (135%).", volley(3, 1.35)),
   kaisergreymon: u("Dragon Fire Crossbow", "🏹", "A flaming bolt (300%) that sets nearby foes ablaze (110%).", smite(3.0, 1.1, 1.8)),
-  // Nature Spirits — Lobomon line
+  // Lobomon line
+  lobomon: u("Lobo Kendo", "⚔️", "A light-sabre flurry: three strikes (125% each).", barrage(3, 1.25)),
   kendogarurumon: u("Lightspeed Jamming", "💫", "Light-blade dashes: three strikes (120% each).", barrage(3, 1.2)),
   magnagarurumon: u("Magna Missile", "🚀", "Every missile in its armour at the 3 nearest (150%).", volley(3, 1.5)),
-  // Nightmare Soldiers — DemiDevimon's Devimon branch
+  // DemiDevimon's Devimon branch
   devimon: u("Touch of Evil", "🖐️", "A cursed touch seizes minds around the target: AoE 135%, frozen for 0.9s.", freeze(1.35, 1.6, 0.9)),
   myotismon: u("Grisly Wing", "🦇", "A swarm of bats drains the target: five bites (80% each, 25% lifesteal).", siphon(5, 0.8, 0.25)),
   ladydevimon: u("Darkness Wave", "🌑", "A wave of bats at the 3 nearest (140%).", volley(3, 1.4)),
-  // Wind Guardians — Salamon line
+  // Salamon line
   gatomon: u("Lightning Paw", "🐾", "A flurry of claw strikes: three hits (120% each).", barrage(3, 1.2)),
   angewomon: u("Celestial Arrow", "🏹", "An arrow of holy light for 400% attack.", bolt(4.0)),
   ophanimon: u("Eden's Javelin", "✨", "Javelins of light rain around the target — AoE 185%.", nova(1.85, 1.8)),
   silphymon: u("Static Force", "🌀", "A sphere of energy (290%) that bursts on nearby foes (100%).", smite(2.9, 1.0, 1.6)),
   // ---- set 6
-  // Deep Savers — Betamon line
+  // Betamon line
   seadramon: u("Ice Arrow", "🧊", "Ice shards at the 3 nearest (130%).", volley(3, 1.3)),
   megaseadramon: u("Thunder Javelin", "⚡", "Lightning from its horn crashes around the target — AoE 185%.", nova(1.85, 1.8)),
   metalseadramon: u("River of Power", "🌊", "A beam from its nose cannon for 400% attack.", bolt(4.0)),
-  // Nature Spirits — Elecmon line
+  // Elecmon line
   leomon: u("Fist of the Beast King", "🦁", "A lion-shaped blast for 260% attack.", bolt(2.6)),
   panjyamon: u("Fist of the Ice Beast", "❄️", "An ice fist (290%) that chills the foes around (100%).", smite(2.9, 1.0, 1.6)),
   saberleomon: u("Howling Crusher", "🐆", "A flurry of claws: five strikes (105% each).", barrage(5, 1.05)),
-  // Nightmare Soldiers — Mushroomon line
+  // Mushroomon line
   woodmon: u("Branch Drill", "🌳", "A spinning branch for 250% attack.", bolt(2.5)),
   cherrymon: u("Cherry Bomb", "🍒", "Exploding cherries burst around the target — AoE 185%.", nova(1.85, 1.8)),
   puppetmon: u("Bullet Hammer", "🔨", "Its hammer fires at the 3 nearest (150%).", volley(3, 1.5)),
-  // Dragon's Roar — Monodramon line
+  // Monodramon line
   strikedramon: u("Strike Fang", "🔥", "A blazing tackle: three strikes (120% each).", barrage(3, 1.2)),
   cyberdramon: u("Desolation Claw", "🐉", "A claw of pure force (300%) that tears through nearby foes (100%).", smite(3.0, 1.0, 1.6)),
   justimon: u("Justice Kick", "🦵", "A finishing kick: 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
-  // Wind Guardians — Lunamon line
+  // Lunamon line
   lekismon: u("Tear Arrow", "🏹", "Arrows of moonlit water at the 3 nearest (130%).", volley(3, 1.3)),
   crescemon: u("Lunatic Dance", "🌙", "A dance of crescent blades: five strikes (105% each).", barrage(5, 1.05)),
   dianamon: u("Good Night Moon", "🌕", "Moonlight lulls the area to sleep: AoE 120%, frozen for 1.2s.", freeze(1.2, 1.8, 1.2)),
   // Support rally on a couple of casters keeps team comps interesting
   candlemon: u("Ember Rally", "🕯️", "Ignites allies: +30% attack for the battle.", rally(0.3)),
-  // rookies whose family synergies fit them badly (or too well) get their own moves
+  // rookies whose element synergies fit them badly (or too well) get their own moves
   gomamon: u("Marching Fishes", "🐟", "A school of fish rams the target twice (100% each).", barrage(2, 1.0)),
-  dracomon: u("Baby Breath", "🔥", "A breath of fire for 220% attack.", bolt(2.2)),
+  dracomon: u("Baby Breath", "🔥", "A breath of fire for 205% attack.", bolt(2.05)),
   gabumon: u("Blue Blaster", "🔵", "A blue flame for 290% attack.", bolt(2.9)),
   veemon: u("Vee Headbutt", "💢", "A charging headbutt for 290% attack.", bolt(2.9)),
 };

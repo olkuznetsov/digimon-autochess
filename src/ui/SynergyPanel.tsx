@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from "react";
 import { useGame } from "../game/store";
-import { traitViews } from "../game/synergies";
+import { traitViews, elementsOf } from "../game/synergies";
 import { FORMS } from "../game/creatures";
 import { MeterRows } from "./DamageMeter";
 
@@ -58,15 +58,21 @@ export function SynergyPanel() {
             {tip === v.def.key && (
               <div className="syn-tip" style={{ borderColor: v.def.color }}>
                 <b style={{ color: v.def.color }}>{v.def.name}</b>
-                <span className="syn-tip-kind">{v.def.kind === "attribute" ? "Attribute" : "Family"} · unique Digimon on the board</span>
+                <span className="syn-tip-kind">{v.def.kind === "attribute" ? "Attribute" : "Element"} · unique Digimon on the board</span>
                 {v.def.tiers.map((t, ti) => (
                   <span key={t.need} className={`syn-tip-tier${ti === v.activeIndex ? " on" : ""}`}>
                     ({t.need}) {t.desc}
                   </span>
                 ))}
                 <span className="syn-tip-units">
-                  {[...new Set(units.filter((u) => u.placement.kind === "board").map((u) => u.formId))]
-                    .filter((id) => FORMS[id].attribute === v.def.key || FORMS[id].family === v.def.key)
+                  {[
+                    ...new Set(
+                      units
+                        .filter((u) => u.placement.kind === "board")
+                        .filter((u) => FORMS[u.formId].attribute === v.def.key || elementsOf(u.formId, u.items).includes(v.def.key))
+                        .map((u) => u.formId),
+                    ),
+                  ]
                     .map((id) => FORMS[id].name)
                     .join(", ") || "none on the board yet"}
                 </span>

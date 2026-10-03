@@ -23,11 +23,13 @@ for model sources.*
   copies star it up: ★★, then ★★★ with a stronger ultimate.
 - **Teamfight Tactics' board**: 7 × 4 cells a side and a bench of 9 — room for level 10, Digivices and raising
   several lines at once.
-- **Synergies**: three attributes in a counter triangle and five families with two tiers each; babies have
-  neither until a Digimental gives them a family.
+- **Synergies as in Cyber Sleuth**: three attributes in a counter triangle (Free babies stand outside it) and the
+  game's eight elements — Fire, Water, Plant, Electric, Earth, Wind, Light, Dark — each fighting its own way:
+  attack, mana, regeneration, attack speed, HP, a damage guard, a shield at the start, lifesteal. Two tiers each;
+  Fresh babies have no element until a Digimental gives them one.
 - **Items**: six base items and the rarer Digitama fuse in pairs — in the tray or right on a Digimon — into 28
   stronger ones: Adventure's Crests, Lightning Coil (every fifth attack strikes everything around the target),
-  Spike Shell, Rage Chip, Blue Card…; Digitama + an item makes a **Digimental**, an emblem of a family, and two
+  Spike Shell, Rage Chip, Blue Card…; Digitama + an item makes a **Digimental**, an emblem of an element, and two
   Digitama make a **Digivice**, one more Digimon on the board. Relics with no recipe counter freezes and healing.
 - **Solo run**: a boss every fifth round, drawn from candidates so runs differ; beat round 15 to win, then keep
   going in endless mode.

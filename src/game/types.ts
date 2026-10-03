@@ -4,14 +4,9 @@
 /** Free = no attribute (the babies): outside the counter triangle, no synergy. */
 export type Attribute = "Vaccine" | "Data" | "Virus" | "Free";
 
-export type Family =
-  | "Dragon's Roar"
-  | "Nature Spirits"
-  | "Wind Guardians"
-  | "Nightmare Soldiers"
-  | "Deep Savers"
-  /** Fresh and In-Training forms: no family synergy */
-  | "Baby";
+/** Cyber Sleuth's elements: every species has one — the synergy axis next to the attribute
+ *  triangle. Neutral (most Fresh babies) counts for no synergy. */
+export type Element = "Fire" | "Water" | "Plant" | "Electric" | "Earth" | "Wind" | "Light" | "Dark" | "Neutral";
 
 /** Evolution stage — also the shop tier and the price: 1 Fresh, 2 In-Training,
  *  3 Rookie, 4 Champion, 5 Mega (Ultimates live here too). */
@@ -31,7 +26,7 @@ export interface Form {
   name: string;
   stage: Stage;
   attribute: Attribute;
-  family: Family;
+  element: Element;
   role: Role;
   evolvesTo?: string[];
   /** appears only as a boss: never in the shop, wild waves or scrims */

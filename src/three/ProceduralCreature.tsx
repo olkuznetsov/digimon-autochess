@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { FORMS, FAMILY_COLOR } from "../game/creatures";
+import { FORMS, ELEMENT_COLOR } from "../game/creatures";
 import type { Role } from "../game/types";
 
 interface Props {
@@ -18,7 +18,7 @@ interface Props {
 
 /**
  * Procedural creature v2: an articulated, code-animated body per combat ROLE
- * (bruiser/tank/assassin/ranged/caster) with a FAMILY-colored accent, so every
+ * (bruiser/tank/assassin/ranged/caster) with an ELEMENT-colored accent, so every
  * form without a glTF model still reads as a distinct creature. Front is +z
  * (same convention as CreatureModel).
  *
@@ -28,7 +28,7 @@ interface Props {
 export function ProceduralCreature({ formId, color, cooldown, attackSpeed, moving = false, facing = 1 }: Props) {
   const form = FORMS[formId];
   const role: Role = form?.role ?? "bruiser";
-  const accent = form ? FAMILY_COLOR[form.family] : color;
+  const accent = form ? ELEMENT_COLOR[form.element] : color;
 
   const rig = useRef<THREE.Group>(null);
   const headG = useRef<THREE.Group>(null);
@@ -120,10 +120,11 @@ export function ProceduralCreature({ formId, color, cooldown, attackSpeed, movin
     </group>
   );
 
-  // family accent, mounted on the head group
+  // element accent, mounted on the head group
   const accentEl = (() => {
-    switch (form?.family) {
-      case "Dragon's Roar":
+    switch (form?.element) {
+      case "Fire":
+      case "Earth":
         return (
           <>
             <mesh position={[-0.09, 0.16, -0.02]} rotation={[-0.35, 0, 0.28]}>
@@ -136,21 +137,22 @@ export function ProceduralCreature({ formId, color, cooldown, attackSpeed, movin
             </mesh>
           </>
         );
-      case "Nature Spirits":
+      case "Plant":
         return (
           <mesh position={[0, 0.19, 0]} rotation={[-0.5, 0, 0]} scale={[1, 1, 0.4]}>
             <coneGeometry args={[0.075, 0.2, 8]} />
             {std(accent, 0.8)}
           </mesh>
         );
-      case "Wind Guardians":
+      case "Wind":
+      case "Electric":
         return (
           <mesh position={[0, 0.18, -0.03]} rotation={[-0.7, 0, 0]} scale={[1, 1, 0.35]}>
             <coneGeometry args={[0.05, 0.22, 8]} />
             {std(accent, 0.9)}
           </mesh>
         );
-      case "Nightmare Soldiers":
+      case "Dark":
         return (
           <>
             {[-0.09, 0, 0.09].map((x, i) => (
@@ -161,7 +163,8 @@ export function ProceduralCreature({ formId, color, cooldown, attackSpeed, movin
             ))}
           </>
         );
-      case "Deep Savers":
+      case "Water":
+      case "Light":
         return (
           <mesh position={[0, 0.15, -0.1]} rotation={[-0.85, 0, 0]} scale={[0.35, 1, 1]}>
             <coneGeometry args={[0.09, 0.24, 8]} />

@@ -68,10 +68,10 @@ function synergyFit(formId: string, board: Unit[]): number {
   const f = FORMS[formId];
   const counts = traitCounts(board);
   let fit = 0;
-  for (const key of [f.attribute, f.family]) {
+  for (const key of [f.attribute, f.element]) {
     const c = counts.get(key) ?? 0;
     const def = TRAITS.find((t) => t.key === key);
-    if (!def) continue; // the babies: no attribute, no family
+    if (!def) continue; // Free babies, Neutral forms: no trait
     const next = def.tiers.find((t) => t.need > c);
     if (next && next.need - c === 1) fit += 3; // completes a tier
     else if (c > 0) fit += 1;

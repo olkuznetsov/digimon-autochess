@@ -1,5 +1,5 @@
-import type { Family, Fighter } from "./types";
-import { FORMS } from "./creatures";
+import type { Element, Fighter } from "./types";
+import { elementsOf } from "./synergies";
 
 /**
  * Augments (Teamfight Tactics): in a VS match, three times per match every player
@@ -8,7 +8,7 @@ import { FORMS } from "./creatures";
  * sends them with every fight — each client builds every fighter the same way.
  *  - instant: paid out once, when picked (gold, items, units)
  *  - economy: every round from then on (income, interest, XP, rerolls)
- *  - combat: every fight, on every unit of the team (or of one family)
+ *  - combat: every fight, on every unit of the team (or of one element)
  */
 
 export type AugmentKind = "instant" | "economy" | "combat";
@@ -19,17 +19,17 @@ export interface AugmentDef {
   emoji: string;
   desc: string;
   kind: AugmentKind;
-  /** combat augments for one family only */
-  family?: Family;
+  /** combat augments for one element only (a Digimental's counts too) */
+  element?: Element;
 }
 
-const a = (id: string, name: string, emoji: string, kind: AugmentKind, desc: string, family?: Family): AugmentDef => ({
+const a = (id: string, name: string, emoji: string, kind: AugmentKind, desc: string, element?: Element): AugmentDef => ({
   id,
   name,
   emoji,
   kind,
   desc,
-  family,
+  element,
 });
 
 export const AUGMENTS: Record<string, AugmentDef> = {
@@ -49,12 +49,15 @@ export const AUGMENTS: Record<string, AugmentDef> = {
   firewall: a("firewall", "Firewall", "🛡️", "combat", "Your units have 15% more max HP"),
   quickboot: a("quickboot", "Quick Boot", "⚡", "combat", "Your units start fights with 40% mana"),
   leech: a("leech", "Leech Protocol", "🩸", "combat", "Your units heal 12% of the damage they deal"),
-  // combat: one family
-  dragonheart: a("dragonheart", "Dragon Heart", "🐉", "combat", "Dragon's Roar units deal 25% more damage", "Dragon's Roar"),
-  wildbloom: a("wildbloom", "Wild Bloom", "🌿", "combat", "Nature Spirits heal 2% max HP every second", "Nature Spirits"),
-  stormwings: a("stormwings", "Storm Wings", "🌪️", "combat", "Wind Guardians attack 25% faster", "Wind Guardians"),
-  nightmarepact: a("nightmarepact", "Nightmare Pact", "🦇", "combat", "Nightmare Soldiers heal 25% of the damage they deal", "Nightmare Soldiers"),
-  abyssalarmor: a("abyssalarmor", "Abyssal Armor", "🐚", "combat", "Deep Savers ignore 15% of incoming damage", "Deep Savers"),
+  // combat: one element — a bigger dose of its own synergy
+  dragonheart: a("dragonheart", "Dragon Heart", "🐉", "combat", "Fire units deal 25% more damage", "Fire"),
+  tidalflow: a("tidalflow", "Tidal Flow", "🌊", "combat", "Water units gain 40% more mana", "Water"),
+  wildbloom: a("wildbloom", "Wild Bloom", "🌿", "combat", "Plant units heal 2% max HP every second", "Plant"),
+  thundersurge: a("thundersurge", "Thunder Surge", "⚡", "combat", "Electric units attack 25% faster", "Electric"),
+  bedrock: a("bedrock", "Bedrock", "⛰️", "combat", "Earth units have 30% more max HP", "Earth"),
+  stormwings: a("stormwings", "Eye of the Storm", "🌪️", "combat", "Wind units ignore 15% of incoming damage", "Wind"),
+  holyaura: a("holyaura", "Holy Aura", "✨", "combat", "Light units start fights with a shield of 25% max HP", "Light"),
+  nightmarepact: a("nightmarepact", "Nightmare Pact", "🦇", "combat", "Dark units heal 25% of the damage they deal", "Dark"),
 };
 export const AUGMENT_IDS = Object.keys(AUGMENTS);
 
@@ -77,7 +80,7 @@ export function applyAugments(fighters: Fighter[], augments: string[]): void {
     const def = AUGMENTS[id];
     if (!def || def.kind !== "combat") continue;
     for (const f of fighters) {
-      if (def.family && FORMS[f.formId]?.family !== def.family) continue;
+      if (def.element && !elementsOf(f.formId, f.items).includes(def.element)) continue;
       switch (id) {
         case "overclock":
           f.attack = Math.round(f.attack * 1.12);
@@ -95,17 +98,27 @@ export function applyAugments(fighters: Fighter[], augments: string[]): void {
         case "dragonheart":
           f.attack = Math.round(f.attack * 1.25);
           break;
+        case "tidalflow":
+          f.manaMult *= 1.4;
+          break;
         case "wildbloom":
           f.regen += 0.02;
           break;
-        case "stormwings":
+        case "thundersurge":
           f.attackSpeed *= 1.25;
+          break;
+        case "bedrock":
+          f.maxHp = Math.round(f.maxHp * 1.3);
+          f.hp = f.maxHp;
+          break;
+        case "stormwings":
+          f.dmgReduction = Math.min(0.5, f.dmgReduction + 0.15);
+          break;
+        case "holyaura":
+          f.shield += Math.round(f.maxHp * 0.25);
           break;
         case "nightmarepact":
           f.lifesteal += 0.25;
-          break;
-        case "abyssalarmor":
-          f.dmgReduction = Math.min(0.5, f.dmgReduction + 0.15);
           break;
       }
     }

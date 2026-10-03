@@ -72,12 +72,12 @@ export const WAVES = {
   bosses: [
     [{ id: "skullsatamon", hp: 1.6, atk: 1.0, adds: 2 }],
     [
-      { id: "machinedramon", hp: 1.19, atk: 0.82, adds: 3 },
-      { id: "mitamamon", hp: 1.08, atk: 0.6, adds: 3 },
+      { id: "machinedramon", hp: 1.14, atk: 0.8, adds: 3 },
+      { id: "mitamamon", hp: 1.04, atk: 0.58, adds: 3 },
     ],
     [
-      { id: "diaboromon", hp: 2.95, atk: 1.38, adds: 4 },
-      { id: "apollomon", hp: 3.27, atk: 1.08, adds: 4 },
+      { id: "diaboromon", hp: 2.82, atk: 1.34, adds: 4 },
+      { id: "apollomon", hp: 3.13, atk: 1.05, adds: 4 },
     ],
   ] as Omit<BossSpec, "addCount">[][],
   /** endless mode: every 5th round the next of these, all with the same multipliers */
@@ -186,21 +186,21 @@ export const VS = {
     35: [0, 0, 0, 0, 9],
     45: [0, 0, 0, 0, 14],
   } as Record<number, Mix>,
-  /** bosses of rounds 10, 20, 30, 40+ — a real check, getting harder: a typical board
-   *  beats them ~67% / 60% / 57% / 52% of the time (600 bot boards on the tier rules, the
-   *  7 × 4 board and starred Megas — by round 30 nearly every board fields one, Oct 2026). A match meets one candidate per round, picked by the room's variant;
-   *  candidates match. */
+  /** bosses of rounds 10, 20, 30, 40+ — a real check: a typical board beats them ~67% /
+   *  40% / 52% / 69% of the time (600 bot boards on the tier rules, the 7 × 4 board,
+   *  starred Megas and the element synergies, Oct 2026). A match meets one candidate per
+   *  round, picked by the room's variant; candidates match. */
   bosses: [
-    [{ id: "skullsatamon", hp: 2.45, atk: 1.32, adds: 3, addCount: 2 }],
+    [{ id: "skullsatamon", hp: 2.3, atk: 1.26, adds: 3, addCount: 2 }],
     [
-      { id: "machinedramon", hp: 4.7, atk: 2.0, adds: 5, addCount: 2 },
-      { id: "mitamamon", hp: 4.6, atk: 1.55, adds: 5, addCount: 2 },
+      { id: "machinedramon", hp: 4.35, atk: 1.9, adds: 5, addCount: 2 },
+      { id: "mitamamon", hp: 4.3, atk: 1.5, adds: 5, addCount: 2 },
     ],
     [
-      { id: "zeed", hp: 6.6, atk: 2.25, adds: 5, addCount: 2 },
-      { id: "apollomon", hp: 7.2, atk: 2.6, adds: 5, addCount: 2 },
+      { id: "zeed", hp: 6.2, atk: 2.2, adds: 5, addCount: 2 },
+      { id: "apollomon", hp: 6.8, atk: 2.55, adds: 5, addCount: 2 },
     ],
-    [{ id: "gracenovamon", hp: 10, atk: 3.1, adds: 5, addCount: 3 }],
+    [{ id: "gracenovamon", hp: 9.5, atk: 3.0, adds: 5, addCount: 3 }],
   ] as BossSpec[][],
 };
 
