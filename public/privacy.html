@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy — Digimon Auto Chess</title>
+    <meta name="description" content="What Digimon Auto Chess stores, and why." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #1b2350;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: linear-gradient(180deg, #2486ea 0%, #5ab9ff 40%, #d2f0ff 100%);
+        font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", system-ui, sans-serif;
+        color: var(--ink);
+        display: flex;
+        justify-content: center;
+        padding: 32px 16px;
+        box-sizing: border-box;
+      }
+      main {
+        max-width: 720px;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.92);
+        border-radius: 18px;
+        box-shadow: 0 14px 34px rgba(20, 40, 90, 0.28);
+        padding: 28px 28px 22px;
+        line-height: 1.6;
+        font-size: 15px;
+      }
+      h1 {
+        margin: 0 0 4px;
+        font-size: 28px;
+      }
+      h2 {
+        margin: 22px 0 6px;
+        font-size: 18px;
+      }
+      .sub {
+        margin: 0 0 12px;
+        color: #4a5378;
+        font-size: 13px;
+      }
+      ul {
+        padding-left: 20px;
+        margin: 6px 0;
+      }
+      a {
+        color: #1f6fe0;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Privacy</h1>
+      <p class="sub">Digimon Auto Chess — a free, non-commercial fan game. Last updated 5 October 2026.</p>
+
+      <h2>Playing without an account</h2>
+      <p>
+        Your progress — the current run, your tamer profile and partner, your settings and the name you chose — is kept in
+        your browser's local storage on your device. Nothing of it leaves the device, except what the leaderboard and VS
+        matches need (below).
+      </p>
+
+      <h2>Signing in with Google</h2>
+      <p>Signing in is optional. If you do, the game receives from Google only:</p>
+      <ul>
+        <li>your Google account's ID — to recognise you when you come back, on any device;</li>
+        <li>your name — offered as your tamer name, which you can change.</li>
+      </ul>
+      <p>
+        It does not read your email, contacts, files or anything else in your Google account. Your game profile and save are
+        then stored on the game's server (Cloudflare Workers) so you can continue on another device.
+      </p>
+
+      <h2>Leaderboard and VS</h2>
+      <p>
+        When a run ends, the leaderboard receives an anonymous ID of your device (or of your account, once you sign in), your tamer name, your best round, your wins and the board you finished
+        with, so other players can see it and fight its ghost. In a VS match the other players see your name and board for
+        that match.
+      </p>
+
+      <h2>What we don't do</h2>
+      <ul>
+        <li>no advertising, no selling or sharing of data with anyone;</li>
+        <li>no tracking across other sites.</li>
+      </ul>
+
+      <h2>Deleting your data</h2>
+      <p>
+        Clearing the site's data in your browser removes everything stored on your device. To have your account, profile
+        or leaderboard entries removed from the server, open an issue at
+        <a href="https://github.com/olkuznetsov/digimon-autochess/issues">github.com/olkuznetsov/digimon-autochess/issues</a>
+        and we will delete them.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Questions about this page:
+        <a href="https://github.com/olkuznetsov/digimon-autochess/issues">GitHub issues</a>. Digimon is a trademark of
+        Bandai and Toei Animation; this fan project is not affiliated with them.
+      </p>
+      <p><a href="/">← Back to the game</a></p>
+    </main>
+  </body>
+</html>
