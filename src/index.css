@@ -3075,3 +3075,427 @@ html, body {
   font-size: 12px;
   color: #9be7a8;
 }
+
+/* ===================== main menu (M11): the tamer, their partner, the modes ===================== */
+.menu {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--font-body);
+  color: var(--text);
+}
+.menu > * {
+  pointer-events: auto;
+}
+.menu-title {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  font-size: 22px;
+  pointer-events: none;
+  text-shadow: 0 0 18px rgba(57, 216, 255, 0.35);
+}
+.menu-title span {
+  color: var(--magenta);
+}
+.tamer-badge {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tamer-avatar {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex: none;
+}
+.tamer-ring {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+.tamer-ring .ring-bg {
+  fill: none;
+  stroke: rgba(122, 140, 255, 0.22);
+  stroke-width: 5;
+}
+.tamer-ring .ring-fg {
+  fill: none;
+  stroke: var(--cyan);
+  stroke-width: 5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease;
+}
+.tamer-portrait,
+.tamer-egg {
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.tamer-egg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: var(--panel-solid);
+}
+.tamer-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tamer-level {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 11px;
+  background: var(--cyan);
+  color: #061024;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tamer-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tamer-name {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  text-align: left;
+  cursor: pointer;
+}
+.tamer-edit {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.tamer-name-input {
+  width: 160px;
+  background: var(--panel-solid);
+  border: 1px solid var(--cyan);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 16px;
+  padding: 3px 8px;
+}
+.tamer-xp {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.tamer-card {
+  position: absolute;
+  top: 98px;
+  left: 16px;
+  width: 230px;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 14px;
+  box-shadow: var(--panel-glow);
+  padding: 12px 14px;
+  backdrop-filter: blur(6px);
+}
+.tamer-card-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 6px;
+}
+.tamer-card-title.crests-title {
+  margin-top: 10px;
+}
+.tamer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 2px 0;
+}
+.tamer-row b {
+  color: var(--text);
+  font-weight: 600;
+  text-align: right;
+}
+.tamer-fav {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.tamer-fav-portrait {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.tamer-fav-portrait img {
+  width: 100%;
+  height: 100%;
+}
+.crests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.crest {
+  font-size: 11px;
+  font-family: var(--font-display);
+  padding: 2px 7px;
+  border-radius: 7px;
+  border: 1px dashed rgba(136, 147, 181, 0.4);
+  color: rgba(136, 147, 181, 0.6);
+}
+.crest.on {
+  border-style: solid;
+  background: rgba(255, 255, 255, 0.05);
+}
+.partner-panel {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  min-width: 300px;
+  text-align: center;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 16px;
+  box-shadow: var(--panel-glow);
+  padding: 10px 18px 12px;
+  backdrop-filter: blur(6px);
+}
+.partner-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+}
+.partner-sub {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 2px 0 8px;
+}
+.partner-grow {
+  cursor: pointer;
+  border: 1px solid var(--gold);
+  background: rgba(255, 211, 77, 0.12);
+  color: var(--gold);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  border-radius: 10px;
+  padding: 7px 16px;
+  animation: partner-pulse 1.6s ease-in-out infinite;
+}
+@keyframes partner-pulse {
+  50% {
+    box-shadow: 0 0 18px rgba(255, 211, 77, 0.45);
+  }
+}
+.partner-next {
+  font-size: 13px;
+  color: var(--text);
+}
+.partner-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+.menu-modes {
+  position: absolute;
+  top: 98px;
+  right: 16px;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mode-btn {
+  cursor: pointer;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 11px 14px;
+  backdrop-filter: blur(6px);
+  transition: filter 0.12s ease, border-color 0.12s ease;
+}
+.mode-btn:hover {
+  filter: brightness(1.25);
+  border-color: rgba(57, 216, 255, 0.6);
+}
+.mode-btn.primary {
+  border: 2px solid var(--cyan);
+  font-size: 17px;
+  padding: 14px;
+  background: rgba(57, 216, 255, 0.12);
+}
+.mode-btn.soon {
+  color: var(--text-dim);
+}
+.soon-tag {
+  float: right;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--magenta);
+  border: 1px solid rgba(255, 79, 216, 0.5);
+  border-radius: 6px;
+  padding: 1px 5px;
+  margin-top: 2px;
+}
+.mode-row {
+  display: flex;
+  gap: 8px;
+}
+.mode-btn.small {
+  flex: 1;
+  text-align: center;
+  font-size: 18px;
+  padding: 8px 0;
+}
+.mode-soon {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+}
+.partner-choice-sub {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 14px;
+  margin: -4px 0 12px;
+}
+.partner-choice-next {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.style-pick {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: var(--gold);
+  color: #241a02;
+  border-radius: 6px;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+.evo-card {
+  position: relative;
+}
+.profile-toast {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  pointer-events: none;
+  background: var(--panel-solid);
+  border: 1px solid var(--cyan);
+  border-radius: 12px;
+  padding: 7px 16px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--cyan);
+  animation: profile-toast 0.35s ease-out;
+}
+.profile-toast.big {
+  border-color: var(--gold);
+  color: var(--gold);
+  font-size: 17px;
+}
+@keyframes profile-toast {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+}
+.tamer-avatar {
+  cursor: pointer;
+}
+@media (max-width: 760px) {
+  .menu-title {
+    display: none;
+  }
+  .tamer-card {
+    display: none;
+    z-index: 30;
+    top: 88px;
+    background: var(--panel-solid);
+    animation: card-in 0.2s ease-out;
+  }
+  .menu.card-open .tamer-card {
+    display: block;
+  }
+  @keyframes card-in {
+    from {
+      opacity: 0;
+      transform: translateX(-16px);
+    }
+  }
+  .menu-modes {
+    top: auto;
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+    width: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .mode-btn {
+    flex: 1 1 45%;
+    font-size: 14px;
+    padding: 10px;
+    text-align: center;
+  }
+  .mode-btn.primary {
+    flex-basis: 100%;
+  }
+  .mode-row {
+    flex-basis: 100%;
+  }
+  .soon-tag {
+    float: none;
+    margin-left: 4px;
+  }
+  .partner-panel {
+    bottom: auto;
+    top: 92px;
+    min-width: 0;
+    width: calc(100% - 24px);
+    padding: 8px 12px;
+  }
+  .partner-hint {
+    display: none;
+  }
+}

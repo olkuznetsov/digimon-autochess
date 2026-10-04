@@ -7,6 +7,7 @@ import { ITEMS } from "../game/items";
 import { PlanTimer } from "./PlanTimer";
 import { XP_TO_NEXT as XP_VIEW } from "../game/xpView";
 import { isMuted, setMuted, isMusicOn, setMusicOn, sfx } from "../audio/sfx";
+import { useProfile } from "../profile/store";
 // panels opened on demand load on demand (the Guide carries every Digimon's card)
 const LobbyModal = lazy(() => import("./LobbyModal").then((m) => ({ default: m.LobbyModal })));
 const LeaderboardModal = lazy(() => import("./LeaderboardModal").then((m) => ({ default: m.LeaderboardModal })));
@@ -64,6 +65,13 @@ export function Hud() {
     }
   });
   const [showPvp, setShowPvp] = useState(!!invite);
+  // the main menu's VS button: open the lobby as the board shows
+  const openOnGame = useProfile((s) => s.openOnGame);
+  useEffect(() => {
+    if (openOnGame !== "vs") return;
+    setShowPvp(true);
+    useProfile.setState({ openOnGame: null });
+  }, [openOnGame]);
   const [showLb, setShowLb] = useState(false);
   const ghost = useGame((s) => s.ghost);
   const ghostReturn = useGame((s) => s.ghostReturn);
@@ -137,6 +145,16 @@ export function Hud() {
               }}
             >
               ♪
+            </button>
+          )}
+          {!pvp && (
+            <button
+              className="icon-btn"
+              title="Main menu — your partner and tamer card"
+              disabled={phase === "battle"}
+              onClick={() => useProfile.getState().setScreen("menu")}
+            >
+              🏠
             </button>
           )}
           <button className="icon-btn" title="Settings" onClick={() => setShowSettings(true)}>

@@ -16,31 +16,45 @@ import { Onboarding } from "./ui/Onboarding";
 import { CarouselPanel } from "./ui/CarouselPanel";
 import { AugmentChoice } from "./ui/AugmentChoice";
 import { Standings } from "./ui/Standings";
+import { MainMenu } from "./ui/MainMenu";
+import { ProfileToast } from "./ui/ProfileToast";
+import { useProfile } from "./profile/store";
+import { startProfileTracker } from "./profile/tracker";
+
+startProfileTracker();
 
 export default function App() {
+  const screen = useProfile((s) => s.screen);
   return (
     <div className="app">
       <Scene />
-      <Hud />
-      <SynergyPanel />
-      <DamageMeter />
-      <NextWave />
-      <Onboarding />
-      <Shop />
-      {/* right rail: VS players above the item tray */}
-      <div className="right-rail">
-        <Standings />
-        <ItemTray />
-      </div>
-      <UnitPanel />
-      <EvoBanner />
-      <DiscoveryToast />
-      <EvolutionChoice />
-      <CarouselPanel />
-      <AugmentChoice />
+      {screen === "menu" ? (
+        <MainMenu />
+      ) : (
+        <>
+          <Hud />
+          <SynergyPanel />
+          <DamageMeter />
+          <NextWave />
+          <Onboarding />
+          <Shop />
+          {/* right rail: VS players above the item tray */}
+          <div className="right-rail">
+            <Standings />
+            <ItemTray />
+          </div>
+          <UnitPanel />
+          <EvoBanner />
+          <DiscoveryToast />
+          <EvolutionChoice />
+          <CarouselPanel />
+          <AugmentChoice />
+          <Hotkeys />
+        </>
+      )}
+      <ProfileToast />
       <LoadingScreen />
       <AudioDirector />
-      <Hotkeys />
     </div>
   );
 }

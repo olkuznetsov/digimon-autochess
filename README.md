@@ -44,6 +44,10 @@ for model sources.*
   Reconnects survive a phone switching apps; play again in the same room. Copy the code or share an invite link
   (`?join=CODE` opens the game with it filled in). Ticks resolve simultaneously, so neither side ever acts first —
   a board against its own mirror is a draw.
+- **A main menu with your partner Digimon**: pick one of five Fresh and raise it — it stands on a holographic
+  pedestal, reacts when you pet it, and digivolves as your tamer level grows (XP from battles, bosses, runs and VS),
+  into the branch you choose among those your play style points to. A tamer card keeps your records and
+  Adventure's crests as achievements. Cosmetic and progression only: a partner never changes a fight.
 - **Leaderboard and ghost battles** against other players' saved boards — season 2 since the tier rules.
 - **Game feel**: hit-stop, camera shake, sparks, pooled damage numbers, a cinematic beat for Mega ultimates,
   "data deletion" deaths, a materialize-in at the start of every fight.

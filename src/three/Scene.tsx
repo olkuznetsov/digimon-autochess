@@ -10,6 +10,8 @@ import { DigitalEnvironment, HORIZON } from "./Environment";
 import { useGame, type PvpBoardUnit } from "../game/store";
 import { opponentOf } from "../game/lobby";
 import { useSettings } from "../settings";
+import { useProfile } from "../profile/store";
+import { MenuStage } from "./MenuStage";
 import { newDrive, type UnitDrive } from "./unitDrive";
 import { juice, resetJuice, tickJuice } from "./juice";
 import { SIM_DT } from "../game/battle";
@@ -59,6 +61,20 @@ function CameraRig() {
     // and eases in a little (portrait already fills the width — pushing in would crop)
     // framed for the 7 × 4 board and its 9-slot bench (portrait is width-bound: the bench
     // spans the board's 7.7 units)
+    if (useProfile.getState().screen === "menu") {
+      // the main menu: the partner on its pedestal, framed low with a slow drift
+      const t = state.clock.elapsedTime;
+      if (portrait) {
+        pos.set(Math.sin(t * 0.12) * 0.5, 2.5, -7.4);
+        look.set(0, 1.55, 0);
+      } else {
+        pos.set(Math.sin(t * 0.12) * 0.7, 2.1, -5.6);
+        look.set(0, 1.25, 0);
+      }
+      cam.position.copy(pos);
+      cam.lookAt(look);
+      return;
+    }
     if (portrait) {
       pos.set(0, 11.0, -13.6);
       look.set(0, 0.4, 2.2);
@@ -366,6 +382,22 @@ export function ScenePost({ low = false }: { low?: boolean }) {
   );
 }
 
+/** The main menu's scene: the Digital World around the partner's pedestal — no board. */
+function MenuContents() {
+  const low = useSettings((s) => s.quality === "low");
+  return (
+    <>
+      <color attach="background" args={[HORIZON]} />
+      <fog attach="fog" args={[HORIZON, 16, 52]} />
+      <DigitalEnvironment />
+      <CameraRig />
+      <SceneLighting />
+      <MenuStage />
+      <ScenePost low={low} />
+    </>
+  );
+}
+
 function SceneContents() {
   const low = useSettings((s) => s.quality === "low");
   const phase = useGame((s) => s.phase);
@@ -462,10 +494,11 @@ function SceneContents() {
 
 export function Scene() {
   const low = useSettings((s) => s.quality === "low");
+  const menu = useProfile((s) => s.screen === "menu");
   return (
     // no shadow maps: models ground themselves with contact-shadow blobs (Creature.tsx)
     <Canvas camera={{ position: [0, 8.4, -11.8], fov: 55 }} dpr={low ? 1 : [1, 2]}>
-      <SceneContents />
+      {menu ? <MenuContents /> : <SceneContents />}
     </Canvas>
   );
 }
