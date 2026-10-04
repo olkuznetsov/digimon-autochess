@@ -242,6 +242,15 @@ Herissmon, Agunimon, Lobomon) лишаються досяжними.
 
 ## 5. Журнал
 <!-- новіші записи зверху -->
+- **2026-10-04** — Set 10 (Саша: «продовжуй поповнювати ростер»): Chuumon → [Sukamon → Etemon | Numemon → [Etemon |
+  Monzaemon]] (Earth → Dark/Light; від Pagumon — клоуни й лиходій Adventure), Lucemon (Frontier, від Tokomon) — рукі з
+  вибором дороги: Angemon (ангел) або Devimon (демон), чемпіони, що вже були; FanBeemon → Waspmon → CannonBeemon (Plant →
+  Electric, від Tanemon); гілки: Gargomon → Antylamon (Tamers), Guardromon → Datamon (Adventure), Stingmon або ExVeemon →
+  Dinobeemon (ДНК V-Tamer). 12 моделей (5 МБ): 41 лінія, 185 форм, 193 моделі, 146 ульт. Трикутник на кожній стадії:
+  Numemon/FanBeemon → Data, Waspmon → Vaccine; Neutral із таблиці → Monzaemon Light, Antylamon Wind. Новий асасин серед
+  рукі (Chuumon) притиснув Vaccine-кастерів: Wormmon отримав «Sticky Net» (щит 15% + мережа), Salamon сильніший,
+  Armadillomon — слабший щит. Розмиття (41 рукі): боси соло R15 −4%, VS R30 −3% → соло 54/47/41%, VS-боси 66/36/50/73%,
+  усі форми 42–58%.
 - **2026-10-04** — Piedmon, новий бос (Саша: «додай Piedmon як нового боса»): ватажок Dark Masters (Virus, Dark,
   асасин), ульта «Trump Sword» — мечі в 4 найближчих (140%), кожного пришпилює на 0.7 с (Holy Ring — контра). Третій
   кандидат соло R15 (з Devimon і Bakemon), другий кандидат VS R40+ — разом з іншими Dark Masters: Puppetmon,

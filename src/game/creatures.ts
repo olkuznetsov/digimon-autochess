@@ -38,12 +38,12 @@ export const FORMS: Record<string, Form> = {
   tsumemon: baby("tsumemon", "Tsumemon", 2, "Dark", "assassin", ["keramon", "demidevimon"]),
   motimon: baby("motimon", "Motimon", 2, "Neutral", "caster", ["hagurumon", "tentomon", "gotsumon"]),
   yokomon: baby("yokomon", "Yokomon", 2, "Plant", "caster", ["biyomon", "wormmon", "elecmon", "mushroomon"]),
-  tanemon: baby("tanemon", "Tanemon", 2, "Plant", "tank", ["palmon", "renamon", "lalamon"]),
+  tanemon: baby("tanemon", "Tanemon", 2, "Plant", "tank", ["palmon", "renamon", "lalamon", "fanbeemon"]),
   bukamon: baby("bukamon", "Bukamon", 2, "Water", "ranged", ["gomamon", "betamon", "otamamon"]),
-  tokomon: baby("tokomon", "Tokomon", 2, "Neutral", "assassin", ["patamon", "falcomon", "hawkmon"]),
+  tokomon: baby("tokomon", "Tokomon", 2, "Neutral", "assassin", ["patamon", "falcomon", "hawkmon", "lucemon"]),
   nyaromon: baby("nyaromon", "Nyaromon", 2, "Light", "assassin", ["terriermon", "salamon", "lunamon", "armadillomon"]),
   tsunomon: baby("tsunomon", "Tsunomon", 2, "Earth", "tank", ["gabumon", "veemon", "monodramon", "goblimon"]),
-  pagumon: baby("pagumon", "Pagumon", 2, "Dark", "caster", ["impmon"]),
+  pagumon: baby("pagumon", "Pagumon", 2, "Dark", "caster", ["impmon", "chuumon"]),
 
   // ============ Agumon — Dragon's Roar (branch at Ultimate) ============
   agumon: f("agumon", "Agumon", 3, "Vaccine", "Fire", "bruiser", { evolvesTo: ["greymon", "geogreymon"] }),
@@ -64,7 +64,7 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Hagurumon — Nightmare Soldiers ============
   hagurumon: f("hagurumon", "Hagurumon", 3, "Virus", "Electric", "tank", { evolvesTo: ["guardromon"] }),
-  guardromon: f("guardromon", "Guardromon", 4, "Virus", "Electric", "tank", { evolvesTo: ["machinedramon", "andromon"] }),
+  guardromon: f("guardromon", "Guardromon", 4, "Virus", "Electric", "tank", { evolvesTo: ["machinedramon", "andromon", "datamon"] }),
   machinedramon: f("machinedramon", "Machinedramon", 5, "Virus", "Electric", "ranged"),
 
   // ============ Patamon — Wind Guardians ============
@@ -100,13 +100,13 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Veemon — Wind Guardians (branch at Champion) ============
   veemon: f("veemon", "Veemon", 3, "Vaccine", "Electric", "bruiser", { evolvesTo: ["exveemon", "paildramon"] }),
-  exveemon: f("exveemon", "ExVeemon", 4, "Vaccine", "Electric", "bruiser", { evolvesTo: ["imperialdramon", "magnamon"] }),
+  exveemon: f("exveemon", "ExVeemon", 4, "Vaccine", "Electric", "bruiser", { evolvesTo: ["imperialdramon", "magnamon", "dinobeemon"] }),
   paildramon: f("paildramon", "Paildramon", 4, "Data", "Electric", "ranged", { evolvesTo: ["imperialdramon"] }),
   imperialdramon: f("imperialdramon", "Imperialdramon", 5, "Vaccine", "Electric", "ranged"),
 
   // ============ Wormmon — Wind Guardians ============
   wormmon: f("wormmon", "Wormmon", 3, "Vaccine", "Plant", "caster", { evolvesTo: ["stingmon"] }),
-  stingmon: f("stingmon", "Stingmon", 4, "Vaccine", "Plant", "assassin", { evolvesTo: ["banchostingmon"] }),
+  stingmon: f("stingmon", "Stingmon", 4, "Vaccine", "Plant", "assassin", { evolvesTo: ["banchostingmon", "dinobeemon"] }),
   banchostingmon: f("banchostingmon", "BanchoStingmon", 5, "Vaccine", "Plant", "assassin"),
 
   // ============ Guilmon — Dragon's Roar ============
@@ -148,7 +148,7 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Terriermon — Deep Savers (branch at Ultimate) ============
   terriermon: f("terriermon", "Terriermon", 3, "Vaccine", "Wind", "ranged", { evolvesTo: ["gargomon"] }),
-  gargomon: f("gargomon", "Gargomon", 4, "Vaccine", "Electric", "ranged", { evolvesTo: ["rapidmon", "megagargomon"] }),
+  gargomon: f("gargomon", "Gargomon", 4, "Vaccine", "Electric", "ranged", { evolvesTo: ["rapidmon", "megagargomon", "antylamon"] }),
   rapidmon: f("rapidmon", "Rapidmon", 5, "Vaccine", "Electric", "ranged"),
   megagargomon: f("megagargomon", "MegaGargomon", 5, "Vaccine", "Electric", "tank"),
 
@@ -302,6 +302,30 @@ export const FORMS: Record<string, Form> = {
   magnadramon: f("magnadramon", "Magnadramon", 5, "Vaccine", "Light", "caster"),
   magnamon: f("magnamon", "Magnamon", 5, "Virus", "Earth", "tank"),
   omnimon: f("omnimon", "Omnimon", 5, "Vaccine", "Light", "bruiser"),
+
+  // ---- set 10: Adventure's clowns and villains, Frontier's fallen angel, a swarm for Electric
+
+  // ============ Chuumon — Earth → Dark (Adventure's Sukamon, Numemon, Etemon, Monzaemon) ============
+  chuumon: f("chuumon", "Chuumon", 3, "Virus", "Earth", "assassin", { evolvesTo: ["sukamon", "numemon"] }),
+  sukamon: f("sukamon", "Sukamon", 4, "Virus", "Earth", "ranged", { evolvesTo: ["etemon"] }),
+  numemon: f("numemon", "Numemon", 4, "Data", "Earth", "tank", { evolvesTo: ["etemon", "monzaemon"] }),
+  etemon: f("etemon", "Etemon", 5, "Virus", "Dark", "caster"),
+  // Neutral in the game's table; the bear of love fights for Light here
+  monzaemon: f("monzaemon", "Monzaemon", 5, "Vaccine", "Light", "tank"),
+
+  // ============ Lucemon — Light (Frontier): an angel's road or a demon's, into Angemon or Devimon ============
+  lucemon: f("lucemon", "Lucemon", 3, "Vaccine", "Light", "caster", { evolvesTo: ["angemon", "devimon"] }),
+
+  // ============ FanBeemon — Plant → Electric (a swarm: Waspmon, CannonBeemon) ============
+  fanbeemon: f("fanbeemon", "FanBeemon", 3, "Data", "Plant", "ranged", { evolvesTo: ["waspmon"] }),
+  waspmon: f("waspmon", "Waspmon", 4, "Vaccine", "Electric", "ranged", { evolvesTo: ["cannonbeemon"] }),
+  cannonbeemon: f("cannonbeemon", "CannonBeemon", 5, "Virus", "Electric", "ranged"),
+
+  // ============ new branches: Gargomon → Antylamon (Tamers), Guardromon → Datamon (Adventure),
+  // Stingmon or ExVeemon → Dinobeemon (V-Tamer's DNA of the two) ============
+  antylamon: f("antylamon", "Antylamon", 5, "Data", "Wind", "assassin"),
+  datamon: f("datamon", "Datamon", 5, "Virus", "Electric", "caster"),
+  dinobeemon: f("dinobeemon", "Dinobeemon", 5, "Data", "Plant", "assassin"),
 
   // ============ bosses only ============
   zeed: f("zeed", "ZeedMillenniummon", 5, "Virus", "Dark", "tank", { bossOnly: true }),

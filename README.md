@@ -13,9 +13,9 @@ for model sources.*
 
 ## What's in it
 
-- **Digimon grow up from babies**: 173 forms in 38 lines on five stages — Fresh → In-Training → Rookie → Champion → Mega —
+- **Digimon grow up from babies**: 185 forms in 41 lines on five stages — Fresh → In-Training → Rookie → Champion → Mega —
   following Digimon Story Cyber Sleuth's own evolution trees, plus 3 wild Digimon in the enemy waves and 5
-  boss-only villains (Piedmon leads the other Dark Masters at VS round 40). Every one is an animated 3D model, with 136 named signature ultimates (Terra Force, Cocytus
+  boss-only villains (Piedmon leads the other Dark Masters at VS round 40). Every one is an animated 3D model, with 146 named signature ultimates (Terra Force, Cocytus
   Breath, Positron Laser…).
 - **Tiers where the price is the stage**: ⛂1 Fresh … ⛂5 Mega, levels 1–10 with level-based shop odds (hover the
   odds over the shop for the detail), and **discovery**: a Champion or Mega shows up in your shop only once you've
@@ -85,11 +85,11 @@ Design choices worth a look:
 - **Models straight from the game files.** `scripts/dscs_setup.sh` unpacks a purchased copy of Digimon Story Cyber
   Sleuth (the Windows game, fetched on a Mac with SteamCMD) with MVGLTools; `scripts/dscs_convert.py` turns a model
   into glTF with its battle clips — no Blender: `scripts/dscs_to_glb.py` writes the glTF itself, baking the clips
-  against the bind pose. `npm run optimize-models` turns the 300 MB of sources into 75 MB of meshopt-compressed,
+  against the bind pose. `npm run optimize-models` turns the 315 MB of sources into 80 MB of meshopt-compressed,
   WebP-textured glTF with pruned clips, harmonized scale tracks and content-hashed URLs; `npm run check-models`
-  validates all 181.
+  validates all 193.
 - **Rendered assets from the real scene.** Dev-only "studios" (`/?studio`, `/?studio=og`, `/?studio=icon`) render
-  the 181 portraits, the link-preview image and the app icons with the game's own lighting.
+  the 193 portraits, the link-preview image and the app icons with the game's own lighting.
 - **Balance from data.** `npm run balance` runs thousands of scrims per form on all five stages (every form wins
   42–58%); `npm run runsim` has a bot play complete runs through the real store (shop odds, discovery, merges,
   economy, items, waves, bosses) to tune the difficulty curve — about half the runs beat each boss of the solo run.

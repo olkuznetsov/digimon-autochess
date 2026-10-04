@@ -114,6 +114,15 @@ const siphon = (hits: number, factor: number, heal: number): Effect => ({
   },
 });
 
+/** Two effects in one cast. */
+const both = (a: Effect, b: Effect): Effect => ({
+  fx: b.fx,
+  cast: (c) => {
+    a.cast(c);
+    b.cast(c);
+  },
+});
+
 /** Swords at the nearest few that pin each where it stands (Piedmon's Trump Sword). */
 const pin = (count: number, factor: number, seconds: number): Effect => ({
   fx: "barrage",
@@ -327,6 +336,17 @@ export const ULTIMATES: Record<string, Ultimate> = {
   metaltyrannomon: u("Nuclear Laser", "☢️", "A laser (290%) that scorches the foes around (100%).", smite(2.9, 1.0, 1.6)),
   lillymon: u("Flower Cannon", "🌺", "A cannon of petals for 400% attack.", bolt(4.0)),
   grapleomon: u("Lion's Roar", "🦁", "Lion fists: five strikes (105% each).", barrage(5, 1.05)),
+  // ---- set 10
+  lucemon: u("Grand Cross", "✝️", "Ten spheres of light in a cross — AoE 150%.", nova(1.5, 1.6)),
+  sukamon: u("Junk Throw", "💩", "Hurls something unspeakable for 240% attack.", bolt(2.4)),
+  numemon: u("Nume-Sludge", "🐌", "Sticky sludge glues the area: AoE 120%, stuck for 0.8s.", freeze(1.2, 1.4, 0.8)),
+  etemon: u("Love Serenade", "🎤", "A song so bad it stuns: AoE 120%, frozen for 1.2s.", freeze(1.2, 1.8, 1.2)),
+  monzaemon: u("Hearts Attack", "💖", "Hearts of love: every ally behind a 7% shield.", bulwark(0.07, true)),
+  waspmon: u("Turbo Stinger", "🐝", "Stingers at the 3 nearest (130%).", volley(3, 1.3)),
+  cannonbeemon: u("Cannon Bomb", "💣", "Bombs rain around the target — AoE 185%.", nova(1.85, 1.8)),
+  antylamon: u("Bulb Ax", "🪓", "Axe arms: 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
+  datamon: u("Digital Bomb", "💾", "A data bomb (290%) that bursts on the foes around (100%).", smite(2.9, 1.0, 1.6)),
+  dinobeemon: u("Hell Masquerade", "🦂", "A storm of stings: five strikes (105% each).", barrage(5, 1.05)),
   // ---- the Dark Masters' leader (boss only)
   piedmon: u("Trump Sword", "🃏", "Four swords at the 4 nearest (140%), each pinned for 0.7s.", pin(4, 1.4, 0.7)),
   // ---- set 9: the anime's finals
@@ -341,7 +361,9 @@ export const ULTIMATES: Record<string, Ultimate> = {
   // rookies whose element synergies fit them badly (or too well) get their own moves
   gomamon: u("Marching Fishes", "🐟", "A school of fish rams the target twice (100% each).", barrage(2, 1.0)),
   dracomon: u("Baby Breath", "🔥", "A breath of fire for 150% attack.", bolt(1.5)),
-  salamon: u("Puppy Howl", "🐶", "A howl that rings around the target — AoE 160%.", nova(1.6, 1.6)),
+  salamon: u("Puppy Howl", "🐶", "A howl that rings around the target — AoE 175%.", nova(1.75, 1.6)),
+  wormmon: u("Sticky Net", "🕸️", "Spins a 15% shield, and a net binds the area: AoE 100%, stuck for 0.8s.", both(bulwark(0.15), freeze(1.0, 1.6, 0.8))),
+  armadillomon: u("Diamond Shell", "🛡️", "Curls up behind a 12% shield.", bulwark(0.12)),
   gabumon: u("Blue Blaster", "🔵", "A blue flame for 290% attack.", bolt(2.9)),
   veemon: u("Vee Headbutt", "💢", "A charging headbutt for 290% attack.", bolt(2.9)),
 };

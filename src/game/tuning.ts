@@ -92,9 +92,9 @@ export const WAVES = {
       { id: "mitamamon", hp: 1.04, atk: 0.58, adds: 3, minions: MINIONS.solo10 },
     ],
     [
-      { id: "diaboromon", hp: 2.7, atk: 1.3, adds: 4, minions: MINIONS.solo15 },
-      { id: "apollomon", hp: 3.0, atk: 1.02, adds: 4, minions: MINIONS.solo15 },
-      { id: "piedmon", hp: 3.2, atk: 1.28, adds: 4, minions: MINIONS.piedmon15 },
+      { id: "diaboromon", hp: 2.6, atk: 1.26, adds: 4, minions: MINIONS.solo15 },
+      { id: "apollomon", hp: 2.9, atk: 0.99, adds: 4, minions: MINIONS.solo15 },
+      { id: "piedmon", hp: 3.05, atk: 1.24, adds: 4, minions: MINIONS.piedmon15 },
     ],
   ] as Omit<BossSpec, "addCount">[][],
   /** endless mode: every 5th round the next of these, all with the same multipliers */
@@ -216,8 +216,8 @@ export const VS = {
       { id: "mitamamon", hp: 3.85, atk: 1.42, adds: 5, addCount: 2, minions: MINIONS.vs20 },
     ],
     [
-      { id: "zeed", hp: 6.4, atk: 2.3, adds: 5, addCount: 2, minions: MINIONS.vs30 },
-      { id: "apollomon", hp: 6.5, atk: 2.55, adds: 5, addCount: 2, minions: MINIONS.vs30 },
+      { id: "zeed", hp: 6.2, atk: 2.25, adds: 5, addCount: 2, minions: MINIONS.vs30 },
+      { id: "apollomon", hp: 6.3, atk: 2.5, adds: 5, addCount: 2, minions: MINIONS.vs30 },
     ],
     [
       { id: "gracenovamon", hp: 9.5, atk: 3.0, adds: 5, addCount: 3, minions: MINIONS.vs40 },

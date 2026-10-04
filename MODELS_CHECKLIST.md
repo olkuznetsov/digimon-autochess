@@ -1,4 +1,4 @@
-# Roster — 173 forms in 38 lines (16 babies included) + 3 wild + 5 bosses, 100% real animated models
+# Roster — 185 forms in 41 lines (16 babies included) + 3 wild + 5 bosses, 100% real animated models
 
 Every form has an animated model: source `models-src/<formId>.glb`, shipped (optimized by `npm run optimize-models`) as `public/models/<formId>.glb` (idle/move/attack01… clips
 drive the combat state machine). The roster is deliberately shaped around sourceable models.
@@ -12,9 +12,9 @@ V3 (branch `v3`, M10): **babies** below Rookie, straight from Cyber Sleuth's evo
 Fresh are Neutral, In-Training carry an element as in the game. Fresh (⛂1): `botamon` → [`koromon` | `wanyamon`], `kuramon` → [`tsumemon` | `pagumon`], `pabumon` → [`motimon` | `yokomon` |
 `tanemon`], `poyomon` → [`bukamon` | `tokomon`], `punimon` → [`nyaromon` | `tsunomon`]. In-Training (⛂2): `koromon` →
 [`agumon` | `guilmon` | `dracomon`], `wanyamon` → [`dorumon` | `gaomon` | `kudamon`], `tsumemon` → [`keramon` | `demidevimon`],
-`motimon` → [`hagurumon` | `tentomon` | `gotsumon`], `yokomon` → [`biyomon` | `wormmon`], `tanemon` → [`palmon` | `renamon` | `lalamon`],
-`bukamon` → [`gomamon` | `betamon` | `otamamon`], `tokomon` → [`patamon` | `falcomon` | `hawkmon`], `nyaromon` → [`terriermon` | `salamon` | `lunamon` | `armadillomon`],
-`tsunomon` → [`gabumon` | `veemon` | `monodramon` | `goblimon`], `pagumon` → `impmon` (set 7). Candlemon, Flamemon, Herissmon, Agunimon and Lobomon start at Rookie (no babies in the game).
+`motimon` → [`hagurumon` | `tentomon` | `gotsumon`], `yokomon` → [`biyomon` | `wormmon`], `tanemon` → [`palmon` | `renamon` | `lalamon` | `fanbeemon`],
+`bukamon` → [`gomamon` | `betamon` | `otamamon`], `tokomon` → [`patamon` | `falcomon` | `hawkmon` | `lucemon`], `nyaromon` → [`terriermon` | `salamon` | `lunamon` | `armadillomon`],
+`tsunomon` → [`gabumon` | `veemon` | `monodramon` | `goblimon`], `pagumon` → [`impmon` | `chuumon`] (sets 7, 10). Candlemon, Flamemon, Herissmon, Agunimon and Lobomon start at Rookie (no babies in the game).
 
 | Line (cost) | Rookie | Champion | Ultimate | Elements |
 |---|---|---|---|---|
@@ -51,6 +51,9 @@ Fresh are Neutral, In-Training carry an element as in the game. Fresh (⛂1): `b
 | Kudamon | `kudamon`(V) | `reppamon`(V) | `chirinmon`(V) | ✨ Light |
 | Lalamon | `lalamon`(D) | `sunflowmon`(D) | `lilamon`(D) | 🌿 Plant |
 | Otamamon | `otamamon`(Vi) | `gekomon`(Vi) | **[`shogungekomon`(Vi) \| `whamon`(V)]** | 💧 Water |
+| Chuumon | `chuumon`(Vi) | **[`sukamon`(Vi) \| `numemon`(D)]** | `sukamon` → `etemon`(Vi), `numemon` → **[`etemon` \| `monzaemon`(V)]** | ⛰️ Earth, 🌑 Dark (etemon), ✨ Light (monzaemon) |
+| Lucemon | `lucemon`(V) | **[`angemon` \| `devimon`]** (Patamon's and DemiDevimon's champions) | theirs | ✨ Light |
+| FanBeemon | `fanbeemon`(D) | `waspmon`(V) | `cannonbeemon`(Vi) | 🌿 Plant, ⚡ Electric (waspmon) |
 
 Set 8 also gives our lines the anime's missing finals: `greymon` → +`metalgreymon`(V, 🔥), `geogreymon` →
 +`skullgreymon`(Vi, 🌑), `growlmon` → +`wargrowlmon`(Vi, 🔥) | +`metaltyrannomon`(Vi, ⚡), `togemon` → +`lillymon`(D, 🌿),
@@ -61,6 +64,10 @@ Greymon's, as WarGreymon + MetalGarurumon), `aquilamon` → +`silphymon` (also G
 +`skullmeramon`(D, 🔥), `dorugamon` → +`dorugreymon`(D, 🔥), `angemon` → +`seraphimon`(V, ✨), `gatomon` →
 +`magnadramon`(V, ✨), `exveemon` → +`magnamon`(Vi — Free in the game, Virus for the Mega triangle; ⛰️). A final with two parents is still one Digimon (like
 Imperialdramon from ExVeemon or Paildramon).
+
+Set 10 branches: `gargomon` → +`antylamon`(D, 🌪️ — Neutral in the game), `guardromon` → +`datamon`(Vi, ⚡), `stingmon` |
+`exveemon` → +`dinobeemon`(D, 🌿 — V-Tamer's DNA of the two). Numemon (D) and Waspmon (V) are flipped from Virus and
+FanBeemon (D) too, so each stage keeps its triangle; Monzaemon is Light (Neutral in the game).
 | Flamemon (3) | `flamemon`(D) | `aldamon`(D) | `susanoomon`(D) | 🔥 Fire, ✨ Light (susanoomon) |
 | Guilmon (4) | `guilmon`(Vi) | `growlmon`(Vi) | `gallantmon`(Vi) | 🔥 Fire, ✨ Light (gallantmon) |
 | Dorumon (4) | `dorumon`(D) | `dorugamon`(D) | `alphamon`(D) | ⛰️ Earth |
