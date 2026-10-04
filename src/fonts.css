@@ -1,0 +1,17 @@
+/* The Japanese the UI shows — subset by scripts/jp-fonts.mjs (runs before every build) */
+@font-face {
+  font-family: "M PLUS Rounded 1c";
+  font-style: normal;
+  font-weight: 500 900;
+  font-display: swap;
+  src: url(/fonts/mplus-rounded-jp.woff2) format("woff2");
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+FF00-FFEF;
+}
+@font-face {
+  font-family: "Dela Gothic One";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/dela-gothic-jp.woff2) format("woff2");
+  unicode-range: U+3000-30FF, U+3400-4DBF, U+4E00-9FFF, U+FF00-FFEF;
+}

@@ -62,14 +62,18 @@ function CameraRig() {
     // framed for the 7 × 4 board and its 9-slot bench (portrait is width-bound: the bench
     // spans the board's 7.7 units)
     if (useProfile.getState().screen === "menu") {
-      // the main menu: the partner on its pedestal, framed low with a slow drift
+      // the main menu: the partner on the painted beach, its feet low in the frame, with a
+      // slow drift. Wide screens shift it left of centre (screen right is world -x here),
+      // clear of the partner card; portrait frames it above the mode buttons.
       const t = state.clock.elapsedTime;
+      const aspect = size.width / size.height;
       if (portrait) {
-        pos.set(Math.sin(t * 0.12) * 0.5, 2.5, -7.4);
-        look.set(0, 1.55, 0);
+        pos.set(Math.sin(t * 0.12) * 0.3, 2.0, -5.8);
+        look.set(0, 0.95, 0);
       } else {
-        pos.set(Math.sin(t * 0.12) * 0.7, 2.1, -5.6);
-        look.set(0, 1.25, 0);
+        const shift = aspect >= 1.6 ? -0.75 : aspect >= 1.3 ? -0.35 : 0;
+        pos.set(shift + Math.sin(t * 0.12) * 0.35, 1.6, -4.4);
+        look.set(shift, 1.39, 0);
       }
       cam.position.copy(pos);
       cam.lookAt(look);
@@ -370,30 +374,28 @@ export function SceneLighting() {
 }
 
 /** Bloom (HDR only), tone mapping and vignette — the game's post chain. */
-export function ScenePost({ low = false }: { low?: boolean }) {
+export function ScenePost({ low = false, menu = false }: { low?: boolean; menu?: boolean }) {
   return (
     <EffectComposer multisampling={low ? 0 : 4}>
-      {/* bloom reads the HDR buffer: only emissive and effects (> 1.0) glow, not lit fur */}
-      <Bloom intensity={0.85} luminanceThreshold={0.9} luminanceSmoothing={0.3} mipmapBlur />
+      {/* bloom reads the HDR buffer: only emissive and effects (> 1.0) glow, not lit fur
+          (in the menu not the painted sky either: its whites are 1.0) */}
+      <Bloom intensity={0.85} luminanceThreshold={menu ? 1.05 : 0.9} luminanceSmoothing={0.3} mipmapBlur />
       {/* the composer disables the renderer's tone mapping, so it happens here */}
       <ToneMapping mode={TONE_MAPPING} />
-      <Vignette eskil={false} offset={0.25} darkness={0.8} />
+      <Vignette eskil={false} offset={0.25} darkness={menu ? 0.4 : 0.8} />
     </EffectComposer>
   );
 }
 
-/** The main menu's scene: the Digital World around the partner's pedestal — no board. */
+/** The main menu's scene: the partner on File Island (a painted backdrop and its own
+ *  daylight, see MenuStage) — no board, no Digital World. */
 function MenuContents() {
   const low = useSettings((s) => s.quality === "low");
   return (
     <>
-      <color attach="background" args={[HORIZON]} />
-      <fog attach="fog" args={[HORIZON, 16, 52]} />
-      <DigitalEnvironment />
       <CameraRig />
-      <SceneLighting />
       <MenuStage />
-      <ScenePost low={low} />
+      <ScenePost low={low} menu />
     </>
   );
 }

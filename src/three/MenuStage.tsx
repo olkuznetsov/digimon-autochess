@@ -1,8 +1,10 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
+import { Environment, Html, Lightformer, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { FORMS, ATTR_COLOR } from "../game/creatures";
 import { useProfile } from "../profile/store";
+import { playerName } from "../net/leaderboard";
 import { CreatureModel } from "./CreatureModel";
 import { modelFor, tweakFor } from "./models";
 import { newDrive, type UnitDrive } from "./unitDrive";
@@ -10,11 +12,78 @@ import { sfx } from "../audio/sfx";
 
 /** the partner is shown bigger than on the board, still growing with its stage */
 const SHOWCASE_SCALE = [0.95, 1.05, 1.2, 1.45, 1.65];
-const TOP = 0.32;
+const TOP = 0.02;
+const BACKDROP = "/art/file-island.webp";
 
-/** The holographic pedestal the partner stands on: a dark plinth, a glowing top and two
- *  counter-rotating rings. */
-function Pedestal({ color }: { color: string }) {
+/** File Island, painted, as the scene's background — cropped like CSS `cover`; on portrait
+ *  screens the crop sits a little right of the middle, on the tram and the mountain. */
+function MenuBackdrop() {
+  const tex = useTexture(BACKDROP);
+  const scene = useThree((s) => s.scene);
+  const size = useThree((s) => s.size);
+  useEffect(() => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
+    scene.background = tex;
+    return () => {
+      if (scene.background === tex) scene.background = null;
+    };
+  }, [tex, scene]);
+  useEffect(() => {
+    const img = tex.image as { width: number; height: number };
+    const ia = img.width / img.height;
+    const va = size.width / size.height;
+    if (va > ia) {
+      const r = ia / va;
+      tex.repeat.set(1, r);
+      tex.offset.set(0, (1 - r) / 2);
+    } else {
+      const r = va / ia;
+      tex.repeat.set(r, 1);
+      tex.offset.set((1 - r) * (va < 0.9 ? 0.55 : 0.5), 0);
+    }
+  }, [tex, size]);
+  return null;
+}
+
+/** Daylight to match the painting: a warm key from the camera's side, sky fill, a rim. */
+function MenuLighting() {
+  return (
+    <>
+      <Environment resolution={64} frames={1} environmentIntensity={0.6}>
+        <Lightformer form="rect" intensity={2.4} color="#ffffff" position={[0, 6, -6]} scale={[10, 4, 1]} />
+        <Lightformer form="rect" intensity={1.6} color="#bfe6ff" position={[-8, 3, 2]} rotation-y={Math.PI / 2} scale={[8, 4, 1]} />
+        <Lightformer form="rect" intensity={1.4} color="#ffe2b8" position={[8, 3, 2]} rotation-y={-Math.PI / 2} scale={[8, 4, 1]} />
+      </Environment>
+      <ambientLight intensity={0.35} />
+      <hemisphereLight args={["#cfeaff", "#e9d3a0", 0.7]} />
+      <directionalLight position={[3, 7, -5]} intensity={1.6} color="#fff4e2" />
+      <directionalLight position={[-2, 4, 6]} intensity={0.9} color="#ffffff" />
+    </>
+  );
+}
+
+/** a soft radial disc: light for the platform, or a contact shadow */
+function radialTexture(inner: string, mid: string, outer: string): THREE.Texture {
+  const c = document.createElement("canvas");
+  c.width = c.height = 256;
+  const g = c.getContext("2d")!;
+  const grd = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  grd.addColorStop(0, inner);
+  grd.addColorStop(0.4, mid);
+  grd.addColorStop(1, outer);
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 256, 256);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/** The partner's platform on the sand: a pool of light, a contact shadow and two
+ *  counter-rotating rings (white, and courage orange). */
+function GlowPlatform() {
+  const glow = useMemo(() => radialTexture("rgba(255,255,255,0.95)", "rgba(200,240,255,0.55)", "rgba(200,240,255,0)"), []);
+  const shade = useMemo(() => radialTexture("rgba(20,30,60,0.5)", "rgba(20,30,60,0.28)", "rgba(20,30,60,0)"), []);
   const ringA = useRef<THREE.Mesh>(null);
   const ringB = useRef<THREE.Mesh>(null);
   useFrame((_, dt) => {
@@ -23,21 +92,21 @@ function Pedestal({ color }: { color: string }) {
   });
   return (
     <group>
-      <mesh position={[0, 0.12, 0]}>
-        <cylinderGeometry args={[1.7, 1.95, 0.24, 64]} />
-        <meshStandardMaterial color="#14182c" metalness={0.6} roughness={0.35} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]}>
+        <planeGeometry args={[4.4, 4.4]} />
+        <meshBasicMaterial map={glow} transparent depthWrite={false} toneMapped={false} />
       </mesh>
-      <mesh position={[0, 0.25, 0]}>
-        <cylinderGeometry args={[1.62, 1.7, 0.04, 64]} />
-        <meshStandardMaterial color="#0d1022" emissive={color} emissiveIntensity={0.35} metalness={0.3} roughness={0.5} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
+        <planeGeometry args={[1.9, 1.9]} />
+        <meshBasicMaterial map={shade} transparent depthWrite={false} />
       </mesh>
-      <mesh ref={ringA} position={[0, TOP + 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[1.42, 1.5, 64, 1, 0, Math.PI * 1.6]} />
-        <meshBasicMaterial color="#7fe9ff" toneMapped={false} transparent opacity={0.9} side={THREE.DoubleSide} />
+      <mesh ref={ringA} position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.42, 1.5, 96, 1, 0, Math.PI * 1.7]} />
+        <meshBasicMaterial color={[1.5, 1.5, 1.5]} toneMapped={false} transparent opacity={0.95} side={THREE.DoubleSide} />
       </mesh>
-      <mesh ref={ringB} position={[0, TOP + 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[1.18, 1.22, 64, 1, 0, Math.PI * 1.2]} />
-        <meshBasicMaterial color="#ff7ad9" toneMapped={false} transparent opacity={0.8} side={THREE.DoubleSide} />
+      <mesh ref={ringB} position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.16, 1.2, 96, 1, 0, Math.PI * 1.25]} />
+        <meshBasicMaterial color="#ff8a1f" toneMapped={false} transparent opacity={0.9} side={THREE.DoubleSide} />
       </mesh>
     </group>
   );
@@ -59,7 +128,7 @@ function Egg() {
         <meshStandardMaterial color="#f6f2e6" roughness={0.45} emissive="#7fe9ff" emissiveIntensity={0.08} />
       </mesh>
       {[0, 1.3, 2.6, 3.9, 5.2].map((a, i) => (
-        <mesh key={i} position={[Math.cos(a) * 0.41, (i % 2 ? 0.12 : -0.1), Math.sin(a) * 0.41]} scale={0.085}>
+        <mesh key={i} position={[Math.cos(a) * 0.41, i % 2 ? 0.12 : -0.1, Math.sin(a) * 0.41]} scale={0.085}>
           <sphereGeometry args={[1, 12, 10]} />
           <meshStandardMaterial color={i % 2 ? "#ff7ad9" : "#4da6ff"} roughness={0.5} />
         </mesh>
@@ -116,6 +185,24 @@ function GrowthBeam({ grewKey }: { grewKey: number | undefined }) {
   );
 }
 
+/** "Let's go!" over the partner's head for a few seconds after the menu opens. */
+function Greeting({ y }: { y: number }) {
+  const [show, setShow] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setShow(false), 5000);
+    return () => clearTimeout(t);
+  }, []);
+  if (!show) return null;
+  return (
+    <Html position={[0, y, 0]} zIndexRange={[4, 0]} style={{ pointerEvents: "none" }}>
+      <div className="menu-bubble">
+        <b>Let’s go, {playerName()}!</b>
+        <span className="jp">いこう！</span>
+      </div>
+    </Html>
+  );
+}
+
 /** The partner itself: its real model, facing the camera with a slow sway; a tap pets it. */
 function Partner({ formId, star }: { formId: string; star: number }) {
   const form = FORMS[formId];
@@ -130,43 +217,48 @@ function Partner({ formId, star }: { formId: string; star: number }) {
   });
   const scale = SHOWCASE_SCALE[(form?.stage ?? 1) - 1] * (star > 1 ? 1.06 : 1);
   return (
-    <group
-      ref={g}
-      position={[0, TOP, 0]}
-      scale={scale}
-      onPointerDown={(e) => {
-        e.stopPropagation();
-        petUntil.current = performance.now() + 1700;
-        setHearts((h) => h + 1);
-        sfx.buy();
-      }}
-    >
-      <Suspense fallback={null}>
-        <CreatureModel
-          key={formId}
-          url={modelFor(formId)!}
-          tweak={tweakFor(formId)}
-          drive={drive}
-          color={form ? ATTR_COLOR[form.attribute] : "#8893b5"}
-          spawnOnMount
-        />
-      </Suspense>
-      <Hearts burst={hearts} />
-    </group>
+    <>
+      <group
+        ref={g}
+        position={[0, TOP, 0]}
+        scale={scale}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          petUntil.current = performance.now() + 1700;
+          setHearts((h) => h + 1);
+          sfx.buy();
+        }}
+      >
+        <Suspense fallback={null}>
+          <CreatureModel
+            key={formId}
+            url={modelFor(formId)!}
+            tweak={tweakFor(formId)}
+            drive={drive}
+            color={form ? ATTR_COLOR[form.attribute] : "#8893b5"}
+            spawnOnMount
+          />
+        </Suspense>
+        <Hearts burst={hearts} />
+      </group>
+      <Greeting y={TOP + 1.2 * scale} />
+    </>
   );
 }
 
-/** The main menu's 3D stage: the partner on its pedestal in the middle of the Digital World. */
+/** The main menu's 3D stage: File Island behind, the partner on its platform of light. */
 export function MenuStage() {
   const partner = useProfile((s) => s.partner);
   const grew = useProfile((s) => s.grew);
-  const color = partner ? ATTR_COLOR[FORMS[partner.formId]?.attribute ?? "Free"] ?? "#7fe9ff" : "#7fe9ff";
   return (
     <group>
-      <Pedestal color={color} />
+      <Suspense fallback={null}>
+        <MenuBackdrop />
+      </Suspense>
+      <MenuLighting />
+      <GlowPlatform />
       {partner ? <Partner formId={partner.formId} star={partner.star} /> : <Egg />}
       <GrowthBeam grewKey={grew?.key} />
-      <pointLight position={[0, 3.2, -2.2]} intensity={14} color="#ffffff" distance={9} />
     </group>
   );
 }
