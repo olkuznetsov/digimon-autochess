@@ -1,4 +1,4 @@
-# Roster — 167 forms in 38 lines (16 babies included) + 3 wild + 4 bosses, 100% real animated models
+# Roster — 173 forms in 38 lines (16 babies included) + 3 wild + 4 bosses, 100% real animated models
 
 Every form has an animated model: source `models-src/<formId>.glb`, shipped (optimized by `npm run optimize-models`) as `public/models/<formId>.glb` (idle/move/attack01… clips
 drive the combat state machine). The roster is deliberately shaped around sourceable models.
@@ -55,6 +55,12 @@ Fresh are Neutral, In-Training carry an element as in the game. Fresh (⛂1): `b
 Set 8 also gives our lines the anime's missing finals: `greymon` → +`metalgreymon`(V, 🔥), `geogreymon` →
 +`skullgreymon`(Vi, 🌑), `growlmon` → +`wargrowlmon`(Vi, 🔥) | +`metaltyrannomon`(Vi, ⚡), `togemon` → +`lillymon`(D, 🌿),
 `leomon` → +`grapleomon`(V, ⚡).
+
+Set 9 — the anime's own finals as branches: `garurumon` → +`weregarurumon` (also Ogremon's) | +`omnimon`(V, ✨; also
+Greymon's, as WarGreymon + MetalGarurumon), `aquilamon` → +`silphymon` (also Gatomon's, the DNA), `meramon` →
++`skullmeramon`(D, 🔥), `dorugamon` → +`dorugreymon`(D, 🔥), `angemon` → +`seraphimon`(V, ✨), `gatomon` →
++`magnadramon`(V, ✨), `exveemon` → +`magnamon`(Vi — Free in the game, Virus for the Mega triangle; ⛰️). A final with two parents is still one Digimon (like
+Imperialdramon from ExVeemon or Paildramon).
 | Flamemon (3) | `flamemon`(D) | `aldamon`(D) | `susanoomon`(D) | 🔥 Fire, ✨ Light (susanoomon) |
 | Guilmon (4) | `guilmon`(Vi) | `growlmon`(Vi) | `gallantmon`(Vi) | 🔥 Fire, ✨ Light (gallantmon) |
 | Dorumon (4) | `dorumon`(D) | `dorugamon`(D) | `alphamon`(D) | ⛰️ Earth |

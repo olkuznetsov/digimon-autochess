@@ -201,9 +201,9 @@ export const VS = {
     35: [0, 0, 0, 0, 9],
     45: [0, 0, 0, 0, 14],
   } as Record<number, Mix>,
-  /** bosses of rounds 10, 20, 30, 40+ — a real check: a typical board beats them ~67% /
-   *  38% / 53% / 69% of the time (600 bot boards on the tier rules, the 7 × 4 board,
-   *  starred Megas, the element synergies and 35 lines, Oct 2026). A match meets one candidate per
+  /** bosses of rounds 10, 20, 30, 40+ — a real check: a typical board beats them ~65% /
+   *  39% / 51% / 72% of the time (600 bot boards on the tier rules, the 7 × 4 board,
+   *  starred Megas, the element synergies, 38 lines and the anime's finals, Oct 2026). A match meets one candidate per
    *  round, picked by the room's variant; candidates match. */
   bosses: [
     [{ id: "skullsatamon", hp: 2.3, atk: 1.26, adds: 3, addCount: 2, minions: MINIONS.vs10 }],
@@ -212,8 +212,8 @@ export const VS = {
       { id: "mitamamon", hp: 3.85, atk: 1.42, adds: 5, addCount: 2, minions: MINIONS.vs20 },
     ],
     [
-      { id: "zeed", hp: 6.2, atk: 2.2, adds: 5, addCount: 2, minions: MINIONS.vs30 },
-      { id: "apollomon", hp: 6.8, atk: 2.55, adds: 5, addCount: 2, minions: MINIONS.vs30 },
+      { id: "zeed", hp: 6.4, atk: 2.3, adds: 5, addCount: 2, minions: MINIONS.vs30 },
+      { id: "apollomon", hp: 6.5, atk: 2.55, adds: 5, addCount: 2, minions: MINIONS.vs30 },
     ],
     [{ id: "gracenovamon", hp: 9.5, atk: 3.0, adds: 5, addCount: 3, minions: MINIONS.vs40 }],
   ] as BossSpec[][],

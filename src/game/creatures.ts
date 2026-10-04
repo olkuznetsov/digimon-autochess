@@ -47,13 +47,13 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Agumon — Dragon's Roar (branch at Ultimate) ============
   agumon: f("agumon", "Agumon", 3, "Vaccine", "Fire", "bruiser", { evolvesTo: ["greymon", "geogreymon"] }),
-  greymon: f("greymon", "Greymon", 4, "Vaccine", "Fire", "bruiser", { evolvesTo: ["wargreymon", "blitzgreymon", "metalgreymon"] }),
+  greymon: f("greymon", "Greymon", 4, "Vaccine", "Fire", "bruiser", { evolvesTo: ["wargreymon", "blitzgreymon", "metalgreymon", "omnimon"] }),
   wargreymon: f("wargreymon", "WarGreymon", 5, "Vaccine", "Fire", "bruiser"),
   blitzgreymon: f("blitzgreymon", "BlitzGreymon", 5, "Virus", "Fire", "ranged"),
 
   // ============ Gabumon — Nature Spirits (branch at Ultimate) ============
   gabumon: f("gabumon", "Gabumon", 3, "Data", "Fire", "bruiser", { evolvesTo: ["garurumon"] }),
-  garurumon: f("garurumon", "Garurumon", 4, "Data", "Fire", "bruiser", { evolvesTo: ["metalgarurumon", "cresgarurumon"] }),
+  garurumon: f("garurumon", "Garurumon", 4, "Data", "Fire", "bruiser", { evolvesTo: ["metalgarurumon", "cresgarurumon", "weregarurumon", "omnimon"] }),
   metalgarurumon: f("metalgarurumon", "MetalGarurumon", 5, "Data", "Water", "ranged"),
   cresgarurumon: f("cresgarurumon", "CresGarurumon", 5, "Vaccine", "Water", "bruiser"),
 
@@ -69,7 +69,7 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Patamon — Wind Guardians ============
   patamon: f("patamon", "Patamon", 3, "Vaccine", "Wind", "ranged", { evolvesTo: ["angemon"] }),
-  angemon: f("angemon", "Angemon", 4, "Vaccine", "Light", "ranged", { evolvesTo: ["magnaangemon"] }),
+  angemon: f("angemon", "Angemon", 4, "Vaccine", "Light", "ranged", { evolvesTo: ["magnaangemon", "seraphimon"] }),
   magnaangemon: f("magnaangemon", "MagnaAngemon", 5, "Vaccine", "Light", "assassin"),
 
   // ============ Dracomon — Nature Spirits ============
@@ -84,7 +84,7 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Candlemon — Nightmare Soldiers ============
   candlemon: f("candlemon", "Candlemon", 3, "Virus", "Fire", "caster", { evolvesTo: ["meramon"] }),
-  meramon: f("meramon", "Meramon", 4, "Virus", "Fire", "bruiser", { evolvesTo: ["gankoomon"] }),
+  meramon: f("meramon", "Meramon", 4, "Virus", "Fire", "bruiser", { evolvesTo: ["gankoomon", "skullmeramon"] }),
   gankoomon: f("gankoomon", "Gankoomon", 5, "Virus", "Fire", "bruiser"),
 
   // ============ Palmon — Nature Spirits (branch at Ultimate) ============
@@ -100,7 +100,7 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Veemon — Wind Guardians (branch at Champion) ============
   veemon: f("veemon", "Veemon", 3, "Vaccine", "Electric", "bruiser", { evolvesTo: ["exveemon", "paildramon"] }),
-  exveemon: f("exveemon", "ExVeemon", 4, "Vaccine", "Electric", "bruiser", { evolvesTo: ["imperialdramon"] }),
+  exveemon: f("exveemon", "ExVeemon", 4, "Vaccine", "Electric", "bruiser", { evolvesTo: ["imperialdramon", "magnamon"] }),
   paildramon: f("paildramon", "Paildramon", 4, "Data", "Electric", "ranged", { evolvesTo: ["imperialdramon"] }),
   imperialdramon: f("imperialdramon", "Imperialdramon", 5, "Vaccine", "Electric", "ranged"),
 
@@ -116,7 +116,7 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Dorumon — Dragon's Roar ============
   dorumon: f("dorumon", "Dorumon", 3, "Data", "Earth", "bruiser", { evolvesTo: ["dorugamon"] }),
-  dorugamon: f("dorugamon", "Dorugamon", 4, "Data", "Earth", "bruiser", { evolvesTo: ["alphamon"] }),
+  dorugamon: f("dorugamon", "Dorugamon", 4, "Data", "Earth", "bruiser", { evolvesTo: ["alphamon", "dorugreymon"] }),
   alphamon: f("alphamon", "Alphamon", 5, "Data", "Earth", "bruiser"),
 
   // ============ Flamemon — Dragon's Roar (set 2, Frontier's warrior of flame) ============
@@ -192,7 +192,7 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Salamon — Wind Guardians (three-way branch at Ultimate) ============
   salamon: f("salamon", "Salamon", 3, "Vaccine", "Light", "caster", { evolvesTo: ["gatomon"] }),
-  gatomon: f("gatomon", "Gatomon", 4, "Vaccine", "Light", "assassin", { evolvesTo: ["angewomon", "ophanimon", "silphymon"] }),
+  gatomon: f("gatomon", "Gatomon", 4, "Vaccine", "Light", "assassin", { evolvesTo: ["angewomon", "ophanimon", "silphymon", "magnadramon"] }),
   angewomon: f("angewomon", "Angewomon", 5, "Vaccine", "Light", "ranged"),
   ophanimon: f("ophanimon", "Ophanimon", 5, "Vaccine", "Light", "caster"),
   silphymon: f("silphymon", "Silphymon", 5, "Data", "Wind", "bruiser"),
@@ -259,7 +259,7 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Hawkmon — Wind (Adventure 02's Aquilamon) ============
   hawkmon: f("hawkmon", "Hawkmon", 3, "Data", "Wind", "ranged", { evolvesTo: ["aquilamon"] }),
-  aquilamon: f("aquilamon", "Aquilamon", 4, "Data", "Wind", "ranged", { evolvesTo: ["hippogryphonmon", "aeroveedramon"] }),
+  aquilamon: f("aquilamon", "Aquilamon", 4, "Data", "Wind", "ranged", { evolvesTo: ["hippogryphonmon", "aeroveedramon", "silphymon"] }),
   hippogryphonmon: f("hippogryphonmon", "HippoGryphonmon", 5, "Data", "Wind", "ranged"),
   aeroveedramon: f("aeroveedramon", "AeroVeedramon", 5, "Vaccine", "Wind", "bruiser"),
 
@@ -292,6 +292,16 @@ export const FORMS: Record<string, Form> = {
   metaltyrannomon: f("metaltyrannomon", "MetalTyrannomon", 5, "Virus", "Electric", "bruiser"),
   lillymon: f("lillymon", "Lillymon", 5, "Data", "Plant", "ranged"),
   grapleomon: f("grapleomon", "GrapLeomon", 5, "Vaccine", "Electric", "bruiser"),
+
+  // ---- set 9: the anime's own finals as branches — Garurumon → WereGarurumon, Aquilamon →
+  // Silphymon (the DNA with Gatomon) and Omnimon (WarGreymon + MetalGarurumon) from either
+  // partner, as Imperialdramon already comes from ExVeemon or Paildramon
+  skullmeramon: f("skullmeramon", "SkullMeramon", 5, "Data", "Fire", "bruiser"),
+  dorugreymon: f("dorugreymon", "DoruGreymon", 5, "Data", "Fire", "bruiser"),
+  seraphimon: f("seraphimon", "Seraphimon", 5, "Vaccine", "Light", "caster"),
+  magnadramon: f("magnadramon", "Magnadramon", 5, "Vaccine", "Light", "caster"),
+  magnamon: f("magnamon", "Magnamon", 5, "Virus", "Earth", "tank"),
+  omnimon: f("omnimon", "Omnimon", 5, "Vaccine", "Light", "bruiser"),
 
   // ============ bosses only ============
   zeed: f("zeed", "ZeedMillenniummon", 5, "Virus", "Dark", "tank", { bossOnly: true }),

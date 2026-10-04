@@ -31,7 +31,7 @@ All Digimon models are ripped from Bandai games (primarily *Digimon Story: Cyber
   WereGarurumon, Pagumon, Impmon, Wizardmon, Bakemon, Wisemon, Phantomon, Hawkmon, Aquilamon, HippoGryphonmon,
   AeroVeedramon, Zudomon, Andromon) and **set 8** (Kudamon, Reppamon, Chirinmon, Lalamon, Sunflowmon, Lilamon,
   Otamamon, Gekomon, ShogunGekomon, Whamon, MetalGreymon, SkullGreymon, WarGrowlmon, MetalTyrannomon, Lillymon,
-  GrapLeomon) — converted from
+  GrapLeomon) and **set 9** (SkullMeramon, DoruGreymon, Seraphimon, Magnadramon, Magnamon, Omnimon) — converted from
   a purchased copy of *Digimon Story Cyber Sleuth:
   Complete Edition* (Bandai Namco) with MVGLTools by SydMontague and the file readers of Pherakki's
   Blender-Tools-for-DSCS (`scripts/dscs_convert.py`).

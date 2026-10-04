@@ -44,7 +44,7 @@ const ATTRIBUTE_TRAITS: TraitDef[] = [
     key: "Data", name: "Data", kind: "attribute", color: ATTR_COLOR.Data,
     tiers: [
       { need: 2, desc: "+15% attack speed", asPct: 0.15 },
-      { need: 3, desc: "+30% attack speed", asPct: 0.3 },
+      { need: 3, desc: "+24% attack speed", asPct: 0.24 },
     ],
   },
   {
@@ -99,11 +99,11 @@ const ELEMENT_TRAITS: TraitDef[] = [
     { need: 4, desc: "ignore 14% of incoming damage; dodges every 4th attack", guardPct: 0.14, procs: { dodgeEvery: 4 } },
   ]),
   el("Light", [
-    { need: 2, desc: "a shield of 12% max HP when battle starts", shieldPct: 0.12 },
+    { need: 2, desc: "a shield of 10% max HP when battle starts", shieldPct: 0.1 },
     {
       need: 4,
-      desc: "a shield of 16% max HP when battle starts; every cast shields the most wounded ally for 20% of its max HP",
-      shieldPct: 0.16,
+      desc: "a shield of 14% max HP when battle starts; every cast shields the most wounded ally for 20% of its max HP",
+      shieldPct: 0.14,
       procs: { blessing: 0.2 },
     },
   ]),

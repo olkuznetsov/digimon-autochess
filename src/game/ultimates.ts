@@ -231,11 +231,11 @@ export const ULTIMATES: Record<string, Ultimate> = {
   // Falcomon line
   peckmon: u("Kunai Wing", "🪶", "Feather kunai: three hits (120% each).", barrage(3, 1.2)),
   crowmon: u("Sunshine Beam", "🔆", "A beam from its mirror — AoE 185%.", nova(1.85, 1.8)),
-  ravemon: u("Blackwing", "🗡️", "A finishing slash: 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
+  ravemon: u("Blackwing", "🗡️", "Four slashes that feed it (110% each, 35% lifesteal).", siphon(4, 1.1, 0.35)),
   // Renamon line
   kyubimon: u("Fox Tail Inferno", "🦊", "Blue fox-fire around the target — AoE 145%.", nova(1.45, 1.6)),
   taomon: u("Talisman of Light", "📜", "Talismans seal the area: AoE 120%, frozen for 1.2s.", freeze(1.2, 1.8, 1.2)),
-  sakuyamon: u("Spirit Strike", "🌸", "Four fox spirits and her staff: five strikes (105% each).", barrage(5, 1.05)),
+  sakuyamon: u("Spirit Strike", "🌸", "Four fox spirits and her staff: five strikes (100% each).", barrage(5, 1.0)),
   // Agunimon line
   burninggreymon: u("Wildfire Tsunami", "🔥", "Flames from its arm cannons at the 3 nearest (135%).", volley(3, 1.35)),
   kaisergreymon: u("Dragon Fire Crossbow", "🏹", "A flaming bolt (300%) that sets nearby foes ablaze (110%).", smite(3.0, 1.1, 1.8)),
@@ -315,6 +315,13 @@ export const ULTIMATES: Record<string, Ultimate> = {
   metaltyrannomon: u("Nuclear Laser", "☢️", "A laser (290%) that scorches the foes around (100%).", smite(2.9, 1.0, 1.6)),
   lillymon: u("Flower Cannon", "🌺", "A cannon of petals for 400% attack.", bolt(4.0)),
   grapleomon: u("Lion's Roar", "🦁", "Lion fists: five strikes (105% each).", barrage(5, 1.05)),
+  // ---- set 9: the anime's finals
+  skullmeramon: u("Metal Fireball", "🔥", "A fireball of blue flame (290%) that scorches the foes around (100%).", smite(2.9, 1.0, 1.6)),
+  dorugreymon: u("Exa Blaster", "💥", "A blast (300%) that tears through nearby foes (100%).", smite(3.0, 1.0, 1.6)),
+  seraphimon: u("Seven Heavens", "✨", "Seven orbs of holy light burst around the target — AoE 185%.", nova(1.85, 1.8)),
+  magnadramon: u("Fire Tornado", "🐲", "Holy fire spirals at the 3 nearest (150%).", volley(3, 1.5)),
+  magnamon: u("Extreme Jihad", "🛡️", "Its golden armour blazes: every ally behind a 6% shield.", bulwark(0.06, true)),
+  omnimon: u("Transcendent Sword", "⚔️", "A sword of light: 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
   // Support rally on a couple of casters keeps team comps interesting
   candlemon: u("Ember Rally", "🕯️", "Ignites allies: +30% attack for the battle.", rally(0.3)),
   // rookies whose element synergies fit them badly (or too well) get their own moves

@@ -242,6 +242,15 @@ Herissmon, Agunimon, Lobomon) лишаються досяжними.
 
 ## 5. Журнал
 <!-- новіші записи зверху -->
+- **2026-10-04** — Set 9, фінали з аніме як гілки (Саша: «додай фінали з аніме як гілки»): Meramon → SkullMeramon,
+  Dorugamon → DoruGreymon, Angemon → Seraphimon, Gatomon → Magnadramon, ExVeemon → Magnamon, і канонічні шляхи до
+  форм, що вже були: Garurumon → WereGarurumon (і далі від Ogremon), Aquilamon → Silphymon (ДНК із Gatomon), Omnimon від
+  Greymon або Garurumon (WarGreymon + MetalGarurumon) — фінал із двома батьками лишається одним дігімоном, як
+  Imperialdramon. Greymon, Garurumon і Gatomon тепер мають по 4 гілки (вікно вибору 4 в ряд, на телефоні 2 × 2).
+  6 моделей (3.1 МБ): 173 форми, 180 моделей, 135 ульт. Magnamon (у грі Free) — Virus для трикутника Mega (28/25/24).
+  Три нові Light-Mega зробили синергію Light частою → Sakuyamon (асасин, Light) 52 → 59%: щит Light 12/16 → 10/14%;
+  Data 3 — +24% (не 30%) швидкості атаки (Data-форми — постійні верхні викиди); Ravemon — «Blackwing» з вампіризмом.
+  Соло 51/44/41%, VS-боси 65/39/~51/72% (R30 перепідібрано), усі форми 42–58%.
 - **2026-10-04** — Set 8 (Саша: «продовжуй»): три лінії — Kudamon → Reppamon → Chirinmon (Light, від Wanyamon),
   Lalamon → Sunflowmon → Lilamon (Plant, від Tanemon), Otamamon → Gekomon → [ShogunGekomon | Whamon] (Water, від
   Bukamon) — і фінали з аніме як гілки наших ліній: Greymon → MetalGreymon, GeoGreymon → SkullGreymon, Growlmon →
