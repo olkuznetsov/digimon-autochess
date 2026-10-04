@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Board } from "./Board";
 import { Creature } from "./Creature";
 import { BattleFx } from "./BattleFx";
-import { DigitalEnvironment, HORIZON } from "./Environment";
+import { IslandEnvironment } from "./Island";
 import { useGame, type PvpBoardUnit } from "../game/store";
 import { opponentOf } from "../game/lobby";
 import { useSettings } from "../settings";
@@ -15,7 +15,7 @@ import { MenuStage } from "./MenuStage";
 import { newDrive, type UnitDrive } from "./unitDrive";
 import { juice, resetJuice, tickJuice } from "./juice";
 import { SIM_DT } from "../game/battle";
-import { makeEnemyWave, makeVsWave, vsRoundKind } from "../game/tuning";
+import { isBossRound, makeEnemyWave, makeVsWave, vsRoundKind } from "../game/tuning";
 import { ITEMS } from "../game/items";
 import { FORMS, ATTR_COLOR } from "../game/creatures";
 import {
@@ -374,15 +374,15 @@ export function SceneLighting() {
 }
 
 /** Bloom (HDR only), tone mapping and vignette — the game's post chain. */
-export function ScenePost({ low = false, menu = false }: { low?: boolean; menu?: boolean }) {
+export function ScenePost({ low = false, day = false }: { low?: boolean; day?: boolean }) {
   return (
     <EffectComposer multisampling={low ? 0 : 4}>
       {/* bloom reads the HDR buffer: only emissive and effects (> 1.0) glow, not lit fur
-          (in the menu not the painted sky either: its whites are 1.0) */}
-      <Bloom intensity={0.85} luminanceThreshold={menu ? 1.05 : 0.9} luminanceSmoothing={0.3} mipmapBlur />
+          (by day not the painted sky or the sand either: their whites are 1.0) */}
+      <Bloom intensity={0.85} luminanceThreshold={day ? 1.05 : 0.9} luminanceSmoothing={0.3} mipmapBlur />
       {/* the composer disables the renderer's tone mapping, so it happens here */}
       <ToneMapping mode={TONE_MAPPING} />
-      <Vignette eskil={false} offset={0.25} darkness={menu ? 0.4 : 0.8} />
+      <Vignette eskil={false} offset={0.25} darkness={day ? 0.4 : 0.8} />
     </EffectComposer>
   );
 }
@@ -395,7 +395,7 @@ function MenuContents() {
     <>
       <CameraRig />
       <MenuStage />
-      <ScenePost low={low} menu />
+      <ScenePost low={low} day />
     </>
   );
 }
@@ -408,6 +408,8 @@ function SceneContents() {
   const setDrag = useGame((s) => s.setDrag);
   const moveUnit = useGame((s) => s.moveUnit);
   const [hovered, setHovered] = useState<{ col: number; row: number } | null>(null);
+  // dusk, and Devimon's gears, while a boss is near
+  const boss = useGame((s) => (s.pvp ? vsRoundKind(s.round) === "boss" : isBossRound(s.round)));
 
   const commitDrag = (clientX?: number, clientY?: number) => {
     const { dragId: id, dragPos } = useGame.getState();
@@ -454,15 +456,11 @@ function SceneContents() {
 
   return (
     <>
-      <color attach="background" args={[HORIZON]} />
-      <fog attach="fog" args={[HORIZON, 16, 52]} />
-
-      <DigitalEnvironment />
+      <IslandEnvironment boss={boss} />
 
       <CameraRig />
-      <SceneLighting />
 
-      <Board highlight={!!dragId} hovered={hovered} />
+      <Board highlight={!!dragId} hovered={hovered} boss={boss} />
 
       {inPrep && <PrepUnits />}
       {inPrep && <EnemyPreview />}
@@ -489,7 +487,7 @@ function SceneContents() {
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
-      <ScenePost low={low} />
+      <ScenePost low={low} day />
     </>
   );
 }

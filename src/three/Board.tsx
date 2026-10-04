@@ -4,16 +4,19 @@ import * as THREE from "three";
 import { COLS, ROWS, CELL, BENCH_SLOTS, BENCH_STEP, BENCH_Z } from "../game/board";
 
 interface BoardProps {
+  /** a boss round: the board dims with the dusk */
+  boss?: boolean;
   /** highlight player cells (during drag) */
   highlight?: boolean;
   hovered?: { col: number; row: number } | null;
 }
 
 /**
- * Holographic grid: one shader plane per area instead of a mesh per tile. Each cell
- * is a dark glass plate with a thin glowing frame (brighter at the corners), a faint
- * team tint and a slow scan band; the hovered cell lights up and, while a unit is
- * dragged, the player's half pulses. Frames run hotter than 1.0 so bloom picks them up.
+ * The board on the beach: one shader plane per area instead of a mesh per tile. Each cell
+ * is a flat, cel-shaded tile — grass on your half, raked sand on theirs — with white grout
+ * between them, a darker band inside the edge and a light corner; the hovered cell
+ * brightens and, while a unit is dragged, your half pulses sky blue. Unlit on purpose: the
+ * anime look wants flat colour (and nothing here reaches the bloom threshold).
  */
 const VERT = /* glsl */ `
 varying vec2 vXZ;
@@ -33,6 +36,7 @@ uniform vec3 uColorA;
 uniform vec3 uColorB;
 uniform vec2 uHover;    // hovered cell, or far away
 uniform float uDrag;    // 0..1 while a unit is being dragged
+uniform float uDim;     // 1 by day, lower at a boss's dusk
 varying vec2 vXZ;
 
 void main() {
@@ -40,40 +44,32 @@ void main() {
   vec2 cell = floor(g);
   vec2 f = fract(g);
   float team = step(uSplit, cell.y);
-  vec3 tint = mix(uColorA, uColorB, team);
+  // a gentle checker, like mown grass and raked sand
+  vec3 base = mix(uColorA, uColorB, team) * (0.95 + 0.07 * mod(cell.x + cell.y, 2.0));
 
   vec2 d2 = min(f, 1.0 - f);
   float d = min(d2.x, d2.y);
   const float gap = 0.035;
-  float plate = smoothstep(gap, gap + 0.01, d);
-  float frame = plate * (1.0 - smoothstep(gap + 0.012, gap + 0.035, d));
-  float corner = 1.0 - smoothstep(0.1, 0.2, max(d2.x, d2.y));
-  float rim = plate * (1.0 - smoothstep(gap, gap + 0.16, d));
-
-  // glass plate: dark, faintly tinted, a little brighter toward the centre
-  float r = length(f - 0.5);
-  vec3 col = vec3(0.006, 0.008, 0.02) + plate * tint * (0.035 + 0.03 * (1.0 - r * 1.4));
-  // fine data dots
-  vec2 dots = fract(g * 5.0) - 0.5;
-  col += plate * tint * 0.025 * (1.0 - smoothstep(0.05, 0.12, length(dots)));
-  // slow scan band sweeping away from the camera
-  float scan = pow(0.5 + 0.5 * sin(g.y * 0.9 - uTime * 1.1), 24.0);
-  col += plate * tint * scan * 0.16;
-  // frame, hotter at the corners
-  col += tint * (frame * (0.7 + corner * 1.6) + rim * 0.06);
+  float tile = smoothstep(gap, gap + 0.012, d);
+  // cel shading: a darker band inside the edge, a light corner (screen top-left)
+  float edge = 1.0 - smoothstep(gap + 0.01, gap + 0.11, d);
+  vec3 col = base * (1.0 - 0.12 * edge);
+  col += tile * 0.05 * (1.0 - smoothstep(0.0, 0.45, length(f - vec2(0.72, 0.72))));
+  // white grout
+  col = mix(vec3(0.97, 0.98, 1.0), col, tile);
 
   float hover = 1.0 - step(0.5, abs(cell.x - uHover.x) + abs(cell.y - uHover.y));
-  col += tint * hover * (plate * 0.22 + frame * 2.2);
+  col = mix(col, vec3(1.0, 1.0, 0.92), hover * tile * 0.45);
   float pulse = uDrag * (1.0 - team) * (0.55 + 0.45 * sin(uTime * 5.0));
-  col += tint * pulse * (plate * 0.07 + frame * 0.9);
+  col = mix(col, vec3(0.72, 0.92, 1.0), pulse * tile * 0.3);
 
-  gl_FragColor = vec4(col, 1.0);
+  gl_FragColor = vec4(col * uDim, 1.0);
 }
 `;
 
-const PLAYER = new THREE.Color("#2f7dff");
-const ENEMY = new THREE.Color("#ff3d81");
-const BENCH = new THREE.Color("#8b6bff");
+const PLAYER = new THREE.Color("#93d36d");
+const ENEMY = new THREE.Color("#efd49a");
+const BENCH = new THREE.Color("#cfe2ef");
 const FAR = new THREE.Vector2(-99, -99);
 
 function GridSurface({
@@ -87,7 +83,10 @@ function GridSurface({
   drag,
   y = 0.012,
   cell = CELL,
+  dim = 1,
 }: {
+  /** darker at a boss's dusk */
+  dim?: number;
   y?: number;
   /** cell size (the bench packs its slots closer) */
   cell?: number;
@@ -114,6 +113,7 @@ function GridSurface({
           uColorB: { value: colorB.clone() },
           uHover: { value: FAR.clone() },
           uDrag: { value: 0 },
+          uDim: { value: 1 },
         },
       }),
     [cols, rows, centerZ, split, colorA, colorB, cell],
@@ -125,6 +125,7 @@ function GridSurface({
     if (hovered) u.uHover.value.set(hovered.col, hovered.row);
     else u.uHover.value.copy(FAR);
     u.uDrag.value += ((drag ? 1 : 0) - u.uDrag.value) * Math.min(1, dt * 8);
+    u.uDim.value += (dim - u.uDim.value) * Math.min(1, dt * 2.5);
   });
 
   return (
@@ -154,7 +155,7 @@ function Rim({ w, d, z, color, glow }: { w: number; d: number; z: number; color:
   );
 }
 
-export function Board({ highlight = false, hovered = null }: BoardProps) {
+export function Board({ highlight = false, hovered = null, boss = false }: BoardProps) {
   const boardW = COLS * CELL;
   const boardD = ROWS * CELL;
   const platformW = boardW + CELL * 0.6;
@@ -165,12 +166,12 @@ export function Board({ highlight = false, hovered = null }: BoardProps) {
 
   return (
     <group>
-      {/* dark glass slab under the board and bench */}
-      <mesh position={[0, -0.07, platformZ]} receiveShadow>
+      {/* a sandstone slab under the board and bench */}
+      <mesh position={[0, -0.07, platformZ]}>
         <boxGeometry args={[platformW, 0.14, platformD]} />
-        <meshStandardMaterial color="#070a18" roughness={0.35} metalness={0.6} />
+        <meshToonMaterial color="#d9bb80" />
       </mesh>
-      <Rim w={platformW} d={platformD} z={platformZ} color="#3a5bff" glow={1.4} />
+      <Rim w={platformW} d={platformD} z={platformZ} color="#ffffff" glow={0.95} />
 
       <GridSurface
         cols={COLS}
@@ -181,15 +182,16 @@ export function Board({ highlight = false, hovered = null }: BoardProps) {
         colorB={ENEMY}
         hovered={hovered}
         drag={highlight}
+        dim={boss ? 0.78 : 1}
       />
       {/* the front line between the halves */}
       <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[boardW + CELL * 0.4, 0.035]} />
-        <meshBasicMaterial color={new THREE.Color("#9be7ff").multiplyScalar(2.2)} toneMapped={false} />
+        <meshBasicMaterial color={new THREE.Color("#ffffff").multiplyScalar(0.95)} toneMapped={false} />
       </mesh>
 
       {/* the bench strip slightly overlaps the board's front edge — sit it just below */}
-      <GridSurface cols={BENCH_SLOTS} rows={1} centerZ={BENCH_Z} y={0.008} split={1} colorA={BENCH} colorB={BENCH} cell={BENCH_STEP} />
+      <GridSurface cols={BENCH_SLOTS} rows={1} centerZ={BENCH_Z} y={0.008} split={1} colorA={BENCH} colorB={BENCH} cell={BENCH_STEP} dim={boss ? 0.78 : 1} />
     </group>
   );
 }
