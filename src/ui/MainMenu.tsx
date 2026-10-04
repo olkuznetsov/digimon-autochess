@@ -16,6 +16,8 @@ import {
   xpToNext,
 } from "../profile/profile";
 import { playerName } from "../net/leaderboard";
+import { useAccount } from "../net/account";
+import { AccountBox } from "./AccountBox";
 import { Portrait } from "./Portrait";
 import { ATTR_PATH, CREST_ICON, ELEMENT_PATH, ICON, Icon, STAGE_JP, orList } from "./kit";
 import { sfx } from "../audio/sfx";
@@ -40,6 +42,9 @@ function TamerBadge({ onAvatar }: { onAvatar: () => void }) {
   const { level, into, need } = levelFor(xp);
   const [name, setName] = useState(playerName());
   const [editing, setEditing] = useState(false);
+  // signing in can bring a name with it
+  const account = useAccount((s) => s.status);
+  useEffect(() => setName(playerName()), [account]);
   const r = 52;
   const c = 2 * Math.PI * r;
   const save = () => {
@@ -101,6 +106,7 @@ function TamerBadge({ onAvatar }: { onAvatar: () => void }) {
         <span className="tamer-xp">
           {into} / {need} XP to Lv.{level + 1}
         </span>
+        {account === "guest" && <span className="tamer-guest">Guest · tap your avatar to sign in</span>}
       </div>
     </div>
   );
@@ -181,6 +187,7 @@ function TamerFile() {
           );
         })}
       </div>
+      <AccountBox />
     </section>
   );
 }

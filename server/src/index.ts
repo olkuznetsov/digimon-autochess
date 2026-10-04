@@ -2,16 +2,19 @@ import { DurableObject } from "cloudflare:workers";
 import { cleanBoard, cleanName, LB_SEASON } from "./util";
 import { Lobby } from "./lobby";
 import { Matchmaker } from "./queue";
+import { Account } from "./account";
+import { accountIdFor, issueSession, readSession, verifyGoogleIdToken } from "./auth";
 
 /**
  * Multiplayer server for Digimon Auto Chess (Cloudflare Worker + Durable Objects):
  * - Lobby (src/lobby.ts): rooms of 2–8 players, the current VS mode;
  * - Matchmaker (src/queue.ts): the public queue that forms lobbies;
  * - MatchRoom: the original 1v1 relay, kept for clients still running an older build;
- * - Leaderboard: best runs, VS wins, lobby rating and saved boards for ghost battles.
+ * - Leaderboard: best runs, VS wins, lobby rating and saved boards for ghost battles;
+ * - Account (src/account.ts): a Google-signed-in tamer's synced game data.
  */
 
-export { Lobby, Matchmaker };
+export { Lobby, Matchmaker, Account };
 
 export interface Env {
   ROOM: DurableObjectNamespace<MatchRoom>;
@@ -20,6 +23,11 @@ export interface Env {
   LB: DurableObjectNamespace<Leaderboard>;
   /** worker secret guarding /lb/admin/* (wrangler secret put ADMIN_KEY) */
   ADMIN_KEY?: string;
+  ACCOUNT: DurableObjectNamespace<Account>;
+  /** the game's Google OAuth client (not secret; wrangler.jsonc vars) */
+  GOOGLE_CLIENT_ID?: string;
+  /** signs session tokens (wrangler secret put SESSION_SECRET) */
+  SESSION_SECRET?: string;
 }
 
 type Side = "A" | "B";
@@ -330,11 +338,78 @@ export class Leaderboard extends DurableObject<Env> {
 
 const CORS = {
   "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET, POST, OPTIONS",
-  "access-control-allow-headers": "content-type",
+  "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "access-control-allow-headers": "content-type, authorization",
 };
 const json = (o: unknown, status = 200) =>
   new Response(JSON.stringify(o), { status, headers: { "content-type": "application/json", ...CORS } });
+
+/** a synced save can't grow past this (the client's game data is a few KB) */
+const MAX_ACCOUNT_DATA = 256 * 1024;
+
+/**
+ * Accounts — Google sign-in, then the tamer's data on every device:
+ * - POST /account/google {credential}: Google's ID token in, a session token out, with the
+ *   account's data (null for a new account);
+ * - GET /account/me: the account and its data;
+ * - PUT /account/data {data, base, force?}: saves unless another device saved since `base`
+ *   (409 with what's stored);
+ * - DELETE /account: erases it.
+ */
+async function accountRoute(request: Request, env: Env, url: URL): Promise<Response> {
+  if (!env.GOOGLE_CLIENT_ID || !env.SESSION_SECRET) return json({ error: "accounts are off" }, 503);
+  const view = (id: string, googleName: string, data: string | null, updatedAt: number) => ({
+    id: `a-${id}`,
+    googleName,
+    data: data ? JSON.parse(data) : null,
+    updatedAt,
+  });
+
+  if (url.pathname === "/account/google" && request.method === "POST") {
+    let body: { credential?: unknown };
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "bad json" }, 400);
+    }
+    const user = await verifyGoogleIdToken(String(body?.credential ?? ""), env.GOOGLE_CLIENT_ID);
+    if (!user) return json({ error: "sign-in failed" }, 401);
+    const id = await accountIdFor(user.sub);
+    const rec = await env.ACCOUNT.getByName(id).touch(cleanName(user.name));
+    return json({ token: await issueSession(env.SESSION_SECRET, id), ...view(id, rec.googleName, rec.data, rec.updatedAt) });
+  }
+
+  const auth = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  const id = await readSession(env.SESSION_SECRET, auth);
+  if (!id) return json({ error: "signed out" }, 401);
+  const stub = env.ACCOUNT.getByName(id);
+
+  if (url.pathname === "/account/me" && request.method === "GET") {
+    const rec = await stub.load();
+    return rec ? json(view(id, rec.googleName, rec.data, rec.updatedAt)) : json({ error: "no such account" }, 401);
+  }
+  if (url.pathname === "/account/data" && request.method === "PUT") {
+    const text = await request.text();
+    if (text.length > MAX_ACCOUNT_DATA) return json({ error: "too big" }, 413);
+    let body: { data?: unknown; base?: unknown; force?: unknown };
+    try {
+      body = JSON.parse(text);
+    } catch {
+      return json({ error: "bad json" }, 400);
+    }
+    if (!body?.data || typeof body.data !== "object") return json({ error: "no data" }, 400);
+    const r = await stub.save(JSON.stringify(body.data), Number(body.base) || 0, body.force === true);
+    if (r.ok) return json({ updatedAt: r.updatedAt });
+    return r.updatedAt
+      ? json({ error: "newer on the server", updatedAt: r.updatedAt, data: r.data ? JSON.parse(r.data) : null }, 409)
+      : json({ error: "no such account" }, 401);
+  }
+  if (url.pathname === "/account" && request.method === "DELETE") {
+    await stub.erase();
+    return json({ deleted: true });
+  }
+  return json({ error: "not found" }, 404);
+}
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -350,6 +425,8 @@ export default {
       const stub = env.ROOM.getByName(m[1].toUpperCase());
       return stub.fetch(request);
     }
+
+    if (url.pathname.startsWith("/account")) return accountRoute(request, env, url);
 
     const lb = env.LB.getByName(LB_SEASON);
     if (url.pathname === "/lb/top" && request.method === "GET") {

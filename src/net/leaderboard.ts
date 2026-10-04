@@ -1,7 +1,8 @@
 import type { PvpBoardUnit } from "../game/store";
 import { WORKER_HOST } from "../channel";
+import { session } from "./account";
 
-/** Anonymous leaderboard client: device id + chosen name, no accounts. */
+/** Leaderboard client: the chosen name, keyed by the device — or by the account, once signed in. */
 
 const BASE = `https://${WORKER_HOST}`;
 
@@ -16,6 +17,8 @@ export interface LbEntry {
 }
 
 export function playerId(): string {
+  const account = session();
+  if (account) return account.id;
   try {
     let id = localStorage.getItem("dac-pid");
     if (!id) {

@@ -20,8 +20,10 @@ import { MainMenu } from "./ui/MainMenu";
 import { ProfileToast } from "./ui/ProfileToast";
 import { useProfile } from "./profile/store";
 import { startProfileTracker } from "./profile/tracker";
+import { startAccountSync } from "./net/account";
 
 startProfileTracker();
+startAccountSync();
 
 export default function App() {
   const screen = useProfile((s) => s.screen);

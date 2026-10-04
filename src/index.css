@@ -4927,3 +4927,72 @@ html, body {
     height: 28px;
   }
 }
+
+/* the account: Sign in with Google in the tamer file */
+.acct {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 18px 0;
+  padding-top: 10px;
+  border-top: 1px solid rgba(27, 35, 80, 0.1);
+}
+.acct-text {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+  color: #4a5378;
+}
+.acct-text b {
+  color: #14a85c;
+}
+.acct-button {
+  min-height: 44px;
+}
+.acct-error {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #d6304a;
+}
+.acct.signed {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+.acct-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c47a;
+  box-shadow: 0 0 8px rgba(34, 196, 122, 0.8);
+}
+.acct-links {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+.acct-link {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 800;
+  color: #2f6bdc;
+  text-decoration: underline;
+}
+.acct-link.danger {
+  color: #b8344c;
+}
+.tamer-guest {
+  display: none;
+  font-size: 11px;
+  font-weight: 800;
+}
+@media (max-width: 760px) {
+  .tamer-guest {
+    display: inline;
+  }
+}
