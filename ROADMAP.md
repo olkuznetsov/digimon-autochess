@@ -242,6 +242,12 @@ Herissmon, Agunimon, Lobomon) лишаються досяжними.
 
 ## 5. Журнал
 <!-- новіші записи зверху -->
+- **2026-10-04** — Piedmon, новий бос (Саша: «додай Piedmon як нового боса»): ватажок Dark Masters (Virus, Dark,
+  асасин), ульта «Trump Sword» — мечі в 4 найближчих (140%), кожного пришпилює на 0.7 с (Holy Ring — контра). Третій
+  кандидат соло R15 (з Devimon і Bakemon), другий кандидат VS R40+ — разом з іншими Dark Masters: Puppetmon,
+  MetalSeadramon, Machinedramon (власні закріплені помічники), і в нескінченному режимі. Підібрано під ту саму
+  прохідність, що й сусіди: соло R15 ~42% (Diaboromon/Apollomon 42%), VS R40 72% (Gracenovamon 72%) — як асасин із
+  тонким HP він потребує більших множників (10 / 3.2 у VS). 181 модель.
 - **2026-10-04** — Set 9, фінали з аніме як гілки (Саша: «додай фінали з аніме як гілки»): Meramon → SkullMeramon,
   Dorugamon → DoruGreymon, Angemon → Seraphimon, Gatomon → Magnadramon, ExVeemon → Magnamon, і канонічні шляхи до
   форм, що вже були: Garurumon → WereGarurumon (і далі від Ogremon), Aquilamon → Silphymon (ДНК із Gatomon), Omnimon від

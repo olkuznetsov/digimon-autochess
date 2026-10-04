@@ -128,6 +128,7 @@ export const MODEL_HASH: Record<string, string> = {
   patamon: "e781682155",
   peckmon: "f1ab0c914a",
   phantomon: "5749d63496",
+  piedmon: "e6cf6dd278",
   piximon: "d54adbd71b",
   poyomon: "b8c898ccb8",
   pumpkinmon: "c35556d6f8",

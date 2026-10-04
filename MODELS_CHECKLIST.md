@@ -1,4 +1,4 @@
-# Roster — 173 forms in 38 lines (16 babies included) + 3 wild + 4 bosses, 100% real animated models
+# Roster — 173 forms in 38 lines (16 babies included) + 3 wild + 5 bosses, 100% real animated models
 
 Every form has an animated model: source `models-src/<formId>.glb`, shipped (optimized by `npm run optimize-models`) as `public/models/<formId>.glb` (idle/move/attack01… clips
 drive the combat state machine). The roster is deliberately shaped around sourceable models.
@@ -76,9 +76,10 @@ Boss-only (`bossOnly`: never in the shop, wild waves or scrims) — boss rounds 
 | Form | Attr / element | Where |
 |---|---|---|
 | `zeed` ZeedMillenniummon | Vi, Dark | VS R30 (or Apollomon), endless |
-| `gracenovamon` Gracenovamon | D, Light | VS R40+, endless |
+| `gracenovamon` Gracenovamon | D, Light | VS R40+ (or Piedmon), endless |
 | `apollomon` Apollomon | V, Fire | solo R15 (or Diaboromon), VS R30, endless |
 | `mitamamon` Mitamamon | V, Electric | solo R10 (or Machinedramon), VS R20, endless |
+| `piedmon` Piedmon | Vi, Dark | solo R15 (or Diaboromon/Apollomon; with Devimon and Bakemon), VS R40+ (or Gracenovamon; with the other Dark Masters — Puppetmon, MetalSeadramon, Machinedramon), endless |
 
 Wild Digimon (`wild`: met in PvE waves, never recruited): `coronamon`(V), `tapirmon`(V) rookies; `piximon`(D) champion.
 

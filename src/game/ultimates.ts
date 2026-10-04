@@ -114,6 +114,18 @@ const siphon = (hits: number, factor: number, heal: number): Effect => ({
   },
 });
 
+/** Swords at the nearest few that pin each where it stands (Piedmon's Trump Sword). */
+const pin = (count: number, factor: number, seconds: number): Effect => ({
+  fx: "barrage",
+  cast: (c) => {
+    const ts = [...c.enemies].sort((a, b) => c.dist(c.caster, a) - c.dist(c.caster, b)).slice(0, count);
+    for (const t of ts) {
+      c.deal(t, factor);
+      c.stun(t, seconds);
+    }
+  },
+});
+
 /** Big hit on the target plus splash to neighbors. */
 const smite = (factor: number, splash: number, radius: number): Effect => ({
   fx: "blast",
@@ -315,6 +327,8 @@ export const ULTIMATES: Record<string, Ultimate> = {
   metaltyrannomon: u("Nuclear Laser", "☢️", "A laser (290%) that scorches the foes around (100%).", smite(2.9, 1.0, 1.6)),
   lillymon: u("Flower Cannon", "🌺", "A cannon of petals for 400% attack.", bolt(4.0)),
   grapleomon: u("Lion's Roar", "🦁", "Lion fists: five strikes (105% each).", barrage(5, 1.05)),
+  // ---- the Dark Masters' leader (boss only)
+  piedmon: u("Trump Sword", "🃏", "Four swords at the 4 nearest (140%), each pinned for 0.7s.", pin(4, 1.4, 0.7)),
   // ---- set 9: the anime's finals
   skullmeramon: u("Metal Fireball", "🔥", "A fireball of blue flame (290%) that scorches the foes around (100%).", smite(2.9, 1.0, 1.6)),
   dorugreymon: u("Exa Blaster", "💥", "A blast (300%) that tears through nearby foes (100%).", smite(3.0, 1.0, 1.6)),

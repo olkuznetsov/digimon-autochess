@@ -306,6 +306,8 @@ export const FORMS: Record<string, Form> = {
   // ============ bosses only ============
   zeed: f("zeed", "ZeedMillenniummon", 5, "Virus", "Dark", "tank", { bossOnly: true }),
   gracenovamon: f("gracenovamon", "Gracenovamon", 5, "Data", "Light", "bruiser", { bossOnly: true }),
+  // the Dark Masters' leader: solo R15, VS R40+ (with the other three as his minions), endless
+  piedmon: f("piedmon", "Piedmon", 5, "Virus", "Dark", "assassin", { bossOnly: true }),
   apollomon: f("apollomon", "Apollomon", 5, "Vaccine", "Fire", "caster", { bossOnly: true }),
   mitamamon: f("mitamamon", "Mitamamon", 5, "Vaccine", "Electric", "ranged", { bossOnly: true }),
 

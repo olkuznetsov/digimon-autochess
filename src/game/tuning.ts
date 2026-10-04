@@ -51,6 +51,9 @@ const MINIONS = {
   vs20: ["andromon", "belzemon"],
   vs30: ["ravemon", "magnagarurumon"],
   vs40: ["zudomon", "cresgarurumon", "diaboromon"],
+  /** Piedmon brings his own: Dark champions at R15, the other Dark Masters at VS R40+ */
+  piedmon15: ["devimon", "bakemon"],
+  darkMasters: ["puppetmon", "metalseadramon", "machinedramon"],
 };
 
 export const WAVES = {
@@ -91,10 +94,11 @@ export const WAVES = {
     [
       { id: "diaboromon", hp: 2.7, atk: 1.3, adds: 4, minions: MINIONS.solo15 },
       { id: "apollomon", hp: 3.0, atk: 1.02, adds: 4, minions: MINIONS.solo15 },
+      { id: "piedmon", hp: 3.2, atk: 1.28, adds: 4, minions: MINIONS.piedmon15 },
     ],
   ] as Omit<BossSpec, "addCount">[][],
   /** endless mode: every 5th round the next of these, all with the same multipliers */
-  endlessBosses: ["gankoomon", "zeed", "apollomon", "imperialdramon", "gracenovamon", "mitamamon", "alphamon", "machinedramon", "diaboromon"],
+  endlessBosses: ["gankoomon", "zeed", "apollomon", "imperialdramon", "gracenovamon", "mitamamon", "alphamon", "machinedramon", "diaboromon", "piedmon"],
   endlessBoss: { hp: 4.2, atk: 1.6, adds: 5 } as { hp: number; atk: number; adds: Stage },
 };
 
@@ -215,7 +219,10 @@ export const VS = {
       { id: "zeed", hp: 6.4, atk: 2.3, adds: 5, addCount: 2, minions: MINIONS.vs30 },
       { id: "apollomon", hp: 6.5, atk: 2.55, adds: 5, addCount: 2, minions: MINIONS.vs30 },
     ],
-    [{ id: "gracenovamon", hp: 9.5, atk: 3.0, adds: 5, addCount: 3, minions: MINIONS.vs40 }],
+    [
+      { id: "gracenovamon", hp: 9.5, atk: 3.0, adds: 5, addCount: 3, minions: MINIONS.vs40 },
+      { id: "piedmon", hp: 10.0, atk: 3.2, adds: 5, addCount: 3, minions: MINIONS.darkMasters },
+    ],
   ] as BossSpec[][],
 };
 
