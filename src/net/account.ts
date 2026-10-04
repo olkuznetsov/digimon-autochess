@@ -7,7 +7,9 @@ import { WORKER_HOST } from "../channel";
  * session token, kept here and sent as a Bearer header (the site and the worker are
  * different sites: a cookie would be a third-party one). The account carries what the
  * game already keeps in localStorage — the profile, the run, the name — and syncs it:
- * on start the newer copy wins, then changes go up every few seconds.
+ * on start the newer copy wins, then changes go up every few seconds. Signing in happens
+ * on the title screen, before the game's stores read localStorage, so the right partner
+ * and records are there from the first frame (signing in later, from the menu, reloads).
  */
 export const GOOGLE_CLIENT_ID = "629270363914-ud33joi20b3f33iinhh4c9nan03hamig.apps.googleusercontent.com";
 
@@ -68,7 +70,12 @@ function api(path: string, init: RequestInit = {}): Promise<Response> {
   });
 }
 
-/** Take the account's copy over this device's and restart, so every store reads it. */
+/** the game is running: its stores have read localStorage, so taking over needs a reload */
+let appRunning = false;
+/** the title screen already settled this device with the account */
+let checked = false;
+
+/** Take the account's copy over this device's (and restart if the game already read it). */
 function adopt(data: Data | null, updatedAt: number) {
   localStorage.setItem(SYNC_KEY, String(updatedAt));
   if (!data || same(data, snapshot())) return;
@@ -76,7 +83,7 @@ function adopt(data: Data | null, updatedAt: number) {
     if (k in data) localStorage.setItem(k, data[k]);
     else localStorage.removeItem(k);
   }
-  location.reload();
+  if (appRunning) location.reload();
 }
 
 let lastSent = "";
@@ -161,12 +168,39 @@ export async function deleteAccount(): Promise<void> {
   }
 }
 
+/** The title screen, signed in already: take a copy another device saved since (before the
+ *  game reads anything). False when the session is gone; offline counts as signed in. */
+export async function prepareAccount(timeoutMs = 6000): Promise<boolean> {
+  if (!session()) return false;
+  checked = true;
+  try {
+    const res = await Promise.race([
+      api("/account/me"),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ]);
+    if (!res) return true; // slow or away: play on with what's here, sync later
+    if (res.status === 401) {
+      signOut();
+      return false;
+    }
+    if (!res.ok) return true;
+    const r = (await res.json()) as { googleName: string; data: Data | null; updatedAt: number };
+    useAccount.setState({ status: "signed", name: r.googleName });
+    if (r.updatedAt > syncedAt()) adopt(r.data, r.updatedAt);
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 let started = false;
-/** On start: if signed in, take a newer copy another device saved, then keep syncing. */
+/** The game is starting: keep syncing (and, if the title screen didn't, take a newer copy). */
 export function startAccountSync() {
+  appRunning = true;
   if (started || !session()) return;
   started = true;
   startLoop();
+  if (checked) return;
   void (async () => {
     try {
       const res = await api("/account/me");

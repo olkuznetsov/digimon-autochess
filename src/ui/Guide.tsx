@@ -155,7 +155,7 @@ function Basics() {
           <li>🏠 The <b>main menu</b> is home to your partner Digimon: pick one of five Fresh in Primary Village and hatch it, and it grows with your <b>tamer level</b> — In-Training at 3, Rookie at 6, Champion at 12, Mega at 20 (★★ at 30, ★★★ at 40).</li>
           <li>✨ When it's ready, you choose who it becomes — the branches on offer follow the elements and attributes you field most.</li>
           <li>🎖 Tamer XP comes from every battle, bosses, won runs and VS matches; Adventure's <b>crests</b> mark your milestones. Your partner is yours alone — it never changes a fight.</li>
-          <li>🔑 <b>Sign in with Google</b> (optional, in your tamer file) to keep your tamer, partner and run on every device: your progress syncs by itself. Signing in on a second device takes whichever tamer has more XP.</li>
+          <li>🔑 <b>Sign in with Google</b> on the title screen (or later, in your tamer file) to keep your tamer, partner and run on every device: your progress syncs by itself. Signing in on a second device takes whichever tamer has more XP.</li>
         </ul>
       </section>
       <section className="guide-sec">

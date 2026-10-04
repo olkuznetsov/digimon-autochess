@@ -13,7 +13,7 @@ import '@fontsource/m-plus-rounded-1c/cyrillic-800.css'
 import '@fontsource/m-plus-rounded-1c/cyrillic-900.css'
 import './fonts.css'
 import './index.css'
-import App from './App.tsx'
+import { TitleScreen } from './ui/TitleScreen'
 import './settings'
 
 const root = createRoot(document.getElementById('root')!)
@@ -28,5 +28,8 @@ if (studio === 'og' || studio === 'icon') {
   // dev tool: renders public/portraits/*.webp (see src/dev/PortraitStudio.tsx)
   import('./dev/PortraitStudio').then(({ PortraitStudio }) => root.render(<PortraitStudio />))
 } else {
-  root.render(<App />)
+  // the title screen first: signing in settles the account's data in localStorage before
+  // the game (and its stores, which read it) is even loaded
+  const startGame = () => import('./App').then(({ default: App }) => root.render(<App />))
+  root.render(<TitleScreen onStart={startGame} />)
 }

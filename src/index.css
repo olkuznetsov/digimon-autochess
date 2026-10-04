@@ -4996,3 +4996,115 @@ html, body {
     display: inline;
   }
 }
+
+/* ---------- title screen: sign in, or play as a guest (before the game loads) ---------- */
+.title-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9vh 16px 7vh;
+  box-sizing: border-box;
+  color: #ffffff;
+  font-family: var(--font-body);
+  background: #141238 url(/art/camp-aurora.webp) center / cover no-repeat;
+}
+.title-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(0deg, rgba(6, 8, 30, 0.85) 0%, rgba(6, 8, 30, 0) 45%),
+    linear-gradient(180deg, rgba(6, 8, 30, 0.35) 0%, rgba(6, 8, 30, 0) 30%);
+}
+.title-screen > * {
+  position: relative;
+}
+.ts-logo {
+  align-items: center;
+}
+.ts-logo .jp {
+  font-size: 14px;
+  letter-spacing: 0.32em;
+  text-shadow: 0 0 12px rgba(120, 255, 190, 0.8);
+}
+.ts-logo .gl-top {
+  margin-top: 8px;
+  font-size: clamp(24px, 3.4vw, 36px);
+}
+.ts-logo .gl-main {
+  font-size: clamp(46px, 8vw, 86px);
+  -webkit-text-stroke: 2px var(--ink);
+  background: linear-gradient(180deg, #ffffff 0%, #ffffff 45%, #b4fff0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 5px 0 var(--ink)) drop-shadow(0 0 22px rgba(120, 255, 190, 0.55));
+}
+.ts-panel {
+  width: min(380px, 100%);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-radius: 20px;
+  background: rgba(10, 12, 40, 0.58);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 14px 34px rgba(0, 0, 0, 0.35);
+}
+.ts-lead {
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+.ts-google {
+  min-height: 44px;
+  display: flex;
+  justify-content: center;
+}
+.ts-guest {
+  width: 300px;
+  max-width: 100%;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  font-size: 17px;
+}
+.ts-guest .in {
+  justify-content: center;
+}
+.ts-guest .jp {
+  color: #4a5378;
+}
+.ts-note {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #c9d2f5;
+  text-align: center;
+}
+.ts-note a {
+  color: #9fe8ff;
+}
+.ts-error {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #ff9fb1;
+  text-align: center;
+}
+.ts-wait {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}

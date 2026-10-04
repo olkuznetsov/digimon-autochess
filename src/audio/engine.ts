@@ -128,8 +128,54 @@ export function audio(): Graph | null {
 let unlocked = false;
 export const isUnlocked = () => unlocked;
 
+/**
+ * iOS plays Web Audio in the "ambient" session, which the ring/silent switch mutes — so
+ * on a phone in silent mode the game was silent while videos weren't. The game has its own
+ * mute button: ask for media playback instead (the Audio Session API, Safari 17+), or, on
+ * older iOS, start a silent <audio> loop, which switches the session the same way.
+ */
+const ios = typeof navigator !== "undefined" && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+const session = typeof navigator !== "undefined" ? (navigator as Navigator & { audioSession?: { type: string } }).audioSession : undefined;
+if (session) {
+  try {
+    session.type = "playback";
+  } catch {
+    /* an older draft of the API: the silent loop below covers it */
+  }
+}
+let silentLoop: HTMLAudioElement | null = null;
+function keepPlaybackSession() {
+  if (!ios || silentLoop || session?.type === "playback") return;
+  // half a second of 8 kHz 8-bit silence
+  const samples = 4000;
+  const buf = new ArrayBuffer(44 + samples);
+  const v = new DataView(buf);
+  const str = (o: number, s: string) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  str(0, "RIFF");
+  v.setUint32(4, 36 + samples, true);
+  str(8, "WAVEfmt ");
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true);
+  v.setUint32(28, 8000, true);
+  v.setUint16(32, 1, true);
+  v.setUint16(34, 8, true);
+  str(36, "data");
+  v.setUint32(40, samples, true);
+  new Uint8Array(buf, 44).fill(128);
+  silentLoop = document.createElement("audio");
+  silentLoop.src = URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+  silentLoop.loop = true;
+  silentLoop.setAttribute("playsinline", "");
+  void silentLoop.play().catch(() => {
+    silentLoop = null; // not a gesture this browser accepts: the next one tries again
+  });
+}
+
 /** Call from a user gesture: creates/resumes the context so sound can start. */
 export function unlockAudio() {
+  keepPlaybackSession();
   const g = audio();
   if (g && g.ctx.state !== "running") void g.ctx.resume();
   if (unlocked) return;
@@ -196,8 +242,13 @@ if (import.meta.env.DEV) Object.assign(window, { __audio: () => ({ graph, master
 if (typeof document !== "undefined") {
   document.addEventListener("visibilitychange", () => {
     if (!graph) return;
-    if (document.hidden) void graph.ctx.suspend();
-    else if (!muted) void graph.ctx.resume();
+    if (document.hidden) {
+      void graph.ctx.suspend();
+      silentLoop?.pause();
+    } else if (!muted) {
+      void graph.ctx.resume();
+      void silentLoop?.play().catch(() => {});
+    }
   });
 }
 
