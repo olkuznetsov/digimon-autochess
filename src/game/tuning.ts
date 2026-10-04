@@ -11,8 +11,8 @@ import { COLS, ROWS } from "./board";
  *  half as often; more gold and 1-gold rerolls keep evolutions coming (600-run sims:
  *  each boss beaten by about half the runs, as before) and let fans dig for favourites. */
 export const ECONOMY = {
-  /** gold at the start of a run or match */
-  startGold: 10,
+  /** gold at the start of a run or match (11 since set 8: every new line thins the shop) */
+  startGold: 11,
   baseIncome: 7,
   /** extra gold for winning a round */
   winGold: 1,
@@ -38,6 +38,19 @@ export const SHOP_ODDS: Record<number, [number, number, number, number, number]>
   8: [0, 10, 58, 27, 5],
   9: [0, 5, 50, 33, 12],
   10: [0, 0, 40, 38, 22],
+};
+
+/** Each boss round's minions, pinned: drawn from the roster by index, they changed whenever
+ *  a new set landed — and the boss round's difficulty with them (set 8 turned VS R10 from 62%
+ *  to 49% on the same boards). These are the ones the curves were tuned on (Oct 2026). */
+const MINIONS = {
+  solo5: ["yokomon", "tsunomon"],
+  solo10: ["armadillomon", "agumon"],
+  solo15: ["infermon", "paildramon"],
+  vs10: ["armadillomon", "agumon"],
+  vs20: ["andromon", "belzemon"],
+  vs30: ["ravemon", "magnagarurumon"],
+  vs40: ["zudomon", "cresgarurumon", "diaboromon"],
 };
 
 export const WAVES = {
@@ -70,14 +83,14 @@ export const WAVES = {
    *  one candidate per round, picked by its seed. Candidates are tuned to the same pass
    *  rate on the same 600 bot boards (`npm run runsim` prints "boss candidates"). */
   bosses: [
-    [{ id: "skullsatamon", hp: 1.55, atk: 0.98, adds: 2 }],
+    [{ id: "skullsatamon", hp: 1.55, atk: 0.98, adds: 2, minions: MINIONS.solo5 }],
     [
-      { id: "machinedramon", hp: 1.14, atk: 0.8, adds: 3 },
-      { id: "mitamamon", hp: 1.04, atk: 0.58, adds: 3 },
+      { id: "machinedramon", hp: 1.14, atk: 0.8, adds: 3, minions: MINIONS.solo10 },
+      { id: "mitamamon", hp: 1.04, atk: 0.58, adds: 3, minions: MINIONS.solo10 },
     ],
     [
-      { id: "diaboromon", hp: 2.7, atk: 1.3, adds: 4 },
-      { id: "apollomon", hp: 3.0, atk: 1.02, adds: 4 },
+      { id: "diaboromon", hp: 2.7, atk: 1.3, adds: 4, minions: MINIONS.solo15 },
+      { id: "apollomon", hp: 3.0, atk: 1.02, adds: 4, minions: MINIONS.solo15 },
     ],
   ] as Omit<BossSpec, "addCount">[][],
   /** endless mode: every 5th round the next of these, all with the same multipliers */
@@ -89,8 +102,9 @@ export const isBossRound = (round: number) => round % 5 === 0;
 
 /** how many of each stage a wave fields: [Fresh, In-Training, Rookie, Champion, Mega] */
 type Mix = [number, number, number, number, number];
-/** `adds`: the stage of the minions flanking the boss */
-type BossSpec = { id: string; hp: number; atk: number; adds: Stage; addCount: number };
+/** `adds`: the stage of the minions flanking the boss; `minions`: which ones (pinned — else
+ *  picked from the roster by the round, as endless bosses still are) */
+type BossSpec = { id: string; hp: number; atk: number; adds: Stage; addCount: number; minions?: string[] };
 
 /** One of a boss round's candidates: the first for seed 0 (saves and rooms from before
  *  there was a choice), otherwise spread by the seed — per round, so a run's bosses vary
@@ -134,7 +148,8 @@ function buildWave(round: number, hpScale: number, boss: BossSpec | null, mix: M
     b.boss = true;
     const adds = Array.from({ length: boss.addCount }, (_, i) => {
       const p = at(i * 2 + 1); // flank the boss
-      return makeFighter(minion(boss.adds, i), `${prefix}${i}`, "enemy", p.col, p.row, hpScale * 0.9);
+      const id = boss.minions?.length ? boss.minions[i % boss.minions.length] : minion(boss.adds, i);
+      return makeFighter(id, `${prefix}${i}`, "enemy", p.col, p.row, hpScale * 0.9);
     });
     return [b, ...adds];
   }
@@ -181,8 +196,8 @@ export const VS = {
     1: [2, 0, 0, 0, 0],
     2: [1, 2, 0, 0, 0],
     5: [0, 1, 2, 0, 0],
-    15: [0, 0, 2, 4, 0],
-    25: [0, 0, 0, 4, 3],
+    15: [0, 0, 1, 5, 0],
+    25: [0, 0, 0, 3, 4],
     35: [0, 0, 0, 0, 9],
     45: [0, 0, 0, 0, 14],
   } as Record<number, Mix>,
@@ -191,16 +206,16 @@ export const VS = {
    *  starred Megas, the element synergies and 35 lines, Oct 2026). A match meets one candidate per
    *  round, picked by the room's variant; candidates match. */
   bosses: [
-    [{ id: "skullsatamon", hp: 2.3, atk: 1.26, adds: 3, addCount: 2 }],
+    [{ id: "skullsatamon", hp: 2.3, atk: 1.26, adds: 3, addCount: 2, minions: MINIONS.vs10 }],
     [
-      { id: "machinedramon", hp: 3.9, atk: 1.8, adds: 5, addCount: 2 },
-      { id: "mitamamon", hp: 3.85, atk: 1.42, adds: 5, addCount: 2 },
+      { id: "machinedramon", hp: 3.9, atk: 1.8, adds: 5, addCount: 2, minions: MINIONS.vs20 },
+      { id: "mitamamon", hp: 3.85, atk: 1.42, adds: 5, addCount: 2, minions: MINIONS.vs20 },
     ],
     [
-      { id: "zeed", hp: 6.2, atk: 2.2, adds: 5, addCount: 2 },
-      { id: "apollomon", hp: 6.8, atk: 2.55, adds: 5, addCount: 2 },
+      { id: "zeed", hp: 6.2, atk: 2.2, adds: 5, addCount: 2, minions: MINIONS.vs30 },
+      { id: "apollomon", hp: 6.8, atk: 2.55, adds: 5, addCount: 2, minions: MINIONS.vs30 },
     ],
-    [{ id: "gracenovamon", hp: 9.5, atk: 3.0, adds: 5, addCount: 3 }],
+    [{ id: "gracenovamon", hp: 9.5, atk: 3.0, adds: 5, addCount: 3, minions: MINIONS.vs40 }],
   ] as BossSpec[][],
 };
 

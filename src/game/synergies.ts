@@ -91,8 +91,8 @@ const ELEMENT_TRAITS: TraitDef[] = [
     },
   ]),
   el("Earth", [
-    { need: 2, desc: "+15% max HP", hpPct: 0.15 },
-    { need: 4, desc: "+16% max HP; the first time below 40% HP: a shield of 16% max HP", hpPct: 0.16, procs: { rescue: 0.16 } },
+    { need: 2, desc: "+12% max HP", hpPct: 0.12 },
+    { need: 4, desc: "+14% max HP; the first time below 40% HP: a shield of 16% max HP", hpPct: 0.14, procs: { rescue: 0.16 } },
   ]),
   el("Wind", [
     { need: 2, desc: "ignore 10% of incoming damage", guardPct: 0.1 },

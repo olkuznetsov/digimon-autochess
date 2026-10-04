@@ -33,6 +33,10 @@ const DUMP = args.dumpBoards as string | undefined;
 // boss knobs for quick sweeps: `r5=hp,atk,adds` etc. override one round's (first) candidate
 const VARIANTS: Record<string, () => void> = {
   current: () => {},
+  // a bigger roster merges slower: more gold for rolls?
+  income8: () => void (ECONOMY.baseIncome = 8),
+  start12: () => void (ECONOMY.startGold = 12),
+  start11: () => void (ECONOMY.startGold = 11),
 };
 for (const round of [5, 10, 15]) {
   const spec = args[`r${round}`] as string | undefined;

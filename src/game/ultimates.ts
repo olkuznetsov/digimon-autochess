@@ -188,7 +188,7 @@ export const ULTIMATES: Record<string, Ultimate> = {
   growlmon: u("Pyro Blaster", "🔥", "A blazing blast for 260%.", bolt(2.6)),
   gallantmon: u("Lightning Joust", "⚔️", "A lance strike (280%) that splashes (100%).", smite(2.8, 1.0, 1.6)),
   // Dorumon line
-  dorugamon: u("Power Metal", "⚙️", "Fires an iron sphere for 255%.", bolt(2.55)),
+  dorugamon: u("Power Metal", "⚙️", "Fires an iron sphere for 190%.", bolt(1.9)),
   alphamon: u("Seiken Gradalpha", "👑", "The Royal Knight's blade erupts — AoE 185%.", nova(1.85, 2.0)),
   // Flamemon line (set 2)
   flamemon: u("Pyro Punch", "🔥", "A blazing punch for 270% attack.", bolt(2.7)),
@@ -280,7 +280,7 @@ export const ULTIMATES: Record<string, Ultimate> = {
   groundramon: u("Rock Breaker", "🪨", "A quake (290%) that shakes the foes around it (100%).", smite(2.9, 1.0, 1.6)),
   // Gotsumon line
   golemon: u("Crystal Stone", "💎", "Hardens behind a 21% shield.", bulwark(0.21)),
-  volcanomon: u("Volcano Strike", "🌋", "Molten rocks at the 3 nearest (150%).", volley(3, 1.5)),
+  volcanomon: u("Volcano Strike", "🌋", "Molten rocks at the 3 nearest (140%).", volley(3, 1.4)),
   pumpkinmon: u("Trick or Treat", "🎃", "A cursed prank: AoE 120%, frozen for 1.2s.", freeze(1.2, 1.8, 1.2)),
   // Goblimon line
   ogremon: u("Pummel Whack", "🦴", "A bone-club smash for 260% attack.", bolt(2.6)),
@@ -297,11 +297,30 @@ export const ULTIMATES: Record<string, Ultimate> = {
   // new branches
   zudomon: u("Vulcan's Hammer", "🔨", "A hammer blow (290%) that shakes the foes around (100%).", smite(2.9, 1.0, 1.6)),
   andromon: u("Lightning Blade", "⚡", "A blade of lightning for 400% attack.", bolt(4.0)),
+  // ---- set 8
+  // Kudamon line
+  reppamon: u("Kamaitachi", "🌪️", "Blades of wind: three strikes (120% each).", barrage(3, 1.2)),
+  chirinmon: u("Holy Hoof", "✨", "Holy light rains around the target — AoE 185%.", nova(1.85, 1.8)),
+  // Lalamon line
+  sunflowmon: u("Sunshine Beam", "🌻", "A beam of sunlight for 250% attack.", bolt(2.5)),
+  lilamon: u("Lila Shower", "🌸", "Petal beams at the 3 nearest (150%).", volley(3, 1.5)),
+  // Otamamon line
+  gekomon: u("Symphony Crusher", "🎺", "A blast of sound stuns the area: AoE 135%, frozen for 0.9s.", freeze(1.35, 1.6, 0.9)),
+  shogungekomon: u("Musical Fist", "🎶", "A war song: every ally behind a 6% shield.", bulwark(0.06, true)),
+  whamon: u("Tidal Wave", "🌊", "A tidal wave: AoE 110% and freezes for 1s.", freeze(1.1, 1.8, 1.0)),
+  // branches
+  metalgreymon: u("Giga Destroyer", "🚀", "Missiles from its chest at the 3 nearest (150%).", volley(3, 1.5)),
+  skullgreymon: u("Ground Zero", "💀", "A missile from its spine (300%) that blasts nearby foes (100%).", smite(3.0, 1.0, 1.6)),
+  wargrowlmon: u("Atomic Blaster", "💥", "Twin cannons for 400% attack.", bolt(4.0)),
+  metaltyrannomon: u("Nuclear Laser", "☢️", "A laser (290%) that scorches the foes around (100%).", smite(2.9, 1.0, 1.6)),
+  lillymon: u("Flower Cannon", "🌺", "A cannon of petals for 400% attack.", bolt(4.0)),
+  grapleomon: u("Lion's Roar", "🦁", "Lion fists: five strikes (105% each).", barrage(5, 1.05)),
   // Support rally on a couple of casters keeps team comps interesting
   candlemon: u("Ember Rally", "🕯️", "Ignites allies: +30% attack for the battle.", rally(0.3)),
   // rookies whose element synergies fit them badly (or too well) get their own moves
   gomamon: u("Marching Fishes", "🐟", "A school of fish rams the target twice (100% each).", barrage(2, 1.0)),
-  dracomon: u("Baby Breath", "🔥", "A breath of fire for 190% attack.", bolt(1.9)),
+  dracomon: u("Baby Breath", "🔥", "A breath of fire for 150% attack.", bolt(1.5)),
+  salamon: u("Puppy Howl", "🐶", "A howl that rings around the target — AoE 160%.", nova(1.6, 1.6)),
   gabumon: u("Blue Blaster", "🔵", "A blue flame for 290% attack.", bolt(2.9)),
   veemon: u("Vee Headbutt", "💢", "A charging headbutt for 290% attack.", bolt(2.9)),
 };

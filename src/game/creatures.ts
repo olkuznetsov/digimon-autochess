@@ -34,12 +34,12 @@ export const FORMS: Record<string, Form> = {
   poyomon: baby("poyomon", "Poyomon", 1, "Neutral", "caster", ["bukamon", "tokomon"]),
   punimon: baby("punimon", "Punimon", 1, "Neutral", "tank", ["nyaromon", "tsunomon"]),
   koromon: baby("koromon", "Koromon", 2, "Fire", "bruiser", ["agumon", "guilmon", "dracomon"]),
-  wanyamon: baby("wanyamon", "Wanyamon", 2, "Wind", "bruiser", ["dorumon", "gaomon"]),
+  wanyamon: baby("wanyamon", "Wanyamon", 2, "Wind", "bruiser", ["dorumon", "gaomon", "kudamon"]),
   tsumemon: baby("tsumemon", "Tsumemon", 2, "Dark", "assassin", ["keramon", "demidevimon"]),
   motimon: baby("motimon", "Motimon", 2, "Neutral", "caster", ["hagurumon", "tentomon", "gotsumon"]),
   yokomon: baby("yokomon", "Yokomon", 2, "Plant", "caster", ["biyomon", "wormmon", "elecmon", "mushroomon"]),
-  tanemon: baby("tanemon", "Tanemon", 2, "Plant", "tank", ["palmon", "renamon"]),
-  bukamon: baby("bukamon", "Bukamon", 2, "Water", "ranged", ["gomamon", "betamon"]),
+  tanemon: baby("tanemon", "Tanemon", 2, "Plant", "tank", ["palmon", "renamon", "lalamon"]),
+  bukamon: baby("bukamon", "Bukamon", 2, "Water", "ranged", ["gomamon", "betamon", "otamamon"]),
   tokomon: baby("tokomon", "Tokomon", 2, "Neutral", "assassin", ["patamon", "falcomon", "hawkmon"]),
   nyaromon: baby("nyaromon", "Nyaromon", 2, "Light", "assassin", ["terriermon", "salamon", "lunamon", "armadillomon"]),
   tsunomon: baby("tsunomon", "Tsunomon", 2, "Earth", "tank", ["gabumon", "veemon", "monodramon", "goblimon"]),
@@ -47,7 +47,7 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Agumon — Dragon's Roar (branch at Ultimate) ============
   agumon: f("agumon", "Agumon", 3, "Vaccine", "Fire", "bruiser", { evolvesTo: ["greymon", "geogreymon"] }),
-  greymon: f("greymon", "Greymon", 4, "Vaccine", "Fire", "bruiser", { evolvesTo: ["wargreymon", "blitzgreymon"] }),
+  greymon: f("greymon", "Greymon", 4, "Vaccine", "Fire", "bruiser", { evolvesTo: ["wargreymon", "blitzgreymon", "metalgreymon"] }),
   wargreymon: f("wargreymon", "WarGreymon", 5, "Vaccine", "Fire", "bruiser"),
   blitzgreymon: f("blitzgreymon", "BlitzGreymon", 5, "Virus", "Fire", "ranged"),
 
@@ -89,7 +89,7 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Palmon — Nature Spirits (branch at Ultimate) ============
   palmon: f("palmon", "Palmon", 3, "Data", "Plant", "caster", { evolvesTo: ["togemon"] }),
-  togemon: f("togemon", "Togemon", 4, "Data", "Plant", "caster", { evolvesTo: ["rosemon", "rosemonbm"] }),
+  togemon: f("togemon", "Togemon", 4, "Data", "Plant", "caster", { evolvesTo: ["rosemon", "rosemonbm", "lillymon"] }),
   rosemon: f("rosemon", "Rosemon", 5, "Data", "Plant", "ranged"),
   rosemonbm: f("rosemonbm", "Rosemon BM", 5, "Virus", "Plant", "caster"),
 
@@ -111,7 +111,7 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Guilmon — Dragon's Roar ============
   guilmon: f("guilmon", "Guilmon", 3, "Virus", "Fire", "bruiser", { evolvesTo: ["growlmon"] }),
-  growlmon: f("growlmon", "Growlmon", 4, "Virus", "Fire", "bruiser", { evolvesTo: ["gallantmon"] }),
+  growlmon: f("growlmon", "Growlmon", 4, "Virus", "Fire", "bruiser", { evolvesTo: ["gallantmon", "wargrowlmon", "metaltyrannomon"] }),
   gallantmon: f("gallantmon", "Gallantmon", 5, "Virus", "Light", "bruiser"),
 
   // ============ Dorumon — Dragon's Roar ============
@@ -130,7 +130,7 @@ export const FORMS: Record<string, Form> = {
   // AtlurKabuterimon of the wider canon — (Data). Otherwise a Vaccine-heavy roster favours Data.
 
   // ============ Agumon's second branch — Dragon's Roar (Data Squad) ============
-  geogreymon: f("geogreymon", "GeoGreymon", 4, "Vaccine", "Fire", "bruiser", { evolvesTo: ["rizegreymon", "shinegreymon"] }),
+  geogreymon: f("geogreymon", "GeoGreymon", 4, "Vaccine", "Fire", "bruiser", { evolvesTo: ["rizegreymon", "shinegreymon", "skullgreymon"] }),
   rizegreymon: f("rizegreymon", "RizeGreymon", 5, "Virus", "Fire", "ranged"),
   shinegreymon: f("shinegreymon", "ShineGreymon", 5, "Vaccine", "Light", "bruiser"),
 
@@ -208,7 +208,7 @@ export const FORMS: Record<string, Form> = {
 
   // ============ Elecmon — Electric → Earth (Leomon) ============
   elecmon: f("elecmon", "Elecmon", 3, "Data", "Electric", "bruiser", { evolvesTo: ["leomon"] }),
-  leomon: f("leomon", "Leomon", 4, "Vaccine", "Earth", "bruiser", { evolvesTo: ["panjyamon", "saberleomon"] }),
+  leomon: f("leomon", "Leomon", 4, "Vaccine", "Earth", "bruiser", { evolvesTo: ["panjyamon", "saberleomon", "grapleomon"] }),
   panjyamon: f("panjyamon", "Panjyamon", 5, "Vaccine", "Water", "bruiser"),
   saberleomon: f("saberleomon", "SaberLeomon", 5, "Data", "Wind", "assassin"),
 
@@ -266,6 +266,32 @@ export const FORMS: Record<string, Form> = {
   // ============ new branches: Ikkakumon → Zudomon, Guardromon → Andromon (as in the anime) ============
   zudomon: f("zudomon", "Zudomon", 5, "Vaccine", "Water", "bruiser"),
   andromon: f("andromon", "Andromon", 5, "Vaccine", "Electric", "bruiser"),
+
+  // ---- set 8: three more lines and the anime's missing finals as branches of our lines
+
+  // ============ Kudamon — Light (Data Squad's Reppamon, Chirinmon) ============
+  kudamon: f("kudamon", "Kudamon", 3, "Vaccine", "Light", "ranged", { evolvesTo: ["reppamon"] }),
+  reppamon: f("reppamon", "Reppamon", 4, "Vaccine", "Light", "assassin", { evolvesTo: ["chirinmon"] }),
+  chirinmon: f("chirinmon", "Chirinmon", 5, "Vaccine", "Light", "caster"),
+
+  // ============ Lalamon — Plant (Data Squad's Sunflowmon, Lilamon) ============
+  lalamon: f("lalamon", "Lalamon", 3, "Data", "Plant", "ranged", { evolvesTo: ["sunflowmon"] }),
+  sunflowmon: f("sunflowmon", "Sunflowmon", 4, "Data", "Plant", "caster", { evolvesTo: ["lilamon"] }),
+  lilamon: f("lilamon", "Lilamon", 5, "Data", "Plant", "ranged"),
+
+  // ============ Otamamon — Water (Adventure's Gekomon; ShogunGekomon, Whamon) ============
+  otamamon: f("otamamon", "Otamamon", 3, "Virus", "Water", "caster", { evolvesTo: ["gekomon"] }),
+  gekomon: f("gekomon", "Gekomon", 4, "Virus", "Water", "caster", { evolvesTo: ["shogungekomon", "whamon"] }),
+  shogungekomon: f("shogungekomon", "ShogunGekomon", 5, "Virus", "Water", "tank"),
+  whamon: f("whamon", "Whamon", 5, "Vaccine", "Water", "tank"),
+
+  // ============ new branches: the anime's own finals ============
+  metalgreymon: f("metalgreymon", "MetalGreymon", 5, "Vaccine", "Fire", "ranged"),
+  skullgreymon: f("skullgreymon", "SkullGreymon", 5, "Virus", "Dark", "bruiser"),
+  wargrowlmon: f("wargrowlmon", "WarGrowlmon", 5, "Virus", "Fire", "ranged"),
+  metaltyrannomon: f("metaltyrannomon", "MetalTyrannomon", 5, "Virus", "Electric", "bruiser"),
+  lillymon: f("lillymon", "Lillymon", 5, "Data", "Plant", "ranged"),
+  grapleomon: f("grapleomon", "GrapLeomon", 5, "Vaccine", "Electric", "bruiser"),
 
   // ============ bosses only ============
   zeed: f("zeed", "ZeedMillenniummon", 5, "Virus", "Dark", "tank", { bossOnly: true }),

@@ -242,6 +242,15 @@ Herissmon, Agunimon, Lobomon) лишаються досяжними.
 
 ## 5. Журнал
 <!-- новіші записи зверху -->
+- **2026-10-04** — Set 8 (Саша: «продовжуй»): три лінії — Kudamon → Reppamon → Chirinmon (Light, від Wanyamon),
+  Lalamon → Sunflowmon → Lilamon (Plant, від Tanemon), Otamamon → Gekomon → [ShogunGekomon | Whamon] (Water, від
+  Bukamon) — і фінали з аніме як гілки наших ліній: Greymon → MetalGreymon, GeoGreymon → SkullGreymon, Growlmon →
+  [WarGrowlmon | MetalTyrannomon], Togemon → Lillymon, Leomon → GrapLeomon. 16 моделей (5.8 МБ), 13 ульт; 38 ліній,
+  167 форм, 174 моделі. Знайдено крихкість: помічники босів брались із ростеру за індексом, тож кожен сет тихо міняв
+  босів (VS R10 62% → 49% на тих самих дошках) — тепер вони закріплені (`MINIONS` у tuning.ts, ті, на яких налаштовано
+  криві; нескінченні боси ще беруть з ростеру). Розмиття магазину (38 рукі): старт 10 → 11 золота (+1 доходу давало
+  61/61/68% — забагато). Earth 15/16 → 12/14% HP (вертикаль 85% → нижче), Dorugamon/Dracomon/Volcanomon −, Salamon
+  отримав «Puppy Howl». Соло 52/51/41%, VS-боси 68/39/54/71%, усі форми 42–58%.
 - **2026-10-03** — Set 7 (Саша: «продовжувати поповнювати ростер»): п'ять ліній із Cyber Sleuth — спершу Earth, найтонша
   стихія (8 форм → 17), далі Dark і Wind: Armadillomon → Ankylomon → [Shakkoumon | Groundramon] (від Nyaromon),
   Gotsumon → Golemon → [Volcanomon | Pumpkinmon] (від Motimon), Goblimon → Ogremon → WereGarurumon (від Tsunomon),
