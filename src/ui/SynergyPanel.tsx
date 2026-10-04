@@ -3,6 +3,9 @@ import { useGame } from "../game/store";
 import { traitViews, elementsOf } from "../game/synergies";
 import { FORMS } from "../game/creatures";
 import { MeterRows } from "./DamageMeter";
+import { ATTR_PATH, ELEMENT_PATH, ICON, Icon } from "./kit";
+
+const EMBLEM: Record<string, string> = { ...ELEMENT_PATH, ...ATTR_PATH };
 
 export function SynergyPanel() {
   const phase = useGame((s) => s.phase);
@@ -24,7 +27,7 @@ export function SynergyPanel() {
     <div className={`synergies${open || showDmg ? " open" : ""}`}>
       <div className="syn-tabs">
         <button className={`syn-title${showDmg ? " off" : ""}`} onClick={() => (showDmg ? setTab("syn") : setOpen((o) => !o))}>
-          Synergies
+          Synergies <span className="jp">シナジー</span>
           {!showDmg && hidden > 0 && <span className="syn-toggle">{open ? " ▾" : ` +${hidden} ▸`}</span>}
         </button>
         {lastMeter && (
@@ -57,7 +60,7 @@ export function SynergyPanel() {
           >
             {tip === v.def.key && (
               <div className="syn-tip" style={{ borderColor: v.def.color }}>
-                <b style={{ color: v.def.color }}>{v.def.name}</b>
+                <b style={{ color: v.def.color }}>{v.def.key}</b>
                 <span className="syn-tip-kind">{v.def.kind === "attribute" ? "Attribute" : "Element"} · unique Digimon on the board</span>
                 {v.def.tiers.map((t, ti) => (
                   <span key={t.need} className={`syn-tip-tier${ti === v.activeIndex ? " on" : ""}`}>
@@ -78,10 +81,14 @@ export function SynergyPanel() {
                 </span>
               </div>
             )}
-            <span className="syn-pip" style={{ background: v.def.color, boxShadow: active ? `0 0 10px ${v.def.color}` : "none" }} />
+            <span className="syn-hex">
+              <span className="syn-hex-in">
+                <Icon d={EMBLEM[v.def.key] ?? ICON.sparkle} size={18} width={2.4} />
+              </span>
+            </span>
             <span className="syn-body">
-              <span className="syn-name" style={active ? { color: v.def.color } : undefined}>
-                {v.def.name}
+              <span className="syn-name">
+                {v.def.key}
                 <span className="syn-count">
                   {v.count}
                   {nextTier ? `/${nextTier.need}` : ""}

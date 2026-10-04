@@ -19,6 +19,15 @@ export const ICON = {
   digivice:
     "M7 3.5h10a2.5 2.5 0 0 1 2.5 2.5v12a2.5 2.5 0 0 1-2.5 2.5H7A2.5 2.5 0 0 1 4.5 18V6A2.5 2.5 0 0 1 7 3.5z M8 7h8v6H8z M9 16.5h.01 M12 16.5h.01 M15 16.5h.01",
   sparkle: "M12 1.5c.9 6.1 4.4 9.6 10.5 10.5-6.1.9-9.6 4.4-10.5 10.5-.9-6.1-4.4-9.6-10.5-10.5 6.1-.9 9.6-4.4 10.5-10.5z",
+  heart: "M12 20.5s-7.6-4.6-7.6-10.1A4.3 4.3 0 0 1 12 7.7a4.3 4.3 0 0 1 7.6 2.7c0 5.5-7.6 10.1-7.6 10.1z",
+  speaker: "M4 9.5h3.5L12 5.5v13l-4.5-4H4z M15.5 9a4 4 0 0 1 0 6 M18 6.5a7.5 7.5 0 0 1 0 11",
+  mute: "M4 9.5h3.5L12 5.5v13l-4.5-4H4z M16 9.5l5 5 M21 9.5l-5 5",
+  music: "M9 18V5.5l10-2V16 M9 18a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z M19 16a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z",
+  flag: "M5 21V4 M5 4h11l-2 4 2 4H5",
+  lock: "M6 11h12v9H6z M8.5 11V8a3.5 3.5 0 0 1 7 0v3",
+  unlock: "M6 11h12v9H6z M8.5 11V8a3.5 3.5 0 0 1 6.8-1.2",
+  levelUp: "M12 19.5v-14 M6.5 11L12 5.5l5.5 5.5",
+  reroll: "M19.5 8.5A8 8 0 1 0 20 14 M19.5 3.5v5h-5",
 } as const;
 
 /** The crests' emblems: drawn in their spirit, not copies of the show's symbols. */
@@ -92,6 +101,16 @@ export function BlackGear({ size = 22, hole = "#3a1530", className = "" }: { siz
       <circle cx="24" cy="24" r="17" fill="none" stroke="#07070d" strokeWidth="9" strokeDasharray="6.2 7.15" />
       <circle cx="24" cy="24" r="14" fill="#07070d" />
       <circle cx="24" cy="24" r="6" fill={hole} />
+    </svg>
+  );
+}
+
+/** The game's money, as a coin rather than ⛂. */
+export function Coin({ size = 16 }: { size?: number }) {
+  return (
+    <svg className="coin" width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9.5" fill="#ffd23f" stroke="#b47800" strokeWidth="1.8" />
+      <circle cx="12" cy="12" r="5.5" fill="none" stroke="#b47800" strokeWidth="1.6" />
     </svg>
   );
 }

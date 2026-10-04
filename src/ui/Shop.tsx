@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { useGame, pvpMe } from "../game/store";
 import { FORMS, ATTR_COLOR, DESCENDANTS, PLAYABLE_IDS, STAGE_NAME, TIER_COLOR, costOf, isTerminal, sellValue } from "../game/creatures";
 import { ECONOMY, SHOP_ODDS } from "../game/tuning";
 import { Portrait } from "./Portrait";
 import { FormTooltip } from "./FormTooltip";
 import { MAX_LEVEL } from "../game/xpView";
+import { Coin, ICON, Icon, STAGE_JP } from "./kit";
 
 export function Shop() {
   const phase = useGame((s) => s.phase);
@@ -29,7 +30,7 @@ export function Shop() {
 
   return (
     <div className={`shop${dragged ? " sell-zone" : ""}`}>
-      {dragged && <div className="sell-hint">Drop here to sell for ⛂ {sellValue(dragged)}</div>}
+      {dragged && <div className="sell-hint">Drop here to sell for <Coin size={14} /> {sellValue(dragged)}</div>}
       <div className="shop-econ">
         <button
           className="econ-btn xp"
@@ -37,7 +38,11 @@ export function Shop() {
           disabled={gold < ECONOMY.xpCost || level >= MAX_LEVEL}
           title={`Buy ${ECONOMY.xpPerBuy} XP (F)`}
         >
-          ▲ <span className="econ-word">Buy XP </span><span className="cost">{ECONOMY.xpCost}</span>
+          <Icon d={ICON.levelUp} size={16} width={2.6} /> <span className="econ-word">Buy XP </span>
+          <span className="cost">
+            <Coin size={13} />
+            {ECONOMY.xpCost}
+          </span>
         </button>
         <button
           className="econ-btn reroll"
@@ -45,8 +50,17 @@ export function Shop() {
           disabled={gold < ECONOMY.rerollCost && freeRerolls === 0}
           title={freeRerolls > 0 ? "Free reroll (Lucky Roll) (D)" : "Reroll the shop (D)"}
         >
-          ⟳ <span className="econ-word">Reroll </span>
-          <span className="cost">{freeRerolls > 0 ? "free" : ECONOMY.rerollCost}</span>
+          <Icon d={ICON.reroll} size={16} width={2.6} /> <span className="econ-word">Reroll </span>
+          <span className="cost">
+            {freeRerolls > 0 ? (
+              "free"
+            ) : (
+              <>
+                <Coin size={13} />
+                {ECONOMY.rerollCost}
+              </>
+            )}
+          </span>
         </button>
       </div>
       <ShopOdds level={level} discovered={discovered} />
@@ -74,8 +88,8 @@ export function Shop() {
           return (
             <button
               key={i}
-              className={`shop-card${mark}${rarity}`}
-              style={{ borderColor: color }}
+              className={`shop-card tier-${form.stage}${mark}${rarity}`}
+              style={{ "--attr": color } as CSSProperties}
               disabled={gold < cost}
               onClick={() => buy(i)}
               onPointerEnter={(e) => e.pointerType === "mouse" && setHover(i)}
@@ -97,11 +111,13 @@ export function Shop() {
               <Portrait formId={formId} className="card-portrait" />
               <span className="card-info">
                 <span className={`card-name${form.name.length > 9 ? " long" : ""}`}>{form.name}</span>
-                <span className="card-attr" style={{ color }}>
-                  {form.attribute === "Free" ? STAGE_NAME[form.stage] : form.attribute}
+                <span className="card-attr">
+                  <i style={{ background: color }} />
+                  {STAGE_JP[form.stage]} · {form.attribute === "Free" ? STAGE_NAME[form.stage] : form.attribute}
                 </span>
-                <span className="card-cost" style={{ color: TIER_COLOR[form.stage] }} title={STAGE_NAME[form.stage]}>
-                  ⛂ {cost}
+                <span className="card-cost" title={STAGE_NAME[form.stage]}>
+                  <Coin size={13} />
+                  {cost}
                 </span>
               </span>
             </button>
@@ -113,7 +129,7 @@ export function Shop() {
         onClick={toggleLock}
         title={locked ? "Shop locked — kept next round (L)" : "Lock the shop for next round (L)"}
       >
-        {locked ? "🔒" : "🔓"}
+        <Icon d={locked ? ICON.lock : ICON.unlock} size={18} />
       </button>
     </div>
   );
@@ -149,11 +165,14 @@ function ShopOdds({ level, discovered }: { level: number; discovered: string[] }
         if (p === 0) return null;
         return (
           <span key={tier} className={`odds-tier${tier >= 4 && counts[i] === 0 ? " dim" : ""}`} style={{ color: TIER_COLOR[tier] }}>
-            ⛂{tier} {p}%
+            <Coin size={11} />
+            {tier} {p}%
           </span>
         );
       })}
-      {discovered.length > 0 && <span className="odds-raised">✨ {discovered.length} raised</span>}
+      {discovered.length > 0 && <span className="odds-raised">
+          <Icon d={ICON.sparkle} size={11} fill="currentColor" /> {discovered.length} raised
+        </span>}
       {open && (
         <div className="odds-pop" onClick={(e) => e.stopPropagation()}>
           <div className="odds-pop-title">
@@ -179,7 +198,8 @@ function ShopOdds({ level, discovered }: { level: number; discovered: string[] }
                 return (
                   <tr key={tier} className={slot === 0 ? "off" : ""}>
                     <td style={{ color: TIER_COLOR[tier] }}>
-                      ⛂{tier} {STAGE_NAME[tier]}
+                      <Coin size={11} />
+                      {tier} {STAGE_NAME[tier]}
                     </td>
                     <td>{pct(slot)}</td>
                     <td title={tier >= 4 ? raised.map((id) => FORMS[id].name).join(", ") || "nothing raised yet" : undefined}>
@@ -193,7 +213,7 @@ function ShopOdds({ level, discovered }: { level: number; discovered: string[] }
             </tbody>
           </table>
           <div className="odds-pop-note">
-            ⛂4 Champions and ⛂5 Megas show up only once you've raised them this game; a tier with nothing to offer
+            Champions (4) and Megas (5) show up only once you've raised them this game; a tier with nothing to offer
             hands its share to the others.{pool ? " VS: copies other tamers hold are out of the pool." : ""}
           </div>
         </div>

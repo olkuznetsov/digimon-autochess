@@ -1,3 +1,4 @@
+import { BlackGear, Coin, ICON, Icon } from "./kit";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useGame, pvpMe, pvpName } from "../game/store";
 import { isCarouselRound, isBossRound, vsRoundKind } from "../game/tuning";
@@ -133,7 +134,7 @@ export function Hud() {
               if (!m) sfx.click();
             }}
           >
-            {muted ? "🔇" : "🔊"}
+            <Icon d={muted ? ICON.mute : ICON.speaker} size={18} />
           </button>
           {!muted && (
             <button
@@ -144,7 +145,7 @@ export function Hud() {
                 setMusicOnUi(!musicOn);
               }}
             >
-              ♪
+              <Icon d={ICON.music} size={18} />
             </button>
           )}
           {!pvp && (
@@ -154,30 +155,34 @@ export function Hud() {
               disabled={phase === "battle"}
               onClick={() => useProfile.getState().setScreen("menu")}
             >
-              🏠
+              <Icon d={ICON.home} size={18} />
             </button>
           )}
           <button className="icon-btn" title="Settings" onClick={() => setShowSettings(true)}>
-            ⚙
+            <Icon d={ICON.sliders} size={18} />
           </button>
           <button className="icon-btn" title="Tamer's Guide — how to play, every Digimon, items, VS" onClick={() => setShowHelp(true)}>
-            ❓
+            <Icon d={ICON.book} size={18} />
           </button>
           {!pvp && (
             <button className="icon-btn vs" title="VS lobby — 2 to 8 tamers" onClick={() => setShowPvp(true)}>
-              ⚔ VS
+              <Icon d={ICON.swords} size={16} width={2.6} /> VS
             </button>
           )}
           {!pvp && (
             <button className="icon-btn" title="Leaderboard & ghost battles" onClick={() => setShowLb(true)}>
-              🏆
+              <Icon d={ICON.trophy} size={18} />
             </button>
           )}
         </div>
         <div className="stats">
           <div className={`stat round${!vs && isBossRound(round) ? " boss" : ""}`}>
-            Round {round}
-            {!vs && isBossRound(round) && <span className="boss-chip">☠ BOSS</span>}
+            <small>ROUND</small> {round}
+            {!vs && isBossRound(round) && (
+              <span className="boss-chip">
+                <BlackGear size={16} hole="#ff8a1f" /> BOSS
+              </span>
+            )}
             {vs && (
               <span className={`round-kind ${roundKind}`}>
                 {roundKind === "pvp" ? "⚔ PvP" : roundKind === "boss" ? "☠ Boss" : "🐾 Wild"}
@@ -186,7 +191,9 @@ export function Hud() {
               </span>
             )}
           </div>
-          <div className="stat health">♥ {health}</div>
+          <div className="stat health">
+            <Icon d={ICON.heart} size={18} fill="currentColor" /> {health}
+          </div>
           {vs && stage === "match" && alive && (
             <button
               className={`icon-btn flag${confirmFlag ? " confirm" : ""}`}
@@ -201,13 +208,18 @@ export function Hud() {
                 }
               }}
             >
-              {confirmFlag ? "Really?" : "🏳️"}
+              {confirmFlag ? "Really?" : <Icon d={ICON.flag} size={16} />}
             </button>
           )}
           {streakLabel && <div className="stat streak">{streakLabel}</div>}
-          <div className="stat gold">⛂ {gold}</div>
+          <div className="stat gold">
+            <Coin size={18} /> {gold}
+          </div>
           <div className="stat level">
-            <span className="lv">Lv {level}</span>
+            <span className="lv">
+              <small>Lv.</small>
+              {level}
+            </span>
             <span className="xp-track">
               <span className="xp-fill" style={{ width: `${xpPct * 100}%` }} />
             </span>
@@ -218,7 +230,7 @@ export function Hud() {
       <div className="actionbar">
         {phase === "prep" && !vs && (
           <button className="action" disabled={boardUnits === 0} onClick={startBattle}>
-            ⚔ Start Battle
+            <Icon d={ICON.swords} size={20} width={2.6} /> Start Battle
           </button>
         )}
         {phase === "prep" && vs && stage === "match" && alive && pvp && (
