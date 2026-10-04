@@ -2821,6 +2821,26 @@ html, body {
 .fuse-wrap {
   overflow-x: auto;
 }
+.guide-search {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 4px 0 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(160, 180, 255, 0.25);
+  background: rgba(10, 14, 30, 0.7);
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+.guide-search:focus {
+  border-color: rgba(120, 220, 255, 0.7);
+  box-shadow: 0 0 0 2px rgba(120, 220, 255, 0.15);
+}
+.dex-card.hit {
+  box-shadow: 0 0 0 2px #7fe9ff, 0 0 14px rgba(127, 233, 255, 0.55);
+}
 .guide-chips {
   display: flex;
   flex-wrap: wrap;

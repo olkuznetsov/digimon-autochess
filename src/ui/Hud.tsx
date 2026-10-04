@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useGame, pvpMe, pvpName } from "../game/store";
 import { isCarouselRound, isBossRound, vsRoundKind } from "../game/tuning";
 import { carouselPick, opponentOf, ratingDelta } from "../game/lobby";
@@ -7,10 +7,11 @@ import { ITEMS } from "../game/items";
 import { PlanTimer } from "./PlanTimer";
 import { XP_TO_NEXT as XP_VIEW } from "../game/xpView";
 import { isMuted, setMuted, isMusicOn, setMusicOn, sfx } from "../audio/sfx";
-import { LobbyModal } from "./LobbyModal";
-import { LeaderboardModal } from "./LeaderboardModal";
-import { SettingsModal } from "./SettingsModal";
-import { Guide } from "./Guide";
+// panels opened on demand load on demand (the Guide carries every Digimon's card)
+const LobbyModal = lazy(() => import("./LobbyModal").then((m) => ({ default: m.LobbyModal })));
+const LeaderboardModal = lazy(() => import("./LeaderboardModal").then((m) => ({ default: m.LeaderboardModal })));
+const SettingsModal = lazy(() => import("./SettingsModal").then((m) => ({ default: m.SettingsModal })));
+const Guide = lazy(() => import("./Guide").then((m) => ({ default: m.Guide })));
 import { lobbyClose, lobbyLeave } from "../net/lobby";
 import { CHANNEL, TEST_CHANNEL } from "../channel";
 
@@ -394,11 +395,13 @@ export function Hud() {
         </div>
       )}
 
+      <Suspense fallback={null}>
       {(showPvp || stage === "lobby") && <LobbyModal initialCode={invite} onClose={() => setShowPvp(false)} />}
       {showLb && <LeaderboardModal onClose={() => setShowLb(false)} />}
 
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {showHelp && <Guide onClose={() => setShowHelp(false)} />}
+      </Suspense>
     </>
   );
 }

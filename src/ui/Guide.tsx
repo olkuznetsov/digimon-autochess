@@ -173,12 +173,15 @@ function Basics() {
 
 /** One form's card: portrait, role, attribute, stats and ultimate (and, for the babies,
  *  what they digivolve into). */
-function FormCard({ id, next = false }: { id: string; next?: boolean }) {
+/** Does a form's name match the search (lower-cased)? */
+const hits = (q: string, id: string) => !!q && FORMS[id].name.toLowerCase().includes(q);
+
+function FormCard({ id, next = false, hit = false }: { id: string; next?: boolean; hit?: boolean }) {
   const form = FORMS[id];
   const s = statsFor(form);
   const ult = ultimateFor(id, form.role);
   return (
-    <div className="dex-card" style={{ borderColor: ATTR_COLOR[form.attribute] }}>
+    <div className={`dex-card${hit ? " hit" : ""}`} style={{ borderColor: ATTR_COLOR[form.attribute] }}>
       <Portrait formId={id} className="dex-portrait" />
       <div className="dex-info">
         <span className="dex-name">{form.name}</span>
@@ -209,7 +212,8 @@ const BABY_OF: Record<string, string[]> = {};
 for (const id of BABY_IDS) for (const n of FORMS[id].evolvesTo ?? []) (BABY_OF[n] ??= []).push(id);
 
 /** Fresh → In-Training → which rookies: the start of every line that has babies. */
-function Babies() {
+function Babies({ q }: { q: string }) {
+  if (q && !BABY_IDS.some((id) => hits(q, id))) return null;
   return (
     <section className="dex-line">
       <div className="dex-line-head">
@@ -221,7 +225,7 @@ function Babies() {
           <div key={stage} className="dex-stage">
             <span className="dex-stage-name">{STAGE_NAME[stage]}</span>
             {BABY_IDS.filter((id) => FORMS[id].stage === stage).map((id) => (
-              <FormCard key={id} id={id} next />
+              <FormCard key={id} id={id} next hit={hits(q, id)} />
             ))}
           </div>
         ))}
@@ -250,8 +254,8 @@ function bossRounds(id: string): string {
 }
 
 /** The Digimon you meet but can't recruit: wild ones in the waves, and the bosses. */
-function Bestiary({ element }: { element: Element | null }) {
-  const of = (ids: string[]) => ids.filter((id) => !element || FORMS[id].element === element);
+function Bestiary({ element, q }: { element: Element | null; q: string }) {
+  const of = (ids: string[]) => ids.filter((id) => (!element || FORMS[id].element === element) && (!q || hits(q, id)));
   const wild = of(WILD_IDS);
   const bosses = of(BOSS_IDS);
   return (
@@ -269,7 +273,7 @@ function Bestiary({ element }: { element: Element | null }) {
                 {wild
                   .filter((id) => FORMS[id].stage === stage)
                   .map((id) => (
-                    <FormCard key={id} id={id} />
+                    <FormCard key={id} id={id} hit={hits(q, id)} />
                   ))}
               </div>
             ))}
@@ -286,7 +290,7 @@ function Bestiary({ element }: { element: Element | null }) {
             {bosses.map((id) => (
               <div key={id} className="dex-stage">
                 <span className="dex-stage-name">{bossRounds(id)}</span>
-                <FormCard id={id} />
+                <FormCard id={id} hit={hits(q, id)} />
               </div>
             ))}
           </div>
@@ -298,6 +302,8 @@ function Bestiary({ element }: { element: Element | null }) {
 
 function Digimon() {
   const [element, setElement] = useState<Element | null>(null);
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
   // lines by name: rookie → its champions → their megas
   const lines = useMemo(
     () =>
@@ -323,6 +329,13 @@ function Digimon() {
         wild Digimon and {BOSS_IDS.length} bosses you can only fight. Stats are per role and stage; what sets a Digimon
         apart is its attribute, element and ultimate.
       </p>
+      <input
+        className="guide-search"
+        type="search"
+        placeholder="🔍 Find a Digimon by name…"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
       <div className="guide-chips">
         <button className={`guide-chip${element === null ? " on" : ""}`} onClick={() => setElement(null)}>
           All
@@ -338,9 +351,13 @@ function Digimon() {
           </button>
         ))}
       </div>
-      {!element && <Babies />}
+      {!element && <Babies q={q} />}
+      {q && ![...lines.flatMap((l) => [l.rookie, ...l.champions, ...l.megas]), ...BABY_IDS, ...WILD_IDS, ...BOSS_IDS].some((id) => hits(q, id)) && (
+        <p className="guide-note">No Digimon called “{query.trim()}”.</p>
+      )}
       {lines
         .filter((l) => !element || [l.rookie, ...l.champions, ...l.megas].some((id) => FORMS[id].element === element))
+        .filter((l) => !q || [l.rookie, ...l.champions, ...l.megas].some((id) => hits(q, id)))
         .map((l) => (
           <section key={l.rookie} className="dex-line">
             <div className="dex-line-head">
@@ -364,7 +381,7 @@ function Digimon() {
                       ) : (
                         i > 0 && <span className="dex-or">or</span>
                       )}
-                      <FormCard id={id} />
+                      <FormCard id={id} hit={hits(q, id)} />
                     </div>
                   ))}
                 </div>
@@ -372,7 +389,7 @@ function Digimon() {
             </div>
           </section>
         ))}
-      <Bestiary element={element} />
+      <Bestiary element={element} q={q} />
     </>
   );
 }

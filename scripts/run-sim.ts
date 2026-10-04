@@ -227,6 +227,10 @@ function arrange() {
 }
 const order = (role: string) => (role === "tank" ? 0 : role === "bruiser" ? 1 : role === "assassin" ? 2 : 3);
 
+/** Items go straight onto the strongest carry with a free slot. Two components on one Digimon
+ *  fuse on the spot (and every pair of components has a recipe), so this completes items on
+ *  the carries as fast as they drop — holding parts back to plan recipes measured weaker
+ *  (bosses 48/43/38% against 49/48/39%: a run loses the early stats). */
 function equipItems() {
   for (let guard = 0; guard < 10; guard++) {
     const { inventory } = S();

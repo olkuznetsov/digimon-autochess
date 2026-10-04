@@ -63,4 +63,21 @@ function portraitSink(): Plugin {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), portraitSink()],
+  build: {
+    // three.js and its React bindings are one ~1.3 MB chunk on purpose (cached between deploys)
+    chunkSizeWarningLimit: 1400,
+    rolldownOptions: {
+      output: {
+        // libraries in chunks of their own: they rarely change, so a deploy only busts the
+        // game's own code and returning players keep the rest cached
+        codeSplitting: {
+          groups: [
+            { name: 'three', test: /node_modules[\\/](three|three-stdlib|@react-three|postprocessing|maath|meshoptimizer|troika-[\w-]+|camera-controls|@monogrid|@use-gesture)[\\/]/, priority: 20 },
+            { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler|zustand|use-sync-external-store)[\\/]/, priority: 15 },
+            { name: 'vendor', test: /node_modules[\\/]/, priority: 10 },
+          ],
+        },
+      },
+    },
+  },
 })
