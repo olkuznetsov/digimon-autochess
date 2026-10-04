@@ -1,4 +1,4 @@
-# Roster — 185 forms in 41 lines (16 babies included) + 3 wild + 7 bosses, 100% real animated models
+# Roster — 284 forms in 48 lines (16 babies included) + 3 wild + 7 bosses, 100% real animated models
 
 Every form has an animated model: source `models-src/<formId>.glb`, shipped (optimized by `npm run optimize-models`) as `public/models/<formId>.glb` (idle/move/attack01… clips
 drive the combat state machine). The roster is deliberately shaped around sourceable models.
@@ -54,6 +54,13 @@ Fresh are Neutral, In-Training carry an element as in the game. Fresh (⛂1): `b
 | Chuumon | `chuumon`(Vi) | **[`sukamon`(Vi) \| `numemon`(D)]** | `sukamon` → `etemon`(Vi), `numemon` → **[`etemon` \| `monzaemon`(V)]** | ⛰️ Earth, 🌑 Dark (etemon), ✨ Light (monzaemon) |
 | Lucemon | `lucemon`(V) | **[`angemon` \| `devimon`]** (Patamon's and DemiDevimon's champions) | theirs | ✨ Light |
 | FanBeemon | `fanbeemon`(D) | `waspmon`(V) | `cannonbeemon`(Vi) | 🌿 Plant, ⚡ Electric (waspmon) |
+| Hackmon | `hackmon`(D) | `baohuckmon`(D) \| `monochromon`(D) | `baohuckmon` → `saviorhuckmon`(D) \| `jesmon`(D); `monochromon` → `triceramon`(D) \| `skullgreymon` | ⛰️ Earth, 🔥 Fire, ✨ Light |
+| Zubamon | `zubamon`(V) | `zubaeagermon`(V) | `zubaeagermon` → `duramon`(V) \| `durandamon`(V) | 🌪️ Wind |
+| ToyAgumon | `toyagumon`(V) | `clockmon`(D) \| `starmon`(V) | `clockmon` → `knightmon`(D) \| `hiandromon`(V); `starmon` → `superstarmon`(D) \| `mamemon`(D) \| `catchmamemon`(D) \| `princemamemon`(D) | ⛰️ Earth, ⚡ Electric, ✨ Light |
+| Dracmon | `dracmon`(Vi) | `sangloupmon`(Vi) \| `raremon`(Vi) | `sangloupmon` → `matadormon`(Vi) \| `grandracmon`(Vi); `raremon` → `dragomon`(Vi) \| `titamon`(Vi) | 🌑 Dark, ⛰️ Earth, 💧 Water |
+| Gazimon | `gazimon`(Vi) | `kurisarimon`(Vi) \| `nanimon`(Vi) | `kurisarimon` → `diaboromon` \| `cyberdramon`; `nanimon` → `digitamamon`(D) \| `superstarmon`(D) | 🌑 Dark, ⛰️ Earth, ✨ Light |
+| Sistermon Blanc | `sistermonblanc`(V) | `sistermonnoir`(Vi) | `sistermonnoir` → `pandamon`(D) \| `mastemon`(V) | ⛰️ Earth, ✨ Light |
+| Syakomon | `syakomon`(D) | `shellnumemon`(Vi) \| `coelamon`(D) | `shellnumemon` → `shogungekomon` \| `megaseadramon`; `coelamon` → `dragomon`(Vi) \| `plesiomon`(D) | 💧 Water |
 
 Set 8 also gives our lines the anime's missing finals: `greymon` → +`metalgreymon`(V, 🔥), `geogreymon` →
 +`skullgreymon`(Vi, 🌑), `growlmon` → +`wargrowlmon`(Vi, 🔥) | +`metaltyrannomon`(Vi, ⚡), `togemon` → +`lillymon`(D, 🌿),
@@ -73,6 +80,13 @@ FanBeemon (D) too, so each stage keeps its triangle; Monzaemon is Light (Neutral
 | Dorumon (4) | `dorumon`(D) | `dorugamon`(D) | `alphamon`(D) | ⛰️ Earth |
 | Agunimon (4) | `agunimon`(Vi) | `burninggreymon`(Vi) | `kaisergreymon`(Vi) | 🔥 Fire |
 | Lobomon (4) | `lobomon`(Vi) | `kendogarurumon`(Vi) | `magnagarurumon`(Vi) | ✨ Light |
+
+Set 11 — the rest of Cyber Sleuth (every model with battle clips that isn't a colour variant, a mode or a story NPC):
+the seven lines above and these branches — `koromon` → +`hackmon`(D), +`toyagumon`(V), `tsunomon` → +`zubamon`(V), `tsumemon` → +`dracmon`(Vi), `pagumon` → +`gazimon`(Vi), `tokomon` → +`sistermonblanc`(V), `bukamon` → +`syakomon`(D), `agumon` → +`tyrannomon`(D), `tentomon` → +`kuwagamon`(Vi), `palmon` → +`vegiemon`(Vi), `patamon` → +`unimon`(V), `veemon` → +`veedramon`(V), +`flamedramon`(V), `wormmon` → +`hudiemon`(V), `gabumon` → +`frigimon`(V), `gomamon` → +`icemon`(D), `gotsumon` → +`tankmon`(D), `armadillomon` → +`cyclonemon`(Vi), `dorumon` → +`raptordramon`(V), `renamon` → +`turuiemon`(V), `mushroomon` → +`mudfrigimon`(D), `hawkmon` → +`airdramon`(V), `hagurumon` → +`platinumsukamon`(Vi), `dorugamon` → +`dorugoramon`(D), `seadramon` → +`leviamon`(Vi), `gekomon` → +`neptunemon`(V), `gaogamon` → +`bancholeomon`(V), +`chaosmon`(V), `leomon` → +`leopardmon`(D), `lekismon` → +`merukimon`(V), `peckmon` → +`minervamon`(V), `golemon` → +`pilevolcamon`(D), `meramon` → +`boltmon`(D), `guardromon` → +`chaosdramon`(Vi), `skullsatamon` → +`creepymon`(Vi), `kendogarurumon` → +`crusadermon`(V), `burninggreymon` → +`dynasmon`(D), `geogreymon` → +`gaiomon`(Vi), `sunflowmon` → +`lotosmon`(D), `devimon` → +`lilithmon`(Vi), `bakemon` → +`venommyotismon`(Vi), `wizardmon` → +`barbamon`(Vi), `growlmon` → +`megidramon`(Vi), `kabuterimon` → +`tyrantkabuterimon`(Vi), `reppamon` → +`kentaurosmon`(V), `sukamon` → +`kingetemon`(Vi), `numemon` → +`metaletemon`(Vi), `waspmon` → +`tigervespamon`(V), `aquilamon` → +`valkyrimon`(V), `birdramon` → +`varodurumon`(V), `ikkakumon` → +`marineangemon`(V), `infermon` → +`armageddemon`(Vi).
+Flipped for the triangles: Syakomon (Data); Hudiemon, Starmon, Turuiemon, Minervamon, Merukimon, TigerVespamon,
+Crusadermon (Vaccine); RustTyranomon (Data). The table's Neutral/Free got an element: the Zubamon line Wind, ToyAgumon,
+PlatinumSukamon and Raptordramon Electric, Starmon, Grademon, Jesmon, Mastemon, Minervamon and Chaosmon Light,
+Digitamamon Dark, Knightmon and PrinceMamemon Earth. Brakedramon and Susanomon are our Breakdramon and Susanoomon.
 
 Removed early on (no animated rips existed then): GeoGreymon/RizeGreymon, Tyrannomon/MetalTyrannomon,
 Gaogamon/MachGaogamon, WereGarurumon, Devimon/IceDevimon/Myotismon, Pegasusmon,

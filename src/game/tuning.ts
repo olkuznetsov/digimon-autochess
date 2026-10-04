@@ -11,8 +11,8 @@ import { COLS, ROWS } from "./board";
  *  half as often; more gold and 1-gold rerolls keep evolutions coming (600-run sims:
  *  each boss beaten by about half the runs, as before) and let fans dig for favourites. */
 export const ECONOMY = {
-  /** gold at the start of a run or match (11 since set 8: every new line thins the shop) */
-  startGold: 11,
+  /** gold at the start of a run or match (12 since set 11: every new line thins the shop) */
+  startGold: 12,
   baseIncome: 7,
   /** extra gold for winning a round */
   winGold: 1,
@@ -90,7 +90,7 @@ export const WAVES = {
    *  one candidate per round, picked by its seed. Candidates are tuned to the same pass
    *  rate on the same 600 bot boards (`npm run runsim` prints "boss candidates"). */
   bosses: [
-    [{ id: "skullsatamon", hp: 1.55, atk: 0.98, adds: 2, minions: MINIONS.solo5 }],
+    [{ id: "skullsatamon", hp: 1.65, atk: 1.02, adds: 2, minions: MINIONS.solo5 }],
     [
       { id: "machinedramon", hp: 1.14, atk: 0.8, adds: 3, minions: MINIONS.solo10 },
       { id: "mitamamon", hp: 1.04, atk: 0.58, adds: 3, minions: MINIONS.solo10 },
@@ -229,15 +229,15 @@ export const VS = {
     35: [0, 0, 0, 0, 9],
     45: [0, 0, 0, 0, 14],
   } as Record<number, Mix>,
-  /** bosses of rounds 10, 20, 30, 40+ — a real check: a typical board beats them ~65% /
-   *  39% / 51% / 72% of the time (600 bot boards on the tier rules, the 7 × 4 board,
+  /** bosses of rounds 10, 20, 30, 40+ — a real check: a typical board beats them ~69% /
+   *  38% / 50% / 69% of the time (600 bot boards on the tier rules, the 7 × 4 board,
    *  starred Megas, the element synergies, 38 lines and the anime's finals, Oct 2026). A match meets one candidate per
    *  round, picked by the room's variant; candidates match. */
   bosses: [
     [{ id: "skullsatamon", hp: 2.3, atk: 1.26, adds: 3, addCount: 2, minions: MINIONS.vs10 }],
     [
-      { id: "machinedramon", hp: 3.9, atk: 1.8, adds: 5, addCount: 2, minions: MINIONS.vs20 },
-      { id: "mitamamon", hp: 3.85, atk: 1.42, adds: 5, addCount: 2, minions: MINIONS.vs20 },
+      { id: "machinedramon", hp: 3.6, atk: 1.7, adds: 5, addCount: 2, minions: MINIONS.vs20 },
+      { id: "mitamamon", hp: 3.55, atk: 1.42, adds: 5, addCount: 2, minions: MINIONS.vs20 },
     ],
     [
       { id: "zeed", hp: 6.2, atk: 2.25, adds: 5, addCount: 2, minions: MINIONS.vs30 },

@@ -63,8 +63,12 @@ def convert(n: int, form_id: str):
     chr_id = f"chr{n:03d}"
     if not os.path.exists(os.path.join(DSDB, chr_id + ".name")):
         sys.exit(f"{chr_id}: no such model in {DSDB}")
-    src_id = chr_id if clips_of(chr_id) else donors().get(n)
-    if not src_id:
+    own = clips_of(chr_id)
+    donor = donors().get(n)
+    # the game plays a donor's clips for a model with few or none of its own (PlatinumSukamon
+    # has one, and fights with Sukamon's); its own clips are layered on top
+    src_ids = ([donor] if donor and len(own) < 4 else []) + ([chr_id] if own else [])
+    if not src_ids:
         sys.exit(f"{chr_id}: no battle clips of its own and no donor")
     stage = tempfile.mkdtemp(prefix=f"dscs-{chr_id}-")
     try:
@@ -72,8 +76,12 @@ def convert(n: int, form_id: str):
             if os.path.exists(os.path.join(DSDB, f"{chr_id}.{ext}")):
                 os.symlink(os.path.join(DSDB, f"{chr_id}.{ext}"), os.path.join(stage, f"{chr_id}.{ext}"))
         os.symlink(os.path.join(DSDB, "images"), os.path.join(stage, "images"))
-        for f in clips_of(src_id):
-            os.symlink(os.path.join(DSDB, f), os.path.join(stage, chr_id + f[len(src_id):]))
+        for src_id in src_ids:
+            for f in clips_of(src_id):
+                dst = os.path.join(stage, chr_id + f[len(src_id):])
+                if os.path.lexists(dst):
+                    os.remove(dst)
+                os.symlink(os.path.join(DSDB, f), dst)
         out = os.path.join(ROOT, "models-src", form_id + ".glb")
         r = subprocess.run([PYTHON, os.path.join(ROOT, "scripts", "dscs_to_glb.py"), stage, chr_id, out], capture_output=True, text=True)
         for line in r.stdout.splitlines():
@@ -83,7 +91,7 @@ def convert(n: int, form_id: str):
             sys.exit(f"{chr_id}: conversion failed\n{r.stderr[-2000:]}")
     finally:
         shutil.rmtree(stage)
-    borrowed = f" (clips of {src_id})" if src_id != chr_id else ""
+    borrowed = f" (clips of {src_ids[0]})" if src_ids[0] != chr_id else ""
     print(f"{chr_id} {names().get(n, '?')} → models-src/{form_id}.glb{borrowed}", flush=True)
     subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "rename_clips.py"), out], check=True)
 

@@ -1,5 +1,7 @@
 import { useGLTF } from "@react-three/drei";
-import { ALL_FORM_IDS, FORMS, ROOKIE_IDS } from "../game/creatures";
+import { ALL_FORM_IDS, FORMS } from "../game/creatures";
+import { useGame } from "../game/store";
+import { makeEnemyWave } from "../game/tuning";
 import { MODEL_HASH } from "./model-manifest";
 
 /**
@@ -34,27 +36,66 @@ export function tweakFor(formId: string): ModelTweak | undefined {
   return MODEL_TWEAKS[formId];
 }
 
-// Rookies load up front (the loading screen waits for them); Champions and Megas
-// are fetched in the background right after, so a digivolution or an enemy wave
-// almost never has to show the procedural placeholder.
-for (const id of ROOKIE_IDS) useGLTF.preload(MODEL_PATHS[id]!);
+// With ~300 forms, fetching every model is far too much for everyone (~130 MB). Up front
+// (the loading screen waits for these): the babies a new run starts with, and whatever a
+// restored run has on its board, bench and shop. After that the background only fetches
+// what a player is about to see: the next two stages of their units, what the shop offers,
+// the next wave and their VS opponents' boards.
+const queued = new Set<string>();
+{
+  const s0 = useGame.getState();
+  const upfront = new Set(ALL_FORM_IDS.filter((id) => FORMS[id].stage <= 2 && !FORMS[id].wild && !FORMS[id].bossOnly));
+  for (const u of s0.units) upfront.add(u.formId);
+  for (const id of s0.shop) upfront.add(id);
+  for (const id of upfront) {
+    if (!MODEL_PATHS[id]) continue;
+    queued.add(id);
+    useGLTF.preload(MODEL_PATHS[id]!);
+  }
+}
+/** A form's next two stages: what its merges can turn into soon. */
+const nextTwo = (id: string) =>
+  (FORMS[id]?.evolvesTo ?? []).flatMap((c) => [c, ...(FORMS[c]?.evolvesTo ?? [])]);
+
+const pending: string[] = [];
+let pumping = false;
+const idle = (cb: () => void) =>
+  ((window as unknown as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback ?? ((f: () => void) => setTimeout(f, 200)))(cb);
+
+/** Fetch these forms' models in the background, a few at a time while the browser is idle. */
+export function preloadForms(ids: Iterable<string>) {
+  for (const id of ids) {
+    if (!MODEL_PATHS[id] || queued.has(id)) continue;
+    queued.add(id);
+    pending.push(id);
+  }
+  if (pumping || !pending.length) return;
+  pumping = true;
+  const next = () => {
+    for (const id of pending.splice(0, 3)) useGLTF.preload(MODEL_PATHS[id]!);
+    if (pending.length) setTimeout(() => idle(next), 350);
+    else pumping = false;
+  };
+  idle(next);
+}
 
 let restQueued = false;
-/** Queue everything else by stage — wild rookies (they open the first waves), then
- *  Champions, then Megas — a few at a time while the browser is idle. */
+/** After the splash: the wild Digimon (they open the first waves), then — as the game goes —
+ *  the next stages of the player's units, the shop, the next wave and VS boards. */
 export function preloadRemainingModels() {
   if (restQueued) return;
   restQueued = true;
-  const queue = [1, 2, 3, 4, 5].flatMap((stage) =>
-    ALL_FORM_IDS.filter((id) => FORMS[id].stage === stage && !ROOKIE_IDS.includes(id)),
-  );
-  const idle =
-    (window as unknown as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback ??
-    ((cb: () => void) => setTimeout(cb, 200));
-  const next = () => {
-    const batch = queue.splice(0, 3);
-    for (const id of batch) useGLTF.preload(MODEL_PATHS[id]!);
-    if (queue.length) setTimeout(() => idle(next), 350);
+  preloadForms(ALL_FORM_IDS.filter((id) => FORMS[id].wild));
+  const relevant = (s: ReturnType<typeof useGame.getState>) => {
+    const ids: string[] = [...s.shop];
+    for (const u of s.units) ids.push(u.formId, ...nextTwo(u.formId));
+    if (s.pvp) for (const board of Object.values(s.pvp.boards)) for (const u of board) ids.push(u.formId);
+    else if (s.phase === "prep") for (const f of makeEnemyWave(s.round, s.runSeed)) ids.push(f.formId);
+    return ids;
   };
-  idle(next);
+  preloadForms(relevant(useGame.getState()));
+  useGame.subscribe((s, prev) => {
+    if (s.units !== prev.units || s.shop !== prev.shop || s.round !== prev.round || s.pvp?.boards !== prev.pvp?.boards || s.phase !== prev.phase)
+      preloadForms(relevant(s));
+  });
 }

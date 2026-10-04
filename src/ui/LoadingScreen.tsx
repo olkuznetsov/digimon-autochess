@@ -14,8 +14,8 @@ const TIPS = [
   "Play a friend: ⚔ VS, share the 4-letter room code.",
 ];
 
-/** First-visit splash: real model-loading progress, then fades out and starts the
- *  background preload of Champions/Megas so digivolutions never show placeholders. */
+/** First-visit splash: real model-loading progress (the babies a run starts with), then
+ *  fades out and starts the on-demand background preload (see models.ts). */
 export function LoadingScreen() {
   const { active, progress, loaded, total } = useProgress();
   const [phase, setPhase] = useState<"loading" | "fading" | "gone">("loading");

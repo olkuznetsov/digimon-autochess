@@ -43,8 +43,8 @@ const ATTRIBUTE_TRAITS: TraitDef[] = [
   {
     key: "Data", name: "Data", kind: "attribute", color: ATTR_COLOR.Data,
     tiers: [
-      { need: 2, desc: "+15% attack speed", asPct: 0.15 },
-      { need: 3, desc: "+24% attack speed", asPct: 0.24 },
+      { need: 2, desc: "+12% attack speed", asPct: 0.12 },
+      { need: 4, desc: "+26% attack speed", asPct: 0.26 },
     ],
   },
   {
