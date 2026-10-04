@@ -242,6 +242,13 @@ Herissmon, Agunimon, Lobomon) лишаються досяжними.
 
 ## 5. Журнал
 <!-- новіші записи зверху -->
+- **2026-10-04** — Lucemon — фінальний бос (Саша: «зроби Lucemon Falldown Mode фінальним босом»): соло R15 — завжди
+  Lucemon Falldown Mode (з Angemon і Devimon — двома його дорогами), а коли він падає, на його місці постає Lucemon
+  Satan Mode (банер «Awakening»; `phase2` у tuning.ts, `rebirth` у battle.ts — детерміновано, як усе). Також кандидат VS
+  R40+ (із Seraphimon, LadyDevimon, Myotismon). Diaboromon/Apollomon/Piedmon лишились у VS і нескінченному режимі.
+  Ульти: «Dead or Alive» (AoE 170% + щит 12%), «Paradise Lost» (удар із добиванням + хвиля). Підбір: Satan Mode
+  з'являється в ~68% фінальних боїв; соло R15 ~44% серед тих, хто дійшов (останній тюнінг −3% не перевірено
+  окремим прогоном), VS R40 ~72% (як Gracenovamon). 195 моделей.
 - **2026-10-04** — Set 10 (Саша: «продовжуй поповнювати ростер»): Chuumon → [Sukamon → Etemon | Numemon → [Etemon |
   Monzaemon]] (Earth → Dark/Light; від Pagumon — клоуни й лиходій Adventure), Lucemon (Frontier, від Tokomon) — рукі з
   вибором дороги: Angemon (ангел) або Devimon (демон), чемпіони, що вже були; FanBeemon → Waspmon → CannonBeemon (Plant →

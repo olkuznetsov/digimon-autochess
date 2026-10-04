@@ -332,6 +332,9 @@ export const FORMS: Record<string, Form> = {
   gracenovamon: f("gracenovamon", "Gracenovamon", 5, "Data", "Light", "bruiser", { bossOnly: true }),
   // the Dark Masters' leader: solo R15, VS R40+ (with the other three as his minions), endless
   piedmon: f("piedmon", "Piedmon", 5, "Virus", "Dark", "assassin", { bossOnly: true }),
+  // the final boss (Frontier): Falldown Mode, and Satan Mode when he falls — solo R15, VS R40+
+  lucemonfm: f("lucemonfm", "Lucemon Falldown Mode", 5, "Virus", "Neutral", "caster", { bossOnly: true }),
+  lucemonsm: f("lucemonsm", "Lucemon Satan Mode", 5, "Virus", "Dark", "bruiser", { bossOnly: true }),
   apollomon: f("apollomon", "Apollomon", 5, "Vaccine", "Fire", "caster", { bossOnly: true }),
   mitamamon: f("mitamamon", "Mitamamon", 5, "Vaccine", "Electric", "ranged", { bossOnly: true }),
 

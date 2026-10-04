@@ -153,7 +153,10 @@ function Basics() {
         <h3>Solo run</h3>
         <ul>
           <li>☠ Every <b>5th round is a boss</b> — beat it for an item and bonus gold.</li>
-          <li>🏆 Survive <b>round 15</b> to win the run, then keep going in endless mode.</li>
+          <li>
+            🏆 <b>Round 15</b> is the final boss, <b>Lucemon Falldown Mode</b> — and when he falls, he rises again as{" "}
+            <b>Satan Mode</b>. Beat both to win the run, then keep going in endless mode.
+          </li>
           <li>👻 The <b>leaderboard</b> stores your best board — anyone can fight it as a risk-free ghost battle.</li>
         </ul>
       </section>
@@ -232,11 +235,15 @@ const BOSS_IDS = ALL_FORM_IDS.filter((id) => FORMS[id].bossOnly);
 /** Where a boss-only form turns up, read off the boss tables. */
 function bossRounds(id: string): string {
   const at: string[] = [];
+  const final = (i: number) => (i === WAVES.bosses.length - 1 ? " — the final boss" : "");
   WAVES.bosses.forEach((tier, i) => {
-    if (tier.some((b) => b.id === id)) at.push(`solo R${(i + 1) * 5}`);
+    if (tier.some((b) => b.id === id)) at.push(`solo R${(i + 1) * 5}${final(i)}`);
+    if (tier.some((b) => b.phase2?.id === id)) at.push(`solo R${(i + 1) * 5}, his second phase`);
   });
   VS.bosses.forEach((tier, i) => {
-    if (tier.some((b) => b.id === id)) at.push(`VS R${(i + 1) * 10}${i === VS.bosses.length - 1 ? "+" : ""}`);
+    const r = `VS R${(i + 1) * 10}${i === VS.bosses.length - 1 ? "+" : ""}`;
+    if (tier.some((b) => b.id === id)) at.push(r);
+    if (tier.some((b) => b.phase2?.id === id)) at.push(`${r}, the second phase`);
   });
   if (WAVES.endlessBosses.includes(id)) at.push("endless");
   return at.join(" · ");

@@ -368,8 +368,36 @@ function resolve(fighters: Fighter[], t: Tick) {
       p.rescue = 0;
       procFx(f, f, "guard", events);
     }
-    if (f.hp <= 0) events?.push({ kind: "death", col: f.col, row: f.row, attr: f.attribute });
+    if (f.hp <= 0) {
+      events?.push({ kind: "death", col: f.col, row: f.row, attr: f.attribute });
+      if (f.rebirth) reborn(f, fighters, events);
+    }
   }
+}
+
+/** A final boss's second phase rises where the first fell (Lucemon Falldown Mode → Satan
+ *  Mode): a fresh fighter, the same on every client, with the boss banner. */
+function reborn(f: Fighter, fighters: Fighter[], events?: CombatEvent[]) {
+  const r = f.rebirth!;
+  const next = makeFighter(r.formId, `${f.uid}+`, f.team, f.col, f.row);
+  next.maxHp = r.maxHp;
+  next.hp = r.maxHp;
+  next.attack = r.attack;
+  next.boss = true;
+  fighters.push(next);
+  events?.push({
+    kind: "cast",
+    col: f.col,
+    row: f.row,
+    attr: next.attribute,
+    ult: "blast",
+    name: "Awakening",
+    stage: 5,
+    form: r.formId,
+    team: f.team,
+    toCol: f.col,
+    toRow: f.row,
+  });
 }
 
 /** Positions live on a 2^-20 grid: a mirrored coordinate (COLS - 1 - x) is then exact, so

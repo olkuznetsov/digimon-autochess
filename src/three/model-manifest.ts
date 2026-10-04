@@ -102,6 +102,8 @@ export const MODEL_HASH: Record<string, string> = {
   lillymon: "453db31512",
   lobomon: "aa93108c8c",
   lucemon: "e59401ac41",
+  lucemonfm: "2e940e4c77",
+  lucemonsm: "46979bddbd",
   lunamon: "134a02d34e",
   machgaogamon: "69a868f196",
   machinedramon: "86a947d320",

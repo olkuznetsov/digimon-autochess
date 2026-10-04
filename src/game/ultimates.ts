@@ -347,6 +347,9 @@ export const ULTIMATES: Record<string, Ultimate> = {
   antylamon: u("Bulb Ax", "🪓", "Axe arms: 260%, 420% below 30% HP.", execute(2.6, 0.3, 1.6)),
   datamon: u("Digital Bomb", "💾", "A data bomb (290%) that bursts on the foes around (100%).", smite(2.9, 1.0, 1.6)),
   dinobeemon: u("Hell Masquerade", "🦂", "A storm of stings: five strikes (105% each).", barrage(5, 1.05)),
+  // ---- the final boss (boss only): Lucemon, in two phases
+  lucemonfm: u("Dead or Alive", "☯️", "A sphere of light and one of darkness: AoE 170%, and he hides behind a 12% shield.", both(bulwark(0.12), nova(1.7, 2.0))),
+  lucemonsm: u("Paradise Lost", "😈", "Slams the target (260%, 420% below 30% HP); the shockwave hits around it (120%).", both(execute(2.6, 0.3, 1.6), nova(1.2, 1.8))),
   // ---- the Dark Masters' leader (boss only)
   piedmon: u("Trump Sword", "🃏", "Four swords at the 4 nearest (140%), each pinned for 0.7s.", pin(4, 1.4, 0.7)),
   // ---- set 9: the anime's finals

@@ -51,6 +51,10 @@ const MINIONS = {
   vs20: ["andromon", "belzemon"],
   vs30: ["ravemon", "magnagarurumon"],
   vs40: ["zudomon", "cresgarurumon", "diaboromon"],
+  /** the final boss, Lucemon, between the roads he could take: Angemon and Devimon; at VS
+   *  R40+ between the angels and demons they became */
+  lucemon15: ["angemon", "devimon"],
+  lucemon40: ["seraphimon", "ladydevimon", "myotismon"],
   /** Piedmon brings his own: Dark champions at R15, the other Dark Masters at VS R40+ */
   piedmon15: ["devimon", "bakemon"],
   darkMasters: ["puppetmon", "metalseadramon", "machinedramon"],
@@ -91,10 +95,17 @@ export const WAVES = {
       { id: "machinedramon", hp: 1.14, atk: 0.8, adds: 3, minions: MINIONS.solo10 },
       { id: "mitamamon", hp: 1.04, atk: 0.58, adds: 3, minions: MINIONS.solo10 },
     ],
+    // the final boss of every run: Lucemon Falldown Mode, and when he falls, Satan Mode
+    // (Diaboromon, Apollomon and Piedmon, R15's old candidates, wait in endless mode and VS)
     [
-      { id: "diaboromon", hp: 2.6, atk: 1.26, adds: 4, minions: MINIONS.solo15 },
-      { id: "apollomon", hp: 2.9, atk: 0.99, adds: 4, minions: MINIONS.solo15 },
-      { id: "piedmon", hp: 3.05, atk: 1.24, adds: 4, minions: MINIONS.piedmon15 },
+      {
+        id: "lucemonfm",
+        hp: 1.45,
+        atk: 1.02,
+        adds: 4,
+        minions: MINIONS.lucemon15,
+        phase2: { id: "lucemonsm", hp: 1.25, atk: 0.92 },
+      },
     ],
   ] as Omit<BossSpec, "addCount">[][],
   /** endless mode: every 5th round the next of these, all with the same multipliers */
@@ -108,7 +119,16 @@ export const isBossRound = (round: number) => round % 5 === 0;
 type Mix = [number, number, number, number, number];
 /** `adds`: the stage of the minions flanking the boss; `minions`: which ones (pinned — else
  *  picked from the roster by the round, as endless bosses still are) */
-type BossSpec = { id: string; hp: number; atk: number; adds: Stage; addCount: number; minions?: string[] };
+type BossSpec = {
+  id: string;
+  hp: number;
+  atk: number;
+  adds: Stage;
+  addCount: number;
+  minions?: string[];
+  /** a second phase that rises when the boss falls (its own multipliers) */
+  phase2?: { id: string; hp: number; atk: number };
+};
 
 /** One of a boss round's candidates: the first for seed 0 (saves and rooms from before
  *  there was a choice), otherwise spread by the seed — per round, so a run's bosses vary
@@ -150,6 +170,10 @@ function buildWave(round: number, hpScale: number, boss: BossSpec | null, mix: M
     b.maxHp = b.hp;
     b.attack = Math.round(b.attack * boss.atk);
     b.boss = true;
+    if (boss.phase2) {
+      const p2 = makeFighter(boss.phase2.id, "phase2", "enemy", 0, 0, hpScale);
+      b.rebirth = { formId: boss.phase2.id, maxHp: Math.round(p2.hp * boss.phase2.hp), attack: Math.round(p2.attack * boss.phase2.atk) };
+    }
     const adds = Array.from({ length: boss.addCount }, (_, i) => {
       const p = at(i * 2 + 1); // flank the boss
       const id = boss.minions?.length ? boss.minions[i % boss.minions.length] : minion(boss.adds, i);
@@ -222,6 +246,15 @@ export const VS = {
     [
       { id: "gracenovamon", hp: 9.5, atk: 3.0, adds: 5, addCount: 3, minions: MINIONS.vs40 },
       { id: "piedmon", hp: 10.0, atk: 3.2, adds: 5, addCount: 3, minions: MINIONS.darkMasters },
+      {
+        id: "lucemonfm",
+        hp: 5.5,
+        atk: 2.6,
+        adds: 5,
+        addCount: 3,
+        minions: MINIONS.lucemon40,
+        phase2: { id: "lucemonsm", hp: 4.5, atk: 2.3 },
+      },
     ],
   ] as BossSpec[][],
 };

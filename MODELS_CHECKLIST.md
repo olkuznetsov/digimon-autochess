@@ -1,4 +1,4 @@
-# Roster — 185 forms in 41 lines (16 babies included) + 3 wild + 5 bosses, 100% real animated models
+# Roster — 185 forms in 41 lines (16 babies included) + 3 wild + 7 bosses, 100% real animated models
 
 Every form has an animated model: source `models-src/<formId>.glb`, shipped (optimized by `npm run optimize-models`) as `public/models/<formId>.glb` (idle/move/attack01… clips
 drive the combat state machine). The roster is deliberately shaped around sourceable models.
@@ -84,9 +84,11 @@ Boss-only (`bossOnly`: never in the shop, wild waves or scrims) — boss rounds 
 |---|---|---|
 | `zeed` ZeedMillenniummon | Vi, Dark | VS R30 (or Apollomon), endless |
 | `gracenovamon` Gracenovamon | D, Light | VS R40+ (or Piedmon), endless |
-| `apollomon` Apollomon | V, Fire | solo R15 (or Diaboromon), VS R30, endless |
+| `apollomon` Apollomon | V, Fire | VS R30, endless (solo R15 until the final boss) |
 | `mitamamon` Mitamamon | V, Electric | solo R10 (or Machinedramon), VS R20, endless |
-| `piedmon` Piedmon | Vi, Dark | solo R15 (or Diaboromon/Apollomon; with Devimon and Bakemon), VS R40+ (or Gracenovamon; with the other Dark Masters — Puppetmon, MetalSeadramon, Machinedramon), endless |
+| `piedmon` Piedmon | Vi, Dark | VS R40+ (or Gracenovamon; with the other Dark Masters — Puppetmon, MetalSeadramon, Machinedramon), endless |
+| `lucemonfm` Lucemon Falldown Mode | Vi, Neutral | **the final boss**: solo R15 (with Angemon and Devimon — his two roads), VS R40+ (with Seraphimon, LadyDevimon, Myotismon) |
+| `lucemonsm` Lucemon Satan Mode | Vi, Dark | Falldown Mode's second phase: rises where he falls (`phase2` in tuning.ts, `rebirth` in battle.ts) |
 
 Wild Digimon (`wild`: met in PvE waves, never recruited): `coronamon`(V), `tapirmon`(V) rookies; `piximon`(D) champion.
 

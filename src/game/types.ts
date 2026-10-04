@@ -114,6 +114,8 @@ export interface Fighter {
   burnPulse?: number;
   /** a Mega's star level (stats baked in by makeFighter; the pips show it) */
   star?: number;
+  /** a final boss's second phase: when this one falls, that form rises in its place */
+  rebirth?: { formId: string; maxHp: number; attack: number };
 }
 
 /** Unique item mechanics on a fighter. Static knobs come from items.ts; the running

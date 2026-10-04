@@ -31,7 +31,8 @@ All Digimon models are ripped from Bandai games (primarily *Digimon Story: Cyber
   WereGarurumon, Pagumon, Impmon, Wizardmon, Bakemon, Wisemon, Phantomon, Hawkmon, Aquilamon, HippoGryphonmon,
   AeroVeedramon, Zudomon, Andromon) and **set 8** (Kudamon, Reppamon, Chirinmon, Lalamon, Sunflowmon, Lilamon,
   Otamamon, Gekomon, ShogunGekomon, Whamon, MetalGreymon, SkullGreymon, WarGrowlmon, MetalTyrannomon, Lillymon,
-  GrapLeomon) and **set 9** (SkullMeramon, DoruGreymon, Seraphimon, Magnadramon, Magnamon, Omnimon), the boss Piedmon and **set 10**
+  GrapLeomon) and **set 9** (SkullMeramon, DoruGreymon, Seraphimon, Magnadramon, Magnamon, Omnimon), the bosses Piedmon, Lucemon
+  Falldown Mode and Lucemon Satan Mode, and **set 10**
   (Chuumon, Sukamon, Numemon, Etemon, Monzaemon, Lucemon, FanBeemon, Waspmon, CannonBeemon, Antylamon, Datamon,
   Dinobeemon) — converted from
   a purchased copy of *Digimon Story Cyber Sleuth:
