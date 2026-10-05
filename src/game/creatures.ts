@@ -443,6 +443,13 @@ export const FORMS: Record<string, Form> = {
   lucemonsm: f("lucemonsm", "Lucemon Satan Mode", 5, "Virus", "Dark", "bruiser", { bossOnly: true }),
   apollomon: f("apollomon", "Apollomon", 5, "Vaccine", "Fire", "caster", { bossOnly: true }),
   mitamamon: f("mitamamon", "Mitamamon", 5, "Vaccine", "Electric", "ranged", { bossOnly: true }),
+  // Cyber Sleuth's data-eaters, with mechanics of their own (battle.ts): the Eater devours the
+  // weakest of your team (solo R10, endless), the Mother Eater broods Eater Bits that shield
+  // her (endless); the Bits and the Legion are their minions
+  eater: f("eater", "Eater", 5, "Virus", "Dark", "bruiser", { bossOnly: true }),
+  mothereater: f("mothereater", "Mother Eater", 5, "Virus", "Dark", "tank", { bossOnly: true }),
+  eaterbit: f("eaterbit", "Eater Bit", 3, "Virus", "Dark", "assassin", { bossOnly: true }),
+  eaterlegion: f("eaterlegion", "Eater Legion", 4, "Virus", "Dark", "tank", { bossOnly: true }),
 
   // ============ wild Digimon (set 3): met in PvE waves, never recruited ============
   coronamon: f("coronamon", "Coronamon", 3, "Vaccine", "Fire", "ranged", { wild: true }),

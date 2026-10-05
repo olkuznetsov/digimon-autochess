@@ -41,7 +41,9 @@ for where the models, the art and the music come from.*
   stronger ones: Adventure's Crests, Lightning Coil (every fifth attack strikes everything around the target),
   Spike Shell, Rage Chip, Blue Card…; Digitama + an item makes a **Digimental**, an emblem of an element, and two
   Digitama make a **Digivice**, one more Digimon on the board. Relics with no recipe counter freezes and healing.
-- **Solo run**: a boss every fifth round, drawn from candidates so runs differ; round 15 is the final boss, Lucemon
+- **Solo run**: a boss every fifth round, drawn from candidates so runs differ — among them Cyber Sleuth's data-eaters
+  with mechanics of their own: the Eater devours your weakest Digimon and grows, the Mother Eater (endless) broods
+  Eater Bits that shield her; round 15 is the final boss, Lucemon
   Falldown Mode, who rises again as Satan Mode when he falls — beat both to win, then keep going in endless mode.
 - **VS for 2–8 players** — with friends over a 4-letter room code, or with strangers through a public
   matchmaking queue — in Teamfight Tactics' round rhythm: a round-robin of opponents (a ghost copy of someone's

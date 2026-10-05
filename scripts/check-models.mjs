@@ -37,7 +37,9 @@ for (const f of files) {
   const doc = await io.read(`public/models/${f}`);
   const anims = doc.getRoot().listAnimations();
   const names = anims.map((a) => a.getName());
-  for (const need of ["idle", "attack01", "move"]) if (!names.includes(need)) problems.push(`${id}: missing clip "${need}"`);
+  // the data-eaters drift instead of walking (the game has no move clip for them): idle carries them
+  const needs = ["eaterbit", "eaterlegion", "mothereater"].includes(id) ? ["idle", "attack01"] : ["idle", "attack01", "move"];
+  for (const need of needs) if (!names.includes(need)) problems.push(`${id}: missing clip "${need}"`);
   const idle = anims.find((a) => a.getName() === "idle");
   const joints = new Set(doc.getRoot().listSkins().flatMap((sk) => sk.listJoints()));
   if (idle) {

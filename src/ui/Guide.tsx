@@ -278,8 +278,15 @@ function Babies({ q }: { q: string }) {
 
 const BOSS_IDS = ALL_FORM_IDS.filter((id) => FORMS[id].bossOnly);
 
+/** The bosses with a mechanic of their own (battle.ts), and their minions. */
+const BOSS_NOTE: Record<string, string> = {
+  eater: "DEVOUR — every 5 s it bites 12% of the max HP off your weakest Digimon, wherever it stands, heals as much and grows 4% stronger. Shield the weak, or bring it down fast.",
+  mothereater: "BROOD — every 8 s an Eater Bit hatches beside her (two at most); while any lives she takes 40% less damage. Clear the brood.",
+};
+
 /** Where a boss-only form turns up, read off the boss tables. */
 function bossRounds(id: string): string {
+  if (id === "eaterbit" || id === "eaterlegion") return "the Eaters' minion";
   const at: string[] = [];
   const final = (i: number) => (i === WAVES.bosses.length - 1 ? " — the final boss" : "");
   WAVES.bosses.forEach((tier, i) => {
@@ -333,6 +340,7 @@ function Bestiary({ element, q }: { element: Element | null; q: string }) {
               <div key={id} className="dex-stage">
                 <span className="dex-stage-name">{bossRounds(id)}</span>
                 <FormCard id={id} hit={hits(q, id)} />
+                {BOSS_NOTE[id] && <span className="dex-note boss-mech">{BOSS_NOTE[id]}</span>}
               </div>
             ))}
           </div>

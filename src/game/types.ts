@@ -116,6 +116,16 @@ export interface Fighter {
   star?: number;
   /** a final boss's second phase: when this one falls, that form rises in its place */
   rebirth?: { formId: string; maxHp: number; attack: number };
+  /** a boss's own mechanic (battle.ts): the Eater devours the weakest of the other side, the
+   *  Mother Eater broods Eater Bits that shield her */
+  mech?: "devour" | "brood";
+  /** seconds to the mechanic's next turn; how many it has brooded; the health scale of its
+   *  brood (the round's) */
+  mechT?: number;
+  mechN?: number;
+  mechScale?: number;
+  /** the Mother Eater with Bits alive: half damage */
+  broodGuard?: boolean;
 }
 
 /** Unique item mechanics on a fighter. Static knobs come from items.ts; the running

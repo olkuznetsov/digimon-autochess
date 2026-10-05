@@ -7160,3 +7160,13 @@ span.lb-face:not(.portrait) {
 .dmgn.small {
   filter: saturate(0.7) brightness(0.95);
 }
+.boss-mech {
+  display: block;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(255, 77, 109, 0.12);
+  border: 1px solid rgba(255, 77, 109, 0.35);
+  color: #ffd0d8;
+  font-size: 11px;
+  line-height: 1.35;
+}

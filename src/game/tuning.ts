@@ -94,8 +94,10 @@ export const WAVES = {
     [
       { id: "machinedramon", hp: 1.14, atk: 0.8, adds: 3, minions: MINIONS.solo10 },
       { id: "mitamamon", hp: 1.04, atk: 0.58, adds: 3, minions: MINIONS.solo10 },
+      { id: "eater", hp: 0.9, atk: 0.53, adds: 3, minions: ["eaterbit"] },
     ],
-    // the final boss of every run: Lucemon Falldown Mode, and when he falls, Satan Mode
+    // (the Eater, an R10 candidate: it devours the weakest of your team — battle.ts)
+  // the final boss of every run: Lucemon Falldown Mode, and when he falls, Satan Mode
     // (Diaboromon, Apollomon and Piedmon, R15's old candidates, wait in endless mode and VS)
     [
       {
@@ -109,7 +111,8 @@ export const WAVES = {
     ],
   ] as Omit<BossSpec, "addCount">[][],
   /** endless mode: every 5th round the next of these, all with the same multipliers */
-  endlessBosses: ["gankoomon", "zeed", "apollomon", "imperialdramon", "gracenovamon", "mitamamon", "alphamon", "machinedramon", "diaboromon", "piedmon"],
+  // (endless round R brings entry R/5 mod the list: the Eater at 20, the Mother Eater at 25)
+  endlessBosses: ["gankoomon", "zeed", "apollomon", "imperialdramon", "eater", "mothereater", "gracenovamon", "mitamamon", "alphamon", "machinedramon", "diaboromon", "piedmon"],
   endlessBoss: { hp: 4.2, atk: 1.6, adds: 5 } as { hp: number; atk: number; adds: Stage },
 };
 
@@ -143,8 +146,20 @@ function pickBoss<T>(candidates: T[], seed: number, round: number): T {
 
 const STAGES = [1, 2, 3, 4, 5] as const;
 const byStage = (ids: string[]) => STAGES.map((stage) => ids.filter((id) => FORMS[id].stage === stage));
-/** Bosses bring their minions from the roster. */
+/** Bosses bring their minions from the roster — the data-eaters their own. */
 const ROSTER = byStage(PLAYABLE_IDS);
+const OWN_MINIONS: Record<string, string[]> = { eater: ["eaterbit"], mothereater: ["eaterbit", "eaterlegion"] };
+/** An endless boss: the shared multipliers — the Mother Eater's own (her brood guards her). */
+function endlessBoss(id: string): BossSpec {
+  const own = id === "mothereater" ? { hp: 2.4, atk: 1.25 } : null;
+  return { id, ...WAVES.endlessBoss, ...own, addCount: 3 };
+}
+
+/** the bosses with a mechanic of their own (battle.ts), and when it first comes round */
+const MECHANICS: Record<string, { mech: "devour" | "brood"; first: number }> = {
+  eater: { mech: "devour", first: 3 },
+  mothereater: { mech: "brood", first: 2 },
+};
 /** Waves draw from the roster plus the wild Digimon — twice, so they turn up often
  *  (a wild pack can bring two of a kind). */
 const WAVE_POOL = ROSTER.map((roster, i) => [...roster, ...byStage(WILD_IDS)[i], ...byStage(WILD_IDS)[i]]);
@@ -170,13 +185,21 @@ function buildWave(round: number, hpScale: number, boss: BossSpec | null, mix: M
     b.maxHp = b.hp;
     b.attack = Math.round(b.attack * boss.atk);
     b.boss = true;
+    const mech = MECHANICS[boss.id];
+    if (mech) {
+      b.mech = mech.mech;
+      b.mechT = mech.first;
+      b.mechN = 0;
+      b.mechScale = hpScale * 0.9;
+    }
     if (boss.phase2) {
       const p2 = makeFighter(boss.phase2.id, "phase2", "enemy", 0, 0, hpScale);
       b.rebirth = { formId: boss.phase2.id, maxHp: Math.round(p2.hp * boss.phase2.hp), attack: Math.round(p2.attack * boss.phase2.atk) };
     }
     const adds = Array.from({ length: boss.addCount }, (_, i) => {
       const p = at(i * 2 + 1); // flank the boss
-      const id = boss.minions?.length ? boss.minions[i % boss.minions.length] : minion(boss.adds, i);
+      const own = boss.minions?.length ? boss.minions : OWN_MINIONS[boss.id];
+      const id = own?.length ? own[i % own.length] : minion(boss.adds, i);
       return makeFighter(id, `${prefix}${i}`, "enemy", p.col, p.row, hpScale * 0.9);
     });
     return [b, ...adds];
@@ -223,7 +246,7 @@ function baseWave(round: number, seed: number): Fighter[] {
     const boss =
       round <= 15
         ? { ...pickBoss(WAVES.bosses[round / 5 - 1], seed, round), addCount: 2 }
-        : { id: WAVES.endlessBosses[(round / 5) % WAVES.endlessBosses.length], ...WAVES.endlessBoss, addCount: 3 };
+        : endlessBoss(WAVES.endlessBosses[(round / 5) % WAVES.endlessBosses.length]);
     return buildWave(round, hpScale, boss, [0, 0, 0, 0, 0]);
   }
   return buildWave(round, hpScale, null, WAVES.table[round] ?? WAVES.endless);

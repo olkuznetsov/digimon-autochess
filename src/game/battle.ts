@@ -173,9 +173,10 @@ interface Tick {
 
 const add = (m: Map<Fighter, number>, f: Fighter, v: number) => m.set(f, (m.get(f) ?? 0) + v);
 
-/** Queue a hit; returns its damage (after the target's reduction). */
+/** Queue a hit; returns its damage (after the target's reduction — and a brooding Mother
+ *  Eater's guard). */
 function hit(t: Tick, src: Fighter, tgt: Fighter, raw: number, mult: number, ability: boolean): number {
-  const amount = raw * (1 - tgt.dmgReduction);
+  const amount = raw * (1 - tgt.dmgReduction) * (tgt.broodGuard ? BROOD_GUARD : 1);
   t.hits.push({ src, tgt, amount, mult, ability, ls: src.lifesteal });
   return amount;
 }
@@ -375,6 +376,55 @@ function resolve(fighters: Fighter[], t: Tick) {
   }
 }
 
+// ---------- the data-eaters' mechanics (Cyber Sleuth's story bosses) ----------
+
+/** the Eater: every DEVOUR_EVERY seconds it bites DEVOUR_SHARE of the max HP off the weakest of
+ *  the other side (wherever it stands, past shields and armour), heals as much and grows
+ *  DEVOUR_GROWTH stronger — protect the weak, or bring it down fast */
+const DEVOUR_EVERY = 5;
+const DEVOUR_SHARE = 0.12;
+const DEVOUR_GROWTH = 1.04;
+/** the Mother Eater: every BROOD_EVERY seconds an Eater Bit hatches next to her (up to
+ *  BROOD_MAX alive); while any lives she takes BROOD_GUARD of the damage — clear the brood */
+const BROOD_EVERY = 8;
+const BROOD_MAX = 2;
+const BROOD_GUARD = 0.6;
+/** where a Bit hatches around her: the first free cell, in a fixed order */
+const BROOD_SPOTS: [number, number][] = [[0, 1], [1, 0], [-1, 0], [1, 1], [-1, 1], [0, -1], [1, -1], [-1, -1]];
+
+function bossMechanic(fr: Fighter, fighters: Fighter[], dt: number, t: Tick) {
+  fr.mechT = (fr.mechT ?? 0) - dt;
+  if (fr.mechT > 1e-9) return;
+  if (fr.mech === "devour") {
+    fr.mechT += DEVOUR_EVERY;
+    let prey: Fighter | null = null;
+    for (const f of fighters) {
+      if (f.team === fr.team || f.hp <= 0) continue;
+      if (!prey || f.hp < prey.hp - 1e-9 || (f.hp <= prey.hp + 1e-9 && preferred(fr, f, prey))) prey = f;
+    }
+    if (!prey) return;
+    const bite = prey.maxHp * DEVOUR_SHARE;
+    t.hits.push({ src: fr, tgt: prey, amount: bite, mult: 1, ability: true, ls: 0 });
+    add(t.heals, fr, bite);
+    t.buffs.set(fr, (t.buffs.get(fr) ?? 1) * DEVOUR_GROWTH);
+    t.events?.push({ kind: "cast", col: fr.col, row: fr.row, attr: fr.attribute, ult: "heal", name: "Devour", stage: 5, form: fr.formId, team: fr.team, toCol: prey.col, toRow: prey.row });
+    return;
+  }
+  // brood
+  fr.mechT += BROOD_EVERY;
+  if (fighters.filter((f) => f.team === fr.team && f.hp > 0 && f.formId === "eaterbit").length >= BROOD_MAX) return;
+  const col0 = Math.round(fr.col);
+  const row0 = Math.round(fr.row);
+  const spot = BROOD_SPOTS.map(([dc, dr]) => [col0 + dc, row0 + (fr.team === "enemy" ? -dr : dr)] as [number, number]).find(
+    ([c, r]) => c >= 0 && c < COLS && r >= 0 && r < ROWS && !fighters.some((f) => f.hp > 0 && Math.abs(f.col - c) < 0.5 && Math.abs(f.row - r) < 0.5),
+  );
+  if (!spot) return;
+  fr.mechN = (fr.mechN ?? 0) + 1;
+  const bit = makeFighter("eaterbit", `${fr.uid}~${fr.mechN}`, fr.team, spot[0], spot[1], fr.mechScale ?? 1);
+  fighters.push(bit);
+  t.events?.push({ kind: "cast", col: fr.col, row: fr.row, attr: fr.attribute, ult: "buff", name: "Brood", stage: 5, form: fr.formId, team: fr.team, toCol: spot[0], toRow: spot[1] });
+}
+
 /** A final boss's second phase rises where the first fell (Lucemon Falldown Mode → Satan
  *  Mode): a fresh fighter, the same on every client, with the boss banner. */
 function reborn(f: Fighter, fighters: Fighter[], events?: CombatEvent[]) {
@@ -424,7 +474,11 @@ function preferred(fr: Fighter, a: Fighter, b: Fighter): boolean {
 export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent[]): void {
   const t: Tick = { hits: [], shields: new Map(), heals: new Map(), stuns: new Map(), buffs: new Map(), allyHeals: [], events };
   const moves: { f: Fighter; col: number; row: number }[] = [];
-  for (const fr of fighters) {
+  // a brooding Mother Eater is guarded while her Bits live (decided as the tick begins)
+  for (const f of fighters) if (f.mech === "brood") f.broodGuard = fighters.some((b) => b.team === f.team && b.hp > 0 && b.formId === "eaterbit");
+  // the list as the tick began: what hatches during it starts acting the next one
+  const acting = fighters.slice();
+  for (const fr of acting) {
     if (fr.hp <= 0) continue;
     if (fr.regen > 0) add(t.heals, fr, fr.maxHp * fr.regen * dt);
     if (fr.wounded) fr.wounded = Math.max(0, fr.wounded - dt);
@@ -445,6 +499,7 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
       fr.moving = false;
       continue;
     }
+    if (fr.mech) bossMechanic(fr, fighters, dt, t);
 
     // the nearest enemy; out of reach a clearly closer one takes over (no chasing one enemy
     // past another), in reach the unit sticks with its target
