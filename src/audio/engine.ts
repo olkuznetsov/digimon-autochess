@@ -143,10 +143,11 @@ if (session) {
     /* an older draft of the API: the silent loop below covers it */
   }
 }
-let silentLoop: HTMLAudioElement | null = null;
-function keepPlaybackSession() {
-  if (!ios || silentLoop || session?.type === "playback") return;
-  // half a second of 8 kHz 8-bit silence
+let silentUrl: string | null = null;
+/** Half a second of silence as a WAV (to start <audio> elements inside a tap). */
+export function silentWavUrl(): string {
+  if (silentUrl) return silentUrl;
+  // 8 kHz, 8-bit mono
   const samples = 4000;
   const buf = new ArrayBuffer(44 + samples);
   const v = new DataView(buf);
@@ -164,8 +165,15 @@ function keepPlaybackSession() {
   str(36, "data");
   v.setUint32(40, samples, true);
   new Uint8Array(buf, 44).fill(128);
+  silentUrl = URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+  return silentUrl;
+}
+
+let silentLoop: HTMLAudioElement | null = null;
+function keepPlaybackSession() {
+  if (!ios || silentLoop || session?.type === "playback") return;
   silentLoop = document.createElement("audio");
-  silentLoop.src = URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+  silentLoop.src = silentWavUrl();
   silentLoop.loop = true;
   silentLoop.setAttribute("playsinline", "");
   void silentLoop.play().catch(() => {

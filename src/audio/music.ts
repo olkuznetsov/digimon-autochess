@@ -1,271 +1,176 @@
 /**
- * Procedural synthwave soundtrack: pad chords, a driving bass, an echoing arp and
- * drums, generated live by a look-ahead step sequencer on the audio clock.
+ * The soundtrack: instrumentals Sasha made in Suno in the mood of Digimon Adventure, two
+ * versions of each theme taking turns, so a long session doesn't loop one track:
+ * - island: the main menu and planning (File Island);
+ * - battle: a fight (Digivolve!);
+ * - boss: a boss round (Black Gears);
+ * - final: the last boss, Lucemon (Fallen Angel);
+ * - victory: a run or a VS match won (Crest of Light), then back to the island.
  *
- * One song, several intensities: prep is filtered and sparse, battle opens up with
- * four-on-the-floor drums, boss rounds switch to a darker progression, and the
- * result screen breathes out. A heartbeat joins when the player's health is low.
- * Layers crossfade, so mode changes never cut a note.
+ * Two <audio> decks stream them (a decoded three-minute track would take ~60 MB) into the
+ * engine's music bus, so mute, the music volume and ducking all apply; every change of
+ * mood crossfades. iOS lets an element play from script only once a tap has played it:
+ * taps call music.sync() (the title screen's, then the game's capture listeners), which
+ * starts the theme and gives the idle deck a silent first play. A heartbeat joins a fight
+ * when the tamer's health runs low.
  */
-import {
-  audio,
-  isMusicOn,
-  isMuted,
-  isUnlocked,
-  mtof,
-  noise,
-  onAudioChange,
-  setMusicBrightness,
-  tone,
-  type Graph,
-} from "./engine";
+import { audio, isMusicOn, isMuted, isUnlocked, onAudioChange, setMusicBrightness, silentWavUrl, tone, type Graph } from "./engine";
 
-export type MusicMode = "prep" | "battle" | "boss" | "result";
+export type Theme = "island" | "battle" | "boss" | "final" | "victory";
 
-const BPM = 104;
-const STEP = 60 / BPM / 4; // one 16th note
-const BAR = STEP * 16;
-
-// [bass root, three pad notes voiced around middle C] (MIDI)
-const Am = [45, 57, 60, 64];
-const F = [41, 57, 60, 65];
-const C = [48, 55, 60, 64];
-const G = [43, 55, 59, 62];
-const Em = [40, 55, 59, 64];
-const Dm = [38, 57, 62, 65];
-const Bb = [46, 58, 62, 65];
-const Gm = [43, 55, 58, 62];
-const A = [45, 57, 61, 64];
-
-const CALM = [Am, F, C, G];
-const LIFT = [F, G, Em, Am];
-const BOSS = [Dm, Bb, Gm, A];
-
-const MIX: Record<MusicMode, { pad: number; bass: number; arp: number; drums: number; bright: number }> = {
-  prep: { pad: 1, bass: 0.7, arp: 0.8, drums: 0.6, bright: 2800 },
-  battle: { pad: 0.7, bass: 1, arp: 0.9, drums: 1, bright: 9000 },
-  boss: { pad: 0.85, bass: 1, arp: 0.7, drums: 1, bright: 7000 },
-  result: { pad: 1, bass: 0.3, arp: 0.45, drums: 0.2, bright: 2000 },
+const TRACKS: Record<Theme, string[]> = {
+  island: ["/music/file-island-1.mp3", "/music/file-island-2.mp3"],
+  battle: ["/music/digivolve-1.mp3", "/music/digivolve-2.mp3"],
+  boss: ["/music/black-gears-1.mp3", "/music/black-gears-2.mp3"],
+  final: ["/music/fallen-angel-1.mp3", "/music/fallen-angel-2.mp3"],
+  victory: ["/music/crest-of-light-1.mp3", "/music/crest-of-light-2.mp3"],
 };
+/** the tracks are mastered loud; the sound effects should sit on top */
+const LEVEL = 0.55;
+const FADE_IN = 0.8;
+const FADE_OUT = 1.2;
 
-interface Layers {
-  ctx: AudioContext;
-  pad: GainNode;
-  bass: GainNode;
-  arp: GainNode;
-  drums: GainNode;
+interface Deck {
+  el: HTMLAudioElement;
+  gain: GainNode;
 }
 
-let layers: Layers | null = null;
-let mode: MusicMode = "prep";
-let tension = false;
-let timer: ReturnType<typeof setInterval> | null = null;
-let nextTime = 0;
-let step = 0;
-let bar = 0;
-let chord = Am;
+let decks: Deck[] | null = null;
+/** elements a tap has played once (iOS lets those play from script later) */
+const primed = new WeakSet<HTMLAudioElement>();
+/** the deck playing the current theme */
+let active = 0;
+/** what the game wants */
+let theme: Theme = "island";
+/** what the active deck plays (null: the music is stopped) */
+let playing: Theme | null = null;
+/** which version of each theme comes next — a random start, then they alternate */
+const turn = Object.fromEntries((Object.keys(TRACKS) as Theme[]).map((t) => [t, Math.floor(Math.random() * 2)])) as Record<Theme, number>;
 
-function ensureLayers(g: Graph): Layers {
-  if (layers && layers.ctx === g.ctx) return layers;
-  const c = g.ctx;
-  const layer = () => {
-    const n = c.createGain();
-    n.gain.value = 0;
-    n.connect(g.music);
-    return n;
-  };
-  const arp = layer();
-  // dotted-8th echo, darkened on every repeat
-  const delay = c.createDelay(1);
-  delay.delayTime.value = STEP * 3;
-  const damp = c.createBiquadFilter();
-  damp.type = "lowpass";
-  damp.frequency.value = 2200;
-  const fb = c.createGain();
-  fb.gain.value = 0.34;
-  const wet = c.createGain();
-  wet.gain.value = 0.4;
-  arp.connect(delay);
-  delay.connect(damp).connect(fb).connect(delay);
-  damp.connect(wet).connect(g.music);
-  layers = { ctx: c, pad: layer(), bass: layer(), arp, drums: layer() };
-  return layers;
-}
-
-function applyMix(fade: number) {
-  const g = audio();
-  if (!g || !layers) return;
-  const m = MIX[mode];
-  const t = g.ctx.currentTime;
-  layers.pad.gain.setTargetAtTime(m.pad, t, fade / 3);
-  layers.bass.gain.setTargetAtTime(m.bass, t, fade / 3);
-  layers.arp.gain.setTargetAtTime(m.arp, t, fade / 3);
-  layers.drums.gain.setTargetAtTime(m.drums, t, fade / 3);
-  setMusicBrightness(m.bright, fade);
-}
-
-// ---------- voices ----------
-
-/** Sustained detuned-saw chord for one bar (attack, hold, release). */
-function pad(g: Graph, L: Layers, notes: number[], t: number) {
-  const c = g.ctx;
-  const out = c.createGain();
-  out.gain.setValueAtTime(0.0001, t);
-  out.gain.exponentialRampToValueAtTime(1, t + 0.4);
-  out.gain.setValueAtTime(1, t + BAR - 0.05);
-  out.gain.exponentialRampToValueAtTime(0.0001, t + BAR + 0.6);
-  const f = c.createBiquadFilter();
-  f.type = "lowpass";
-  f.frequency.value = mode === "prep" || mode === "result" ? 1100 : 1700;
-  f.Q.value = 0.6;
-  f.connect(out);
-  out.connect(L.pad);
-  const send = c.createGain();
-  send.gain.value = 0.5;
-  out.connect(send).connect(g.musicVerb);
-  for (const n of notes) {
-    for (const cents of [-8, 8]) {
-      const o = c.createOscillator();
-      o.type = "sawtooth";
-      o.frequency.value = mtof(n);
-      o.detune.value = cents;
-      const v = c.createGain();
-      v.gain.value = 0.022;
-      o.connect(v).connect(f);
-      o.start(t);
-      o.stop(t + BAR + 0.7);
-    }
-  }
-}
-
-/** Plucky resonant saw bass with a filter envelope. */
-function bassNote(g: Graph, L: Layers, midi: number, t: number, len: number) {
-  const c = g.ctx;
-  const o = c.createOscillator();
-  o.type = "sawtooth";
-  o.frequency.value = mtof(midi);
-  const f = c.createBiquadFilter();
-  f.type = "lowpass";
-  f.Q.value = 6;
-  f.frequency.setValueAtTime(1500, t);
-  f.frequency.exponentialRampToValueAtTime(260, t + 0.16);
-  const v = c.createGain();
-  v.gain.setValueAtTime(0.0001, t);
-  v.gain.exponentialRampToValueAtTime(0.13, t + 0.006);
-  v.gain.exponentialRampToValueAtTime(0.07, t + 0.12);
-  v.gain.exponentialRampToValueAtTime(0.0001, t + len);
-  o.connect(f).connect(v).connect(L.bass);
-  o.start(t);
-  o.stop(t + len + 0.05);
-}
-
-function kick(L: Layers, t: number, vol = 0.55) {
-  tone(150, 0.3, { vol, to: 42, glide: 0.1, time: t, out: L.drums });
-}
-function snare(g: Graph, L: Layers, t: number) {
-  noise(0.2, { freq: 1900, q: 0.7, vol: 0.22, time: t, out: L.drums, send: 0.5, sendTo: g.musicVerb });
-  tone(190, 0.09, { type: "triangle", vol: 0.1, time: t, out: L.drums });
-}
-function hat(L: Layers, t: number, open: boolean, vol = 0.05) {
-  noise(open ? 0.13 : 0.035, { filter: "highpass", freq: 7500, vol, time: t, out: L.drums });
-}
-function heartbeat(g: Graph, t: number) {
-  tone(62, 0.14, { vol: 0.5, to: 44, time: t, out: g.music });
-  tone(55, 0.12, { vol: 0.34, to: 40, time: t + 0.17, out: g.music });
-}
-
-// arp walks the chord tones an octave up; the last note reaches for the top
-const ARP = [0, 1, 2, 1, 0, 1, 2, 3];
-
-function scheduleStep(g: Graph, L: Layers, i: number, t: number) {
-  const busy = mode === "battle" || mode === "boss";
-  if (i === 0) {
-    const prog = mode === "boss" ? BOSS : Math.floor(bar / 8) % 2 === 0 ? CALM : LIFT;
-    chord = prog[bar % 4];
-    bar++;
-    pad(g, L, chord.slice(1), t);
-  }
-
-  // bass: driving octave 8ths in battle, long roots otherwise
-  if (busy) {
-    if (i % 2 === 0) bassNote(g, L, chord[0] + (i % 4 === 2 ? 12 : 0), t, STEP * 1.7);
-  } else if (i === 0 || i === 8) {
-    bassNote(g, L, chord[0], t, STEP * 7);
-  }
-
-  // arp: 16ths in battle, 8ths when calm
-  if (busy || i % 2 === 0) {
-    const k = ARP[(busy ? i : i / 2) % ARP.length];
-    const midi = k === 3 ? chord[1] + 24 : chord[1 + k] + 12;
-    tone(mtof(midi), STEP * 0.9, {
-      type: busy ? "square" : "triangle",
-      vol: busy ? 0.022 : 0.03,
-      lowpass: busy ? 3000 : 1800,
-      time: t,
-      out: L.arp,
+function ensureDecks(g: Graph): Deck[] {
+  if (decks) return decks;
+  decks = [0, 1].map(() => {
+    const el = new Audio();
+    el.preload = "auto";
+    el.setAttribute("playsinline", "");
+    const gain = g.ctx.createGain();
+    gain.gain.value = 0;
+    g.ctx.createMediaElementSource(el).connect(gain).connect(g.music);
+    const deck = { el, gain };
+    el.addEventListener("ended", () => {
+      if (decks?.[active] !== deck || !playing) return;
+      // a track ran out: the other version of the theme, or after a victory, the island
+      start(g, theme === "victory" ? "island" : theme);
     });
-  }
-
-  // drums
-  if (busy) {
-    if (i % 4 === 0) kick(L, t);
-    if (i === 4 || i === 12) snare(g, L, t);
-    if (i % 2 === 0) hat(L, t, i % 4 === 2);
-    else if (mode === "boss") hat(L, t, false, 0.025);
-    if (mode === "boss" && i === 14 && bar % 2 === 0) kick(L, t, 0.4);
-  } else if (mode === "prep") {
-    if (i === 0) kick(L, t, 0.35);
-    if (i % 4 === 2) hat(L, t, false, 0.03);
-  }
-
-  if (tension && (i === 0 || i === 8)) heartbeat(g, t);
+    return deck;
+  });
+  return decks;
 }
 
-function tick() {
-  const g = audio();
-  if (!g || g.ctx.state !== "running") return;
-  const L = ensureLayers(g);
-  const now = g.ctx.currentTime;
-  // first tick, or the main thread stalled / the tab was hidden: skip ahead rather
-  // than firing a burst of late notes
-  if (nextTime < now) nextTime = now + 0.06;
-  while (nextTime < now + 0.15) {
-    scheduleStep(g, L, step % 16, nextTime);
-    nextTime += STEP;
-    step++;
+/** the idle deck's first play, silent — inside a tap it lets the deck play later on iOS */
+function primeIdle(D: Deck[]) {
+  const idle = D[1 - active].el;
+  if (primed.has(idle) || !idle.paused) return;
+  idle.src = silentWavUrl();
+  void idle
+    .play()
+    .then(() => {
+      primed.add(idle);
+      idle.pause();
+    })
+    .catch(() => {});
+}
+
+function fade(g: Graph, d: Deck, to: number, seconds: number) {
+  const p = d.gain.gain;
+  const t = g.ctx.currentTime;
+  p.cancelScheduledValues(t);
+  p.setValueAtTime(p.value, t);
+  p.linearRampToValueAtTime(to, t + seconds);
+}
+
+/** Crossfade to the next version of a theme on the other deck. */
+function start(g: Graph, next: Theme) {
+  const D = ensureDecks(g);
+  const out = D[active];
+  if (playing) {
+    fade(g, out, 0, FADE_OUT);
+    setTimeout(() => {
+      if (D[active] !== out) out.el.pause();
+    }, FADE_OUT * 1000 + 60);
   }
+  active = 1 - active;
+  const d = D[active];
+  const list = TRACKS[next];
+  theme = next;
+  playing = next;
+  d.el.src = list[turn[next]++ % list.length];
+  fade(g, d, LEVEL, FADE_IN);
+  void d.el
+    .play()
+    .then(() => primed.add(d.el))
+    .catch(() => {
+      // not allowed yet (no tap since load, on iOS): the next tap's sync() tries again
+      if (D[active] === d && playing === next) playing = null;
+    });
+}
+
+function stop() {
+  if (!decks || !playing) return;
+  playing = null;
+  const g = audio();
+  const D = decks;
+  if (g) for (const d of D) fade(g, d, 0, 0.4);
+  setTimeout(() => {
+    if (!playing) for (const d of D) d.el.pause();
+  }, 450);
 }
 
 function sync() {
   const want = isMusicOn() && !isMuted() && isUnlocked();
-  if (want && !timer) {
-    const g = audio();
-    if (!g) return;
-    ensureLayers(g);
-    step = 0; // start on a downbeat
-    nextTime = 0;
-    applyMix(2.5);
-    timer = setInterval(tick, 25);
-    tick();
-  } else if (!want && timer) {
-    clearInterval(timer);
-    timer = null;
-    const g = audio();
-    if (g && layers) {
-      const t = g.ctx.currentTime;
-      for (const n of [layers.pad, layers.bass, layers.arp, layers.drums]) n.gain.setTargetAtTime(0, t, 0.15);
-    }
-  }
+  if (!want) return stop();
+  const g = audio();
+  if (!g) return;
+  // the tracks are mixed already: keep the bus's lowpass (made for the old synth) open
+  setMusicBrightness(20000, 0.3);
+  if (playing !== theme) start(g, theme);
+  if (decks) primeIdle(decks);
 }
 onAudioChange(sync);
 
+// a hidden tab mustn't keep streaming: the engine suspends its clock, this pauses the track
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (!decks || !playing) return;
+    const el = decks[active].el;
+    if (document.hidden) el.pause();
+    else void el.play().catch(() => {});
+  });
+}
+
+let beat: ReturnType<typeof setInterval> | null = null;
+function heartbeat() {
+  const g = audio();
+  if (!g || !playing || playing === "island" || playing === "victory") return;
+  const t = g.ctx.currentTime + 0.02;
+  tone(62, 0.14, { vol: 0.5, to: 44, time: t, out: g.music });
+  tone(55, 0.12, { vol: 0.34, to: 40, time: t + 0.17, out: g.music });
+}
+
 export const music = {
-  setMode(m: MusicMode) {
-    if (m === mode) return;
-    mode = m;
-    if (timer) applyMix(m === "battle" || m === "boss" ? 0.6 : 1.5);
+  /** start (or resume) what should be playing — call it from taps */
+  sync,
+  setTheme(t: Theme) {
+    if (t === theme) return;
+    theme = t;
+    sync();
   },
+  /** low health: a heartbeat under the fight */
   setTension(on: boolean) {
-    tension = on;
+    if (on && !beat) beat = setInterval(heartbeat, 860);
+    else if (!on && beat) {
+      clearInterval(beat);
+      beat = null;
+    }
   },
 };

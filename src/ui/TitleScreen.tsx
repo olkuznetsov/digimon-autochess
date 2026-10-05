@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { loadGis, prepareAccount, session, useAccount } from "../net/account";
 import { unlockAudio } from "../audio/engine";
+import { music } from "../audio/music";
 import { ICON, Icon } from "./kit";
 
 /**
  * Before the main menu: sign in with Google, or play as a guest. It runs before the game
  * is even loaded, so the account's partner and records are in place when the stores read
- * them; a tamer who signed in before goes straight through ("welcome back"). The tap that
- * starts also unlocks audio, so the menu's music can play on phones.
+ * them; a tamer who signed in before goes straight through ("welcome back"). Any tap here
+ * unlocks audio and starts the island theme — on a phone, music needs a tap to begin.
  */
 export function TitleScreen({ onStart }: { onStart: () => void }) {
   const status = useAccount((s) => s.status);
@@ -61,7 +62,13 @@ export function TitleScreen({ onStart }: { onStart: () => void }) {
   }, [status, phase]);
 
   return (
-    <div className="title-screen" onPointerDown={() => unlockAudio()}>
+    <div
+      className="title-screen"
+      onPointerDown={() => {
+        unlockAudio();
+        music.sync();
+      }}
+    >
       <div className="game-logo ts-logo">
         <span className="jp">デジモン オートチェス</span>
         <b className="gl-top">DIGIMON</b>
@@ -78,6 +85,7 @@ export function TitleScreen({ onStart }: { onStart: () => void }) {
               className="sbtn ts-guest"
               onClick={() => {
                 unlockAudio();
+                music.sync();
                 start();
               }}
             >
