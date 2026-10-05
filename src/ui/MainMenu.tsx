@@ -4,6 +4,7 @@ import { useGame } from "../game/store";
 import { useProfile } from "../profile/store";
 import {
   CRESTS,
+  MAX_PARTNERS,
   PARTNER_STARTERS,
   STAGE_LEVELS,
   STAR_LEVELS,
@@ -19,6 +20,7 @@ import { playerName } from "../net/leaderboard";
 import { useAccount } from "../net/account";
 import { AccountBox } from "./AccountBox";
 import { EvoCutIn } from "./Moments";
+import { Digivice } from "./Digivice";
 import { Portrait } from "./Portrait";
 import { ATTR_PATH, CREST_ICON, ELEMENT_PATH, ICON, Icon, STAGE_JP, orList } from "./kit";
 import { sfx } from "../audio/sfx";
@@ -41,6 +43,8 @@ function xpForLevel(level: number): number {
 function TamerBadge({ onAvatar }: { onAvatar: () => void }) {
   const xp = useProfile((s) => s.xp);
   const partner = useProfile((s) => s.partner);
+  const avatar = useProfile((s) => s.avatar);
+  const face = avatar ?? partner?.formId;
   const { level, into, need } = levelFor(xp);
   const [name, setName] = useState(playerName());
   const [editing, setEditing] = useState(false);
@@ -81,7 +85,7 @@ function TamerBadge({ onAvatar }: { onAvatar: () => void }) {
           />
         </svg>
         <span className="tamer-face">
-          {partner ? <Portrait formId={partner.formId} className="tamer-portrait" /> : <Icon d={CREST_ICON.hope} size={34} />}
+          {face ? <Portrait formId={face} className="tamer-portrait" /> : <Icon d={CREST_ICON.hope} size={34} />}
         </span>
         <span className="rib orange tamer-level">
           <span className="in">Lv.{level}</span>
@@ -115,7 +119,7 @@ function TamerBadge({ onAvatar }: { onAvatar: () => void }) {
 }
 
 /** Left: the tamer file — records and Adventure's crests (a drawer from the avatar on phones). */
-function TamerFile() {
+function TamerFile({ onDigivice }: { onDigivice: () => void }) {
   const stats = useProfile((s) => s.stats);
   const crests = useProfile((s) => s.crests);
   const fav = favoriteForm(stats);
@@ -168,6 +172,9 @@ function TamerFile() {
         <span>Digimon raised</span>
         <b>{stats.raised.length}</b>
       </div>
+      <button className="tf-digivice" onClick={onDigivice}>
+        <Icon d={ICON.digivice} size={16} width={2.4} /> PARTNERS &amp; AVATAR <span className="jp">デジヴァイス</span>
+      </button>
       <div className="tf-crests-head">
         <span>CRESTS · 紋章</span>
         <b>
@@ -195,14 +202,16 @@ function TamerFile() {
 }
 
 /** Bottom right: who the partner is, where it can grow and when. */
-function PartnerCard({ onEvolve }: { onEvolve: () => void }) {
+function PartnerCard({ onEvolve, onDigivice }: { onEvolve: () => void; onDigivice: () => void }) {
   const partner = useProfile((s) => s.partner);
-  const xp = useProfile((s) => s.xp);
+  const count = useProfile((s) => 1 + s.others.length);
   const stats = useProfile((s) => s.stats);
   const options = useProfile((s) => s.evolutionOptions)();
   const starUp = useProfile((s) => s.starUpPartner);
   if (!partner) return null;
   const form = FORMS[partner.formId];
+  // a partner grows with its bond: the XP earned at the tamer's side
+  const xp = partner.xp ?? 0;
   const level = levelFor(xp).level;
   const canStar = form.stage >= 5 && partner.star < partnerStarCap(level);
   const next = nextGrowthLevel(form.stage, partner.star);
@@ -220,7 +229,9 @@ function PartnerCard({ onEvolve }: { onEvolve: () => void }) {
             PARTNER <span className="jp">パートナー</span>
           </span>
         </h2>
-        <span className="pc-hint">Tap it to pet it</span>
+        <button className="pc-switch" onClick={onDigivice} title="Your partners and avatar">
+          <Icon d={ICON.digivice} size={14} width={2.4} /> {count}/{MAX_PARTNERS}
+        </button>
       </div>
       <div className="pc-name">
         <b>
@@ -228,7 +239,7 @@ function PartnerCard({ onEvolve }: { onEvolve: () => void }) {
           {partner.star > 1 && <span className="pc-stars"> {"★".repeat(partner.star)}</span>}
         </b>
         <span className="pc-stage">
-          {STAGE_NAME[form.stage].toUpperCase()} · {STAGE_JP[form.stage]}
+          {STAGE_NAME[form.stage].toUpperCase()} · {STAGE_JP[form.stage]} · BOND Lv.{level}
         </span>
       </div>
       <div className="pc-chips">
@@ -422,8 +433,8 @@ const EGG_SPOTS: [string, string][] = [
 ];
 
 /** First visit: Primary Village — pick a baby to raise, then hatch it. */
-function PartnerChoice() {
-  const choose = useProfile((s) => s.choosePartner);
+function PartnerChoice({ extra, onDone }: { extra?: boolean; onDone?: () => void }) {
+  const choose = useProfile((s) => (extra ? s.hatchPartner : s.choosePartner));
   const [pick, setPick] = useState<string>(PARTNER_STARTERS[0]);
   const form = FORMS[pick];
   return (
@@ -433,10 +444,14 @@ function PartnerChoice() {
           <span className="jp">はじまりの町</span> PRIMARY VILLAGE
         </span>
         <h1>
-          <span className="v-small">CHOOSE YOUR</span>
+          <span className="v-small">{extra ? "A NEW" : "CHOOSE YOUR"}</span>
           <span className="v-big">PARTNER</span>
         </h1>
-        <p className="v-sub">Every Digimon starts as a baby. Yours grows as your tamer level rises — and you choose who it becomes.</p>
+        <p className="v-sub">
+          {extra
+            ? "It hatches at your side and grows on its own — twice as fast until it reaches your tamer level. Your other partners wait in the Digivice."
+            : "Every Digimon starts as a baby. Yours grows as you play — and you choose who it becomes."}
+        </p>
       </div>
       <div className="village-stage">
         <span className="v-cushion" />
@@ -473,6 +488,7 @@ function PartnerChoice() {
         onClick={() => {
           sfx.evolve();
           choose(pick);
+          onDone?.();
         }}
       >
         <span className="sheen" />
@@ -480,6 +496,11 @@ function PartnerChoice() {
           <b>HATCH {form.name.toUpperCase()}</b> <span className="jp">孵化</span>
         </span>
       </button>
+      {extra && (
+        <button className="v-cancel" onClick={onDone}>
+          Not now
+        </button>
+      )}
       <p className="v-note">Cosmetic only — your partner never changes the battles.</p>
     </div>
   );
@@ -581,22 +602,42 @@ export function MainMenu() {
   const [panel, setPanel] = useState<Panel | null>(null);
   // phones: the tamer file slides in from the avatar
   const [card, setCard] = useState(false);
+  const [digivice, setDigivice] = useState(false);
+  const [hatching, setHatching] = useState(false);
+  const openDigivice = () => {
+    sfx.click();
+    setCard(false);
+    setDigivice(true);
+  };
   return (
     <div className={`menu${card ? " card-open" : ""}`} onClick={() => card && setCard(false)}>
       <TamerBadge
         onAvatar={() => {
+          // a phone opens the tamer file (the Digivice is a tap away in it); wider screens
+          // show the file already, so the avatar opens the Digivice
+          if (!matchMedia("(max-width: 640px)").matches) return openDigivice();
           sfx.click();
           setCard((c) => !c);
         }}
       />
-      <TamerFile />
+      <TamerFile onDigivice={openDigivice} />
       <div className="menu-place">
         <Icon d={ICON.pin} size={16} width={2.6} /> FILE ISLAND <span className="jp">ファイル島</span>
       </div>
       <MenuCorner onPanel={setPanel} />
-      <PartnerCard onEvolve={() => setEvolving(true)} />
+      <PartnerCard onEvolve={() => setEvolving(true)} onDigivice={openDigivice} />
       <ModeButtons />
       {!partner && <PartnerChoice />}
+      {digivice && (
+        <Digivice
+          onClose={() => setDigivice(false)}
+          onHatch={() => {
+            setDigivice(false);
+            setHatching(true);
+          }}
+        />
+      )}
+      {hatching && <PartnerChoice extra onDone={() => setHatching(false)} />}
       {evolving && <PartnerEvolution onClose={() => setEvolving(false)} />}
       <GrowthBanner />
       <Suspense fallback={null}>

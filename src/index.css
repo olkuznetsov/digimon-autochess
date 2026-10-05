@@ -5930,3 +5930,257 @@ html, body {
     linear-gradient(180deg, rgba(10, 20, 64, 0.25), rgba(10, 16, 48, 0.6)),
     #14205a url(/art/sea-day.webp) 74% center / cover no-repeat;
 }
+
+/* ---------- the Digivice: partners and the avatar ---------- */
+.pc-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1.5px solid rgba(47, 123, 255, 0.45);
+  border-radius: 999px;
+  background: rgba(47, 123, 255, 0.1);
+  color: #2f5fd0;
+  font-family: var(--font-display);
+  font-size: 12px;
+  cursor: pointer;
+}
+.pc-switch:hover {
+  background: rgba(47, 123, 255, 0.18);
+}
+.tf-digivice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 12px;
+  background: var(--grad-blue);
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(47, 123, 255, 0.35);
+}
+.tf-digivice .jp {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 10px;
+  opacity: 0.85;
+}
+.dv-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(10, 20, 60, 0.45);
+}
+.dv {
+  width: min(640px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 14px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  animation: rr-card 0.3s ease-out both;
+}
+.dv-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dv-close {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(27, 35, 80, 0.08);
+  color: var(--ink);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.dv-sub {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+.dv-sub b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--ink);
+}
+.dv-sub span,
+.dv-note {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #6a7396;
+}
+.dv-note {
+  margin: 0;
+}
+.dv-partners {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 8px;
+}
+.dv-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 6px 8px;
+  border: 1.5px solid rgba(27, 35, 80, 0.12);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--ink);
+  font-family: var(--font-body);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    transform 0.12s,
+    box-shadow 0.12s;
+}
+button.dv-slot:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(20, 40, 90, 0.18);
+}
+.dv-slot.active {
+  cursor: default;
+  border-color: var(--orange);
+  box-shadow:
+    0 0 0 2px rgba(255, 122, 26, 0.35),
+    0 6px 16px rgba(255, 122, 26, 0.2);
+}
+.dv-tag {
+  position: absolute;
+  top: -8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--grad-orange);
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 9.5px;
+  white-space: nowrap;
+}
+.dv-face {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+}
+.dv-name {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.2;
+}
+.dv-stars {
+  color: #ffb800;
+}
+.dv-stage {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #4a5378;
+}
+.dv-rec {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #8a91ad;
+}
+.dv-call {
+  margin-top: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--grad-blue);
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 10.5px;
+}
+.dv-new {
+  border-style: dashed;
+  border-color: rgba(255, 122, 26, 0.6);
+  background: rgba(255, 245, 235, 0.9);
+  justify-content: center;
+}
+.dv-egg {
+  width: 44px;
+  height: 56px;
+  margin-bottom: 4px;
+  border: 2px solid #ffffff;
+  border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%;
+  background:
+    radial-gradient(circle at 28% 30%, #ff9ec8 0 5px, transparent 6px),
+    radial-gradient(circle at 74% 52%, #7cc6ff 0 5px, transparent 6px),
+    radial-gradient(circle at 50% 30%, #ffffff 0%, #f6efe6 100%);
+  box-shadow: 0 5px 10px rgba(150, 60, 110, 0.25);
+}
+.dv-avatars {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 6px;
+  max-height: 210px;
+  overflow-y: auto;
+  padding: 2px;
+}
+.dv-av {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  cursor: pointer;
+}
+.dv-av-face {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+}
+.dv-av.on .dv-av-face {
+  box-shadow:
+    0 0 0 3px var(--orange),
+    0 0 12px rgba(255, 122, 26, 0.6);
+}
+.dv-av.partner span {
+  position: absolute;
+  bottom: 2px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: rgba(27, 35, 80, 0.75);
+  color: #ffffff;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+.v-cancel {
+  margin-top: 10px;
+  padding: 6px 18px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 13px;
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .dv {
+    padding: 12px 12px 14px;
+  }
+  .dv-partners {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -10,6 +10,8 @@ import type { Element } from "../game/types";
 
 /** The five Fresh a new tamer picks a partner from. */
 export const PARTNER_STARTERS = ["botamon", "kuramon", "pabumon", "poyomon", "punimon"];
+/** How many partners the Digivice holds (the one at the tamer's side and the rest). */
+export const MAX_PARTNERS = 6;
 
 /** Tamer XP from level L to L + 1: 100, 150, 200… (level 3 in a run or two, Mega at 20). */
 export const xpToNext = (level: number) => 100 + 50 * (level - 1);
@@ -65,12 +67,31 @@ export interface Partner {
   since: number;
   /** the forms it has been, oldest first */
   history: string[];
+  /** bond: the XP it has earned at the tamer's side — its level gates its growth (a save
+   *  from before the Digivice held more partners: the tamer's XP) */
+  xp?: number;
+  /** runs played with it, the furthest round, bosses beaten */
+  runs?: number;
+  best?: number;
+  bosses?: number;
 }
+
+/** A partner's own level, from its bond XP. */
+export const bondLevel = (p: Partner) => levelFor(p.xp ?? 0).level;
+/** Bond XP for what the tamer earns: a partner below the tamer's level learns twice as fast
+ *  (an experienced tamer raises a new one quicker). */
+export const bondGain = (p: Partner, tamerXp: number, amount: number) =>
+  bondLevel(p) < levelFor(tamerXp).level ? amount * 2 : amount;
 
 export interface Profile {
   v: 1;
   xp: number;
+  /** the partner at the tamer's side */
   partner: Partner | null;
+  /** the others, resting in the Digivice */
+  others: Partner[];
+  /** a favourite Digimon shown as the tamer's avatar (null: the partner) */
+  avatar: string | null;
   stats: TamerStats;
   /** crest ids earned */
   crests: string[];
@@ -81,6 +102,8 @@ export function newProfile(): Profile {
     v: 1,
     xp: 0,
     partner: null,
+    others: [],
+    avatar: null,
     stats: {
       runs: 0,
       runsWon: 0,
@@ -133,7 +156,8 @@ export interface CrestDef {
   desc: string;
   earned: (p: Profile) => boolean;
 }
-const partnerStage = (p: Profile) => (p.partner ? FORMS[p.partner.formId]?.stage ?? 1 : 0);
+/** the most grown of the tamer's partners */
+const partnerStage = (p: Profile) => Math.max(0, ...[p.partner, ...p.others].map((x) => (x ? FORMS[x.formId]?.stage ?? 1 : 0)));
 export const CRESTS: CrestDef[] = [
   { id: "courage", name: "Courage", color: "#ff9b3d", desc: "Win a solo run", earned: (p) => p.stats.runsWon >= 1 },
   { id: "friendship", name: "Friendship", color: "#4da6ff", desc: "Finish a VS match", earned: (p) => p.stats.vsMatches >= 1 },

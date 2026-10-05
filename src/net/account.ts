@@ -17,6 +17,9 @@ const BASE = `https://${WORKER_HOST}`;
 const SESSION_KEY = "dac-session";
 /** the account version this device last matched */
 const SYNC_KEY = "dac-sync-at";
+/** the layout of what's synced: the worker refuses saves from a game older than the last
+ *  one to save (2: partners in the Digivice and the avatar joined the profile) */
+const DATA_SCHEMA = 2;
 /** what travels with the account (device preferences, like graphics quality, stay put) */
 const SYNCED = ["dac-profile-v1", "dac-save-v3", "dac-run-v1", "dac-name", "dac-best-round", "dac-onboarded"];
 
@@ -93,7 +96,7 @@ async function upload(force = false, keepalive = false): Promise<void> {
   const data = snapshot();
   const text = JSON.stringify(data);
   if (!force && text === lastSent) return;
-  const res = await api("/account/data", { method: "PUT", body: JSON.stringify({ data, base: syncedAt(), force }), keepalive });
+  const res = await api("/account/data", { method: "PUT", body: JSON.stringify({ data, base: syncedAt(), force, schema: DATA_SCHEMA }), keepalive });
   if (res.ok) {
     lastSent = text;
     localStorage.setItem(SYNC_KEY, String(((await res.json()) as { updatedAt: number }).updatedAt));
@@ -103,6 +106,9 @@ async function upload(force = false, keepalive = false): Promise<void> {
     adopt(r.data, r.updatedAt);
   } else if (res.status === 401) {
     signOut();
+  } else if (res.status === 426) {
+    // a newer game saved this tamer: this tab is out of date
+    useAccount.setState({ error: "A newer version of the game is out — reload to keep syncing" });
   }
 }
 

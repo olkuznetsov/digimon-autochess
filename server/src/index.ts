@@ -352,8 +352,8 @@ const MAX_ACCOUNT_DATA = 256 * 1024;
  * - POST /account/google {credential}: Google's ID token in, a session token out, with the
  *   account's data (null for a new account);
  * - GET /account/me: the account and its data;
- * - PUT /account/data {data, base, force?}: saves unless another device saved since `base`
- *   (409 with what's stored);
+ * - PUT /account/data {data, base, force?, schema?}: saves unless another device saved since
+ *   `base` (409 with what's stored), or a newer game saved last (426: this one is outdated);
  * - DELETE /account: erases it.
  */
 async function accountRoute(request: Request, env: Env, url: URL): Promise<Response> {
@@ -391,15 +391,16 @@ async function accountRoute(request: Request, env: Env, url: URL): Promise<Respo
   if (url.pathname === "/account/data" && request.method === "PUT") {
     const text = await request.text();
     if (text.length > MAX_ACCOUNT_DATA) return json({ error: "too big" }, 413);
-    let body: { data?: unknown; base?: unknown; force?: unknown };
+    let body: { data?: unknown; base?: unknown; force?: unknown; schema?: unknown };
     try {
       body = JSON.parse(text);
     } catch {
       return json({ error: "bad json" }, 400);
     }
     if (!body?.data || typeof body.data !== "object") return json({ error: "no data" }, 400);
-    const r = await stub.save(JSON.stringify(body.data), Number(body.base) || 0, body.force === true);
+    const r = await stub.save(JSON.stringify(body.data), Number(body.base) || 0, body.force === true, Math.max(1, Math.floor(Number(body.schema) || 1)));
     if (r.ok) return json({ updatedAt: r.updatedAt });
+    if (r.outdated) return json({ error: "a newer version of the game saved this tamer" }, 426);
     return r.updatedAt
       ? json({ error: "newer on the server", updatedAt: r.updatedAt, data: r.data ? JSON.parse(r.data) : null }, 409)
       : json({ error: "no such account" }, 401);
