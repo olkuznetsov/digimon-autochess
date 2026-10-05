@@ -374,9 +374,13 @@ export function SceneLighting() {
 }
 
 /** Bloom (HDR only), tone mapping and vignette — the game's post chain. */
+/** phones: no MSAA on the HDR buffers — at 2× pixel density it's tens of MB of GPU memory
+ *  for edges the density already smooths */
+const COARSE = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
+
 export function ScenePost({ low = false, day = false }: { low?: boolean; day?: boolean }) {
   return (
-    <EffectComposer multisampling={low ? 0 : 4}>
+    <EffectComposer multisampling={low || COARSE ? 0 : 4}>
       {/* bloom reads the HDR buffer: only emissive and effects (> 1.0) glow, not lit fur
           (by day not the painted sky or the sand either: their whites are 1.0) */}
       <Bloom intensity={0.85} luminanceThreshold={day ? 1.05 : 0.9} luminanceSmoothing={0.3} mipmapBlur />

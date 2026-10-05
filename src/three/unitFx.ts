@@ -64,6 +64,9 @@ if (uDissolve > 0.001) {
 const FRAG_ADD = /* glsl */ `
 #include <opaque_fragment>
 gl_FragColor.rgb += uEdgeColor * fxGlow * 4.0 + uFlashColor * uFlash;
+// a ripped model can carry a degenerate normal; a NaN pixel would spread through the
+// bloom's blur over the whole frame (a black blink) — GPU min/max turn it into a number
+gl_FragColor = clamp(gl_FragColor, 0.0, 32.0);
 `;
 
 /** Clone a material and inject the dissolve + flash effects. */

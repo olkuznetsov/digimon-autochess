@@ -3,7 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { useGLTF, useAnimations } from "@react-three/drei";
 import { SkeletonUtils } from "three-stdlib";
 import * as THREE from "three";
-import { TARGET_HEIGHT, type ModelTweak } from "./models";
+import { TARGET_HEIGHT, type ModelTweak, releaseModel, retainModel } from "./models";
 import type { UnitDrive } from "./unitDrive";
 import { withUnitFx, type UnitFxUniforms } from "./unitFx";
 import { juice } from "./juice";
@@ -65,12 +65,20 @@ export function CreatureModel({ url, tweak, drive, color, spawnOnMount, onDissol
     return { cloned: c, fx: uniforms };
   }, [scene]);
 
+  // the model cache keeps what's on screen and releases the rest (models.ts)
+  useEffect(() => {
+    retainModel(url, scene);
+    return () => releaseModel(url);
+  }, [url, scene]);
+
   useEffect(
     () => () => {
       cloned.traverse((o) => {
         const mesh = o as THREE.Mesh;
         if (!mesh.isMesh) return;
         for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) m.dispose();
+        // each clone has its own skeleton, and with it a bone texture on the GPU
+        (o as THREE.SkinnedMesh).skeleton?.dispose();
       });
     },
     [cloned],

@@ -1,6 +1,8 @@
 import { useGLTF } from "@react-three/drei";
+import * as THREE from "three";
 import { ALL_FORM_IDS, FORMS } from "../game/creatures";
 import { useGame } from "../game/store";
+import { useProfile } from "../profile/store";
 import { makeEnemyWave } from "../game/tuning";
 import { MODEL_HASH } from "./model-manifest";
 
@@ -36,6 +38,19 @@ export function tweakFor(formId: string): ModelTweak | undefined {
   return MODEL_TWEAKS[formId];
 }
 
+// memory bookkeeping (used from the very first preloads below; see "keeping memory bounded")
+const COARSE = typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
+const CAP = COARSE ? 36 : 96;
+/** loaded (preloaded or shown) model URLs, with when they were last needed */
+const loaded = new Map<string, number>();
+/** the cached originals of models that have been on screen (their GPU data to free) */
+const originals = new Map<string, THREE.Object3D>();
+/** mounted instances per model */
+const users = new Map<string, number>();
+const formOfUrl = new Map<string, string>(Object.entries(MODEL_PATHS).map(([id, url]) => [url!, id]));
+
+const touch = (url: string) => loaded.set(url, performance.now());
+
 // With ~300 forms, fetching every model is far too much for everyone (~130 MB). Up front
 // (the loading screen waits for these): the babies a new run starts with, and whatever a
 // restored run has on its board, bench and shop. After that the background only fetches
@@ -51,6 +66,7 @@ const queued = new Set<string>();
     if (!MODEL_PATHS[id]) continue;
     queued.add(id);
     useGLTF.preload(MODEL_PATHS[id]!);
+    loaded.set(MODEL_PATHS[id]!, 0);
   }
 }
 /** A form's next two stages: what its merges can turn into soon. */
@@ -72,11 +88,103 @@ export function preloadForms(ids: Iterable<string>) {
   if (pumping || !pending.length) return;
   pumping = true;
   const next = () => {
-    for (const id of pending.splice(0, 3)) useGLTF.preload(MODEL_PATHS[id]!);
+    for (const id of pending.splice(0, 3)) {
+      useGLTF.preload(MODEL_PATHS[id]!);
+      touch(MODEL_PATHS[id]!);
+    }
+    scheduleTrim();
     if (pending.length) setTimeout(() => idle(next), 350);
     else pumping = false;
   };
   idle(next);
+}
+
+// ---------- keeping memory bounded ----------
+// A long endless run on a phone touched hundreds of models and kept every one: iOS answers
+// that memory pressure by dropping the WebGL context, and the screen blinks black while
+// three.js restores it. So models off screen — not on the board, the bench, the shop, the
+// next wave, a VS board or the menu's partner — are released, oldest first, once more than
+// CAP are loaded (fetched again from the HTTP cache if they come back).
+/** CreatureModel: this model is on screen */
+export function retainModel(url: string, scene: THREE.Object3D) {
+  originals.set(url, scene);
+  users.set(url, (users.get(url) ?? 0) + 1);
+  touch(url);
+}
+
+/** CreatureModel: one fewer instance of this model on screen */
+export function releaseModel(url: string) {
+  users.set(url, Math.max(0, (users.get(url) ?? 1) - 1));
+  touch(url);
+  scheduleTrim();
+}
+
+let trimTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleTrim() {
+  if (trimTimer || loaded.size <= CAP) return;
+  trimTimer = setTimeout(() => {
+    trimTimer = null;
+    trim();
+  }, 1500);
+}
+
+function disposeScene(root: THREE.Object3D) {
+  const seen = new Set<unknown>();
+  root.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    if (!seen.has(mesh.geometry)) {
+      seen.add(mesh.geometry);
+      mesh.geometry.dispose();
+    }
+    for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+      if (seen.has(m)) continue;
+      seen.add(m);
+      for (const v of Object.values(m)) {
+        if (v instanceof THREE.Texture && !seen.has(v)) {
+          seen.add(v);
+          v.dispose();
+        }
+      }
+      m.dispose();
+    }
+  });
+}
+
+/** model URLs the game shows now or about to */
+function neededNow(): Set<string> {
+  const s = useGame.getState();
+  const ids = new Set<string>(s.shop.filter(Boolean));
+  for (const u of s.units) {
+    ids.add(u.formId);
+    for (const n of nextTwo(u.formId)) ids.add(n);
+  }
+  if (s.pvp) for (const board of Object.values(s.pvp.boards)) for (const u of board) ids.add(u.formId);
+  else for (const f of makeEnemyWave(s.round, s.runSeed)) ids.add(f.formId);
+  const partner = useProfile.getState().partner?.formId;
+  if (partner) ids.add(partner);
+  const urls = new Set<string>();
+  for (const id of ids) if (MODEL_PATHS[id]) urls.add(MODEL_PATHS[id]!);
+  return urls;
+}
+
+function trim() {
+  if (loaded.size <= CAP) return;
+  const keep = neededNow();
+  const idle = [...loaded.keys()]
+    .filter((u) => !users.get(u) && !keep.has(u))
+    .sort((a, b) => (loaded.get(a) ?? 0) - (loaded.get(b) ?? 0));
+  while (loaded.size > CAP && idle.length) {
+    const url = idle.shift()!;
+    const scene = originals.get(url);
+    if (scene) disposeScene(scene);
+    originals.delete(url);
+    users.delete(url);
+    loaded.delete(url);
+    useGLTF.clear(url);
+    const id = formOfUrl.get(url);
+    if (id) queued.delete(id);
+  }
 }
 
 let restQueued = false;
@@ -99,3 +207,21 @@ export function preloadRemainingModels() {
       preloadForms(relevant(s));
   });
 }
+
+if (import.meta.env.DEV)
+  Object.assign(window, {
+    __models: () => {
+      const keep = neededNow();
+      return {
+        cap: CAP,
+        loaded: loaded.size,
+        onScreen: [...users.values()].filter(Boolean).length,
+        originals: originals.size,
+        keep: keep.size,
+        idle: [...loaded.keys()].filter((u) => !users.get(u) && !keep.has(u)).length,
+        trimPending: !!trimTimer,
+      };
+    },
+    /** soak test: fetch n random models, as a long run would */
+    __soakModels: (n: number) => preloadForms([...ALL_FORM_IDS].sort(() => Math.random() - 0.5).slice(0, n)),
+  });
