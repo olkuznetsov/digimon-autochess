@@ -119,6 +119,9 @@ Design choices worth a look:
   other fights, while a match already running when an update lands finishes on the rules it started with.
 - **A test channel for new rules.** A build with `VITE_CHANNEL=v3` talks to its own worker (its own lobbies,
   queue and leaderboard), so a rules overhaul like the tiers was played on a separate address before it went live.
+- **Blows land on the animation.** An attack winds up before its blow lands (a share of the attack interval) and a
+  ranged shot flies before it hits, in the sim itself — so the renderer starts the swing with the attack, times the
+  clip's contact frame to the blow and flies the shot for exactly as long: numbers and flashes come with the impact.
 - **Cosmetics never touch the sim.** Hit-stop, slow motion and 2× speed only change *when* fixed steps run in
   real time (`src/three/juice.ts`), so replays and PvP results stay identical.
 - **No per-tick React renders for units.** Each unit reads its fighter state in `useFrame` through a small mutable

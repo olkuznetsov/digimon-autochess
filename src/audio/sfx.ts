@@ -119,6 +119,8 @@ export function battleSfx(e: CombatEvent) {
     if (allow("death", 140)) deletion();
     return;
   }
+  // a shot leaving: its hit sounds when it lands
+  if (e.kind === "shot") return;
   // Wind's dodge: a whoosh; Fire's burn: a soft crackle
   if (e.tag === "miss") {
     if (allow("miss", 140)) noise(0.06, { filter: "highpass", freq: 2600, vol: 0.05 });

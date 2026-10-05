@@ -322,7 +322,11 @@ function BattleUnit({ uid }: { uid: string }) {
     d.cooldown = f.cooldown;
     d.attackInterval = 1 / f.attackSpeed;
     d.engaged = !!target && !f.moving;
-    if (f.cooldown > prev.current.cooldown + 0.01) d.attackKey++;
+    // an attack starts (its interval restarts): the swing begins, its blow lands a wind-up later
+    if (f.cooldown > prev.current.cooldown + 0.01) {
+      d.windup = f.swing ?? d.windup;
+      d.attackKey++;
+    }
     d.castKey = f.castKey;
     const lost = prev.current.hp - f.hp;
     if (lost > 0.5) {

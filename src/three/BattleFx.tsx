@@ -7,6 +7,7 @@ import type { Element } from "../game/types";
 import { cellToWorld } from "../game/board";
 import { juice, addTrauma, hitStop, slowMo, screenFlash } from "./juice";
 import { useSettings } from "../settings";
+import { SHOT_FLIGHT } from "../game/battle";
 
 /** Effects run on the juice clock: they freeze in hit-stop, slow in slow-mo and
  *  keep playing after the battle ends (the final blow). */
@@ -116,7 +117,11 @@ const formOfUid = (uid: string | undefined): string | undefined => {
 
 // ---------- projectile: a glowing streak with a short trail ----------
 
-const SHOT_DUR = 0.2;
+/** the sim's flight: a shot leaves at the swing's contact and lands with its hit */
+const SHOT_DUR = SHOT_FLIGHT;
+/** an Electric attacker's bolt crackles at once — no shot flies first */
+const strikesAtOnce = (fx: Fx) => lookOf(formOfUid(fx.src))?.el === "Electric";
+
 function Shot({ fx }: { fx: Fx }) {
   const element = useMemo(() => lookOf(formOfUid(fx.src)), [fx.src]);
   if (element?.el === "Electric") return <Bolt fx={fx} look={element.look} />;
@@ -1078,9 +1083,12 @@ export function BattleFx() {
           <TagSparksM key={f.id} fx={f} />
         ) : f.kind === "hit" ? (
           <group key={f.id}>
-            {f.ranged && <ShotM fx={f} />}
+            {/* a shot flew in since its launch (kind "shot"); Electric strikes at once */}
+            {f.ranged && !f.ability && strikesAtOnce(f) && <ShotM fx={f} />}
             <ImpactM fx={f} />
           </group>
+        ) : f.kind === "shot" ? (
+          <ShotM key={f.id} fx={f} />
         ) : f.kind === "cast" ? (
           <CastFx key={f.id} fx={f} />
         ) : (

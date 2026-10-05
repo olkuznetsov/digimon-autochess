@@ -13,9 +13,11 @@ export interface UnitDrive {
   /** yaw the unit should face (radians, 0 = +z) */
   yaw: number;
   moving: boolean;
-  /** seconds until the next attack (battle) and the attack interval — for swing anticipation */
+  /** seconds until the next attack (battle) and the attack interval */
   cooldown: number;
   attackInterval: number;
+  /** the attack just started: seconds until its blow lands — the swing's contact frame */
+  windup: number;
   /** stationary next to a live target, so an attack is coming */
   engaged: boolean;
   attackKey: number;
@@ -44,6 +46,7 @@ export function newDrive(x = 0, z = 0, yaw = 0): UnitDrive {
     moving: false,
     cooldown: 0,
     attackInterval: 1,
+    windup: 0.25,
     engaged: false,
     attackKey: 0,
     castKey: 0,

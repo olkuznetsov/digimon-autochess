@@ -23,12 +23,20 @@ const SEPARATION_WEIGHT = 1.3;
 
 const MAX_MANA = 100;
 const MANA_PER_ATTACK = 15;
+/** An attack winds up before its blow lands — a share of the attack interval, the moment the
+ *  attack animation makes contact (the renderer times the clip to it); attacks per second
+ *  are unchanged, only the first blow on arrival waits. */
+const WINDUP_SHARE = 0.3;
+const WINDUP_MAX = 0.3;
+const WINDUP_MIN = 0.1;
+/** A ranged attack's shot flies this long before it lands (Electric strikes at once). */
+export const SHOT_FLIGHT = 0.2;
 const MANA_PER_HIT_TAKEN = 5;
 
 /** Cosmetic events emitted by stepCombat for the FX layer (damage numbers,
  *  projectiles, casts, death bursts). The balance sim simply doesn't pass a collector. */
 export interface CombatEvent {
-  kind: "hit" | "death" | "cast";
+  kind: "hit" | "death" | "cast" | "shot";
   col: number;
   row: number;
   attr: Attribute;
@@ -59,6 +67,8 @@ export interface CombatEvent {
   tgt?: string;
   /** hit only: a burn pulse (Fire) or a dodged attack (Wind) */
   tag?: "burn" | "miss";
+  /** shot only: seconds until it lands (the hit follows then) */
+  flight?: number;
 }
 
 /** Build a combat-ready Fighter from a form. Used by the store and the balance sim. */
@@ -200,6 +210,40 @@ function onAttack(fr: Fighter, target: Fighter, dealt: number, fighters: Fighter
       const m = attributeMultiplier(fr.attribute, e.attribute);
       hit(t, fr, e, fr.attack * atkMult(fr) * (p.chainFactor ?? 1) * m, m, true);
     }
+  }
+}
+
+/** A swing's contact: the blow lands (or, ranged, the shot leaves — Electric strikes at once),
+ *  the attacker gains mana and casts at full. */
+function strike(fr: Fighter, target: Fighter, fighters: Fighter[], t: Tick) {
+  const mult = attributeMultiplier(fr.attribute, target.attribute);
+  const raw = fr.attack * atkMult(fr) * mult;
+  if (fr.range > 1.5 && FORMS[fr.formId]?.element !== "Electric") {
+    (fr.shots ??= []).push({ tgt: target.uid, left: SHOT_FLIGHT, raw, mult });
+    t.events?.push({ kind: "shot", col: target.col, row: target.row, attr: fr.attribute, fromCol: fr.col, fromRow: fr.row, src: fr.uid, tgt: target.uid, team: fr.team, flight: SHOT_FLIGHT });
+  } else {
+    const dealt = hit(t, fr, target, raw, mult, false);
+    if (fr.procs) onAttack(fr, target, dealt, fighters, t);
+  }
+  fr.mana = Math.min(fr.maxMana, fr.mana + MANA_PER_ATTACK * fr.manaMult);
+  if (fr.mana >= fr.maxMana) {
+    castAbility(fr, target, fighters, t);
+    fr.mana = fr.maxMana * (fr.procs?.castRefund ?? 0);
+  }
+}
+
+/** Shots in the air land when their flight runs out — on a target that's still standing. */
+function flyShots(fr: Fighter, fighters: Fighter[], dt: number, t: Tick) {
+  const shots = fr.shots!;
+  for (let i = 0; i < shots.length; i++) {
+    const s = shots[i];
+    s.left -= dt;
+    if (s.left > 1e-9) continue;
+    shots.splice(i--, 1);
+    const target = fighters.find((x) => x.uid === s.tgt && x.hp > 0);
+    if (!target) continue;
+    const dealt = hit(t, fr, target, s.raw, s.mult, false);
+    if (fr.procs) onAttack(fr, target, dealt, fighters, t);
   }
 }
 
@@ -495,11 +539,21 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
     }
     if (fr.procs?.ccImmune) fr.procs.ccImmune = Math.max(0, fr.procs.ccImmune - dt);
     fr.cooldown = Math.max(0, fr.cooldown - dt);
-    // frozen units can't move, attack, or cast until the stun wears off
+    if (fr.shots) flyShots(fr, fighters, dt, t);
+    // frozen units can't move, attack, or cast until the stun wears off (a swing breaks off)
     if (fr.stunned > 0) {
       fr.stunned = Math.max(0, fr.stunned - dt);
       fr.moving = false;
+      fr.swing = undefined;
       continue;
+    }
+    if (fr.swing !== undefined) {
+      fr.swing -= dt;
+      if (fr.swing <= 1e-9) {
+        fr.swing = undefined;
+        const at = fighters.find((x) => x.uid === fr.swingAt && x.hp > 0);
+        if (at) strike(fr, at, fighters, t);
+      }
     }
     if (fr.mech) bossMechanic(fr, fighters, dt, t);
 
@@ -528,16 +582,11 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
     const d = dist(fr, target);
     if (d <= fr.range + 0.05) {
       fr.moving = false;
-      if (fr.cooldown <= 0) {
-        const mult = attributeMultiplier(fr.attribute, target.attribute);
-        const dealt = hit(t, fr, target, fr.attack * atkMult(fr) * mult, mult, false);
-        if (fr.procs) onAttack(fr, target, dealt, fighters, t);
+      if (fr.cooldown <= 0 && fr.swing === undefined) {
+        // the attack starts: the interval runs from now, the blow lands a wind-up later
         fr.cooldown = 1 / (fr.attackSpeed * asMult(fr));
-        fr.mana = Math.min(fr.maxMana, fr.mana + MANA_PER_ATTACK * fr.manaMult);
-        if (fr.mana >= fr.maxMana) {
-          castAbility(fr, target, fighters, t);
-          fr.mana = fr.maxMana * (fr.procs?.castRefund ?? 0);
-        }
+        fr.swing = Math.min(WINDUP_MAX, Math.max(WINDUP_MIN, fr.cooldown * WINDUP_SHARE));
+        fr.swingAt = target.uid;
       }
     } else {
       fr.moving = true;

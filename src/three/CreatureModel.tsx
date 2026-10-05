@@ -33,8 +33,8 @@ type Mode = "loco" | "attack" | "cast" | "hit" | "win" | "dead";
  * A creature model: normalized to TARGET_HEIGHT with feet at y=0, per-instance
  * materials with dissolve/flash effects (unitFx), and an event-driven animation
  * state machine read from `drive` every frame:
- *   dead > cast (special01) > attack (attack01, swing anticipated so the blow lands
- *   when the damage does, sped up to fit the attack interval) > heavy-hit (damage)
+ *   dead > cast (special01) > attack (attack01, started with the sim's attack and sped up
+ *   so its contact frame meets the blow a wind-up later) > heavy-hit (damage)
  *   > win > idle/move.
  * Facing/position are applied by the parent.
  *
@@ -139,13 +139,15 @@ export function CreatureModel({ url, tweak, drive, color, spawnOnMount, onDissol
     return true;
   };
 
+  // the attack clip, sped up so its contact frame meets the blow a wind-up away (and the
+  // whole swing fits the attack interval)
   const swing = (d: UnitDrive) => {
     const a = clips.attack;
     if (!a) return;
     const dur = a.getClip().duration;
-    const ts = THREE.MathUtils.clamp(dur / (d.attackInterval * 0.92), 1, 2.6);
+    const ts = THREE.MathUtils.clamp(Math.max((CONTACT * dur) / Math.max(0.05, d.windup), dur / (d.attackInterval * 0.92)), 0.8, 3.2);
     mode.current = "attack";
-    play(a, true, 0.08, ts, true);
+    play(a, true, 0.06, ts, true);
   };
 
   useFrame((_, dt) => {
@@ -231,8 +233,8 @@ export function CreatureModel({ url, tweak, drive, color, spawnOnMount, onDissol
     }
     if (d.attackKey !== seen.current.attackKey) {
       seen.current.attackKey = d.attackKey;
-      // blow landed without an anticipated swing (first hit on arrival) — swing now
-      if (mode.current !== "cast" && mode.current !== "attack") swing(d);
+      // an attack starts: the swing, timed to land with the blow
+      if (mode.current !== "cast") swing(d);
     }
     if (d.heavyHitKey !== seen.current.heavyHitKey) {
       seen.current.heavyHitKey = d.heavyHitKey;
@@ -240,14 +242,6 @@ export function CreatureModel({ url, tweak, drive, color, spawnOnMount, onDissol
         mode.current = "hit";
         play(clips.damage, true, 0.06, 1.7, true);
       }
-    }
-
-    // anticipate the next blow so the swing's contact frame meets the damage
-    if ((mode.current === "loco" || mode.current === "hit") && d.engaged && !d.moving && clips.attack) {
-      const dur = clips.attack.getClip().duration;
-      const ts = THREE.MathUtils.clamp(dur / (d.attackInterval * 0.92), 1, 2.6);
-      const lead = (CONTACT * dur) / ts;
-      if (d.cooldown > 0 && d.cooldown <= lead) swing(d);
     }
 
     // one-shots return to locomotion when done

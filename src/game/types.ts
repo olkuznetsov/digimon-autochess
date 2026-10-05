@@ -79,6 +79,12 @@ export interface Fighter {
   col: number;
   row: number;
   cooldown: number;
+  /** an attack under way: seconds of wind-up left until the blow lands (the model's contact
+   *  frame) — or, ranged, until the shot leaves — and on whom */
+  swing?: number;
+  swingAt?: string;
+  /** shots in flight: each lands on its target when `left` runs out */
+  shots?: { tgt: string; left: number; raw: number; mult: number }[];
   moving: boolean;
   targetUid: string | null;
   /** ability resource: gained on attack/hit; casts the role ability when full */
