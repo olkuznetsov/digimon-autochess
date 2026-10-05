@@ -33,6 +33,17 @@
  *     inheriting — a body that grows takes its limbs along — and so does every child of a
  *     parent that squashes flat in the clip (Syakomon sinking into its shell) or is scaled to
  *     ~0 to hide what's below it (Taomon's brush and its straps).
+ *  9. degenerate rotation keys: a few clips carry (0,0,0,0) quaternions (Lobomon's sword in
+ *     its attacks, Darkdramon's wings going down, ToyAgumon's win) — three.js interpolates them
+ *     into unnormalized rotations and the part warps for a few frames. Each takes its nearest
+ *     valid key in the track (or the rest rotation).
+ * 10. root motion: some clips carry the body across Cyber Sleuth's wide battlefield — Icemon's
+ *     win walks off 22 heights, Crescemon's special flies 12 out and up — so on a board square
+ *     the model left its cell. Where the body (its joints' median) strays more than ROOT_REACH
+ *     heights from its idle spot, the travel of the joints that carry it (moving joints that
+ *     carry at least half the body — J_center in most rigs, Aquilamon's "mass", Reppamon's
+ *     "spine" — the one moving most first, up to three) is scaled down until it stays near:
+ *     the same moves, a shorter way.
  *
  * Geometry, textures and animation stay visually lossless (meshopt "medium" quantizes
  * vertices; gltf-transform re-derives the skins' inverse bind matrices for that — verified
@@ -48,10 +59,13 @@ import sharp from "sharp";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, basename } from "node:path";
+import { isBodyJoint, posesOf } from "./lib/clip-math.mjs";
 
 const SRC = "models-src";
 const OUT = "public/models";
 const MANIFEST = "src/three/model-manifest.ts";
+/** how far a clip may carry the body from its spot, in idle heights (step 10) */
+const ROOT_REACH = 1.2;
 const KEEP_CLIPS = new Set([
   "idle", "move", "attack01", "attack02", "special01", "special02", "win", "damage", "down", "guard",
 ]);
@@ -93,6 +107,8 @@ for (const file of files) {
 
   const fixed = harmonizeScale(doc);
   const chains = compensateChains(doc);
+  const zeroRot = fixZeroRotations(doc);
+  const rooted = tameRootMotion(doc);
   normalizeMaterials(doc);
 
   await doc.transform(
@@ -116,7 +132,9 @@ for (const file of files) {
       .toFixed(2)
       .padStart(5)} MB   clips kept ${clips.length - dropped}/${clips.length}` +
       (fixed.length ? `   scale added: ${fixed.join(", ")}` : "") +
-      (chains.length ? `   chains: ${chains.join(", ")}` : ""),
+      (chains.length ? `   chains: ${chains.join(", ")}` : "") +
+      (zeroRot.length ? `   zero rotations fixed: ${zeroRot.join(", ")}` : "") +
+      (rooted.length ? `   root motion: ${rooted.join(", ")}` : ""),
   );
 }
 
@@ -231,6 +249,108 @@ function compensateChains(doc) {
     if (n) done.push(`${anim.getName()}(${n})`);
   }
   return done;
+}
+
+/** Root motion (step 10): the carrying joint's travel scaled down where a clip takes the body off its spot. */
+function tameRootMotion(doc) {
+  const root = doc.getRoot();
+  const buffer = root.listBuffers()[0];
+  const joints = root.listSkins()[0]?.listJoints() ?? [];
+  const body = joints.filter(isBodyJoint);
+  const anims = root.listAnimations();
+  const idle = anims.find((a) => a.getName() === "idle");
+  if (!body.length || !idle) return [];
+  // the body's spot: the median of its joints (a hidden joint flung far can't move it)
+  const median = (v) => [...v].sort((a, b) => a - b)[v.length >> 1];
+  const spotOf = (ps) => [median(ps.map((p) => p[0])), median(ps.map((p) => p[2]))];
+  const p0 = posesOf(idle, body, 10)[0];
+  const ys = p0.map((p) => p[1]);
+  const h = Math.max(1e-6, Math.max(...ys) - Math.min(...ys));
+  const spot = spotOf(p0);
+  // how much of the body each joint carries
+  const bodySet = new Set(body);
+  const carries = new Map();
+  const count = (node) => {
+    if (carries.has(node)) return carries.get(node);
+    const n = (bodySet.has(node) ? 1 : 0) + node.listChildren().reduce((sum, c) => sum + count(c), 0);
+    carries.set(node, n);
+    return n;
+  };
+  const driftOf = (anim) => {
+    let d = 0;
+    for (const ps of posesOf(anim, body, 15)) {
+      const [x, z] = spotOf(ps);
+      d = Math.max(d, Math.hypot(x - spot[0], z - spot[1]) / h);
+    }
+    return d;
+  };
+  const travel = (c) => {
+    const a = c.getSampler().getOutput().getArray();
+    let r = 0;
+    for (const k of [0, 2]) {
+      let lo = Infinity;
+      let hi = -Infinity;
+      for (let i = k; i < a.length; i += 3) {
+        lo = Math.min(lo, a[i]);
+        hi = Math.max(hi, a[i]);
+      }
+      r = Math.max(r, hi - lo);
+    }
+    return r;
+  };
+  const done = [];
+  for (const anim of anims) {
+    if (anim === idle) continue;
+    let drift = driftOf(anim);
+    if (drift <= ROOT_REACH) continue;
+    const before = drift;
+    const used = new Set();
+    const scaled = [];
+    for (let pass = 0; pass < 3 && drift > ROOT_REACH * 1.05; pass++) {
+      const ch = anim
+        .listChannels()
+        .filter((c) => c.getTargetPath() === "translation" && !used.has(c) && count(c.getTargetNode()) >= body.length / 2 && travel(c) > 1e-4)
+        .sort((a, b) => travel(b) - travel(a))[0];
+      if (!ch) break;
+      used.add(ch);
+      const f = ROOT_REACH / drift;
+      const rest = ch.getTargetNode().getTranslation();
+      const smp = ch.getSampler();
+      const a = Float32Array.from(smp.getOutput().getArray());
+      for (let i = 0; i < a.length; i += 3) for (let k = 0; k < 3; k++) a[i + k] = rest[k] + (a[i + k] - rest[k]) * f;
+      const out = doc.createAccessor().setType("VEC3").setArray(a).setBuffer(buffer);
+      const moved = doc.createAnimationSampler().setInput(smp.getInput()).setOutput(out).setInterpolation(smp.getInterpolation());
+      anim.addSampler(moved);
+      ch.setSampler(moved);
+      scaled.push(`${ch.getTargetNode().getName()} ×${f.toFixed(2)}`);
+      drift = driftOf(anim);
+    }
+    done.push(`${anim.getName()} ${before.toFixed(1)}h→${drift.toFixed(1)}h${scaled.length ? ` (${scaled.join(", ")})` : " (no joint carries it)"}`);
+  }
+  return done;
+}
+
+/** Degenerate rotation keys (step 9): each takes its nearest valid key, or the rest rotation. */
+function fixZeroRotations(doc) {
+  const fixed = [];
+  for (const anim of doc.getRoot().listAnimations()) {
+    for (const ch of anim.listChannels()) {
+      if (ch.getTargetPath() !== "rotation") continue;
+      const out = ch.getSampler().getOutput();
+      const n = out.getCount();
+      const keys = Array.from({ length: n }, (_, i) => out.getElement(i, []));
+      const ok = keys.map((q) => Math.hypot(...q) > 0.5);
+      if (ok.every(Boolean)) continue;
+      for (let i = 0; i < n; i++) {
+        if (ok[i]) continue;
+        let j = -1;
+        for (let d = 1; d < n && j < 0; d++) j = i - d >= 0 && ok[i - d] ? i - d : i + d < n && ok[i + d] ? i + d : -1;
+        out.setElement(i, j >= 0 ? keys[j] : ch.getTargetNode().getRotation());
+      }
+      fixed.push(`${anim.getName()}:${ch.getTargetNode().getName()}`);
+    }
+  }
+  return fixed;
 }
 
 /** A scale track that leaves 1 somewhere (ignoring keys where it hides the joint). */
