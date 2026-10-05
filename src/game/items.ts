@@ -66,7 +66,7 @@ const FUSED: Record<string, ItemDef> = {
   reliamental: fused("reliamental", "Digimental of Reliability", "💧", "counts as Water; +35% max HP", "digitama", "guardplate"),
   kindmental: fused("kindmental", "Digimental of Kindness", "🌑", "counts as Dark; +60% mana gain", "digitama", "manacore"),
   hopemental: fused("hopemental", "Digimental of Hope", "🌠", "its own element counts twice; 20% lifesteal", "digitama", "vampirecode"),
-  digivice: fused("digivice", "Digivice", "📟", "+1 Digimon on the board while it fights", "digitama", "digitama"),
+  digivice: fused("digivice", "Digivice", "📟", "+1 Digimon on the board — from the tray, no need to equip it", "digitama", "digitama"),
 };
 
 /** Complete items with no recipe (TFT's artifacts): bosses and the VS carousel hand them
@@ -86,7 +86,7 @@ export const EMBLEM_ELEMENT: Record<string, Element> = {
   reliamental: "Water",
   kindmental: "Dark",
 };
-/** Digivices on a unit add this many board slots (see boardCap in store.ts). */
+/** Each Digivice owned adds a board slot — in the tray or held by a Digimon (boardCap in store.ts). */
 export const DIGIVICE = "digivice";
 
 export const ITEMS: Record<string, ItemDef> = { ...BASE, ...SPECIAL, ...FUSED, ...RELICS };

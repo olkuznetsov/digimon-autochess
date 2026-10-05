@@ -60,7 +60,7 @@ export function Hud() {
   const setSimSpeed = useGame((s) => s.setSimSpeed);
   const boardUnits = useGame((s) => s.units.filter((u) => u.placement.kind === "board").length);
   // room on the board: the level's slots plus a Digivice's
-  const cap = useGame((s) => boardCap(s.units, s.level));
+  const cap = useGame((s) => boardCap(s.units, s.level, s.inventory));
   const [muted, setMutedUi] = useState(isMuted());
   const [musicOn, setMusicOnUi] = useState(isMusicOn());
   const [showHelp, setShowHelp] = useState(false);

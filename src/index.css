@@ -1035,6 +1035,14 @@ body,
   border-color: rgba(255, 211, 77, 0.65);
   box-shadow: inset 0 0 12px rgba(255, 211, 77, 0.12);
 }
+/* a Digivice works from the tray: shown as on, not picked up */
+.item-chip.active {
+  cursor: default;
+  box-shadow: 0 0 0 2px #36d27a inset, 0 0 14px rgba(54, 210, 122, 0.45);
+}
+.item-chip.active .item-desc {
+  color: #7dffb0;
+}
 .item-chip.fusable {
   border-color: var(--cyan);
   box-shadow: 0 0 14px rgba(57, 216, 255, 0.45);

@@ -73,13 +73,13 @@ export function Shop() {
           // what you're already collecting: copies owned, and whether this one digivolves them
           // a Mega merges with copies of its own star level (★): the third stars it up
           const copies = units.filter((u) => u.formId === formId && (!isTerminal(formId) || !u.star)).length;
-          // it digivolves into something you have: name the furthest of those that can still grow —
-          // a form still digivolving, or a Mega short of ★★★ (more copies star it up); a ★★★ Mega
-          // is finished and needs nothing more
+          // it digivolves into something you have: name the furthest of those that can still grow
+          // from it — a form still digivolving, or a Mega at ★ (two more make ★★); a ★★ Mega is
+          // done for this line (★★★ takes nine of the Mega itself — buy those, not the forms below)
           const lead =
             copies === 0
               ? units
-                  .filter((u) => DESCENDANTS[formId]?.has(u.formId) && (!isTerminal(u.formId) || (u.star ?? 1) < 3))
+                  .filter((u) => DESCENDANTS[formId]?.has(u.formId) && (!isTerminal(u.formId) || (u.star ?? 1) < 2))
                   .map((u) => u.formId)
                   .sort((a, b) => FORMS[b].stage - FORMS[a].stage)[0]
               : undefined;

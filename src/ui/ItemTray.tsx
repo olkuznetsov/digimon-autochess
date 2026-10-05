@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useGame } from "../game/store";
-import { ITEMS, fuseResult } from "../game/items";
+import { DIGIVICE, ITEMS, fuseResult } from "../game/items";
 
 /** Inventory of dropped items. Click an item, then a unit to equip (max 2) — or a
  *  glowing item to fuse the pair into a stronger one. */
@@ -29,6 +29,15 @@ export function ItemTray() {
           if (!def) return null;
           const fuse = selId && i !== selIdx ? fuseResult(selId, id) : null;
           const into = fuse ? ITEMS[fuse] : null;
+          // a Digivice already adds its slot from here: nothing to pick it up for
+          if (id === DIGIVICE)
+            return (
+              <div key={`${id}-${i}`} className="item-chip fused active" title={`${def.name} — ${def.desc}`}>
+                <span className="item-emoji">{def.emoji}</span>
+                <span className="item-name">{def.name}</span>
+                <span className="item-desc">+1 on the board · active</span>
+              </div>
+            );
           return (
             <button
               key={`${id}-${i}`}

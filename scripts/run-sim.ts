@@ -200,9 +200,9 @@ const FRONT = [3, 2, 4, 1, 5, 0, 6];
 /** Field the strongest `level` units: tanks/bruisers in front, assassins mid, ranged/casters back. */
 function arrange() {
   resolvePending();
-  const { units, level } = S();
+  const { units, level, inventory } = S();
   const ranked = [...units].sort((a, b) => power(b) + synergyFit(b.formId, units) * 4 - (power(a) + synergyFit(a.formId, units) * 4));
-  const fielded = ranked.slice(0, boardCap(ranked.slice(0, level).map((u) => ({ ...u, placement: { kind: "board", col: 0, row: 0 } as Placement })), level));
+  const fielded = ranked.slice(0, boardCap(units, level, inventory));
   const rows: Record<number, number> = { 3: 0, 2: 0, 1: 0, 0: 0 };
   const rowFor = (u: Unit) => {
     const role = FORMS[u.formId].role;

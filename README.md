@@ -40,7 +40,7 @@ for where the models, the art and the music come from.*
 - **Items**: six base items and the rarer Digitama fuse in pairs — in the tray or right on a Digimon — into 28
   stronger ones: Adventure's Crests, Lightning Coil (every fifth attack strikes everything around the target),
   Spike Shell, Rage Chip, Blue Card…; Digitama + an item makes a **Digimental**, an emblem of an element, and two
-  Digitama make a **Digivice**, one more Digimon on the board. Relics with no recipe counter freezes and healing.
+  Digitama make a **Digivice**, one more Digimon on the board as soon as it's made (it works from the item tray). Relics with no recipe counter freezes and healing.
 - **Solo run**: a boss every fifth round, drawn from candidates so runs differ — among them Cyber Sleuth's data-eaters
   with mechanics of their own: the Eater devours your weakest Digimon and grows, the Mother Eater (endless) broods
   Eater Bits that shield her; round 15 is the final boss, Lucemon

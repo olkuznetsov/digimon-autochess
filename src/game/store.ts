@@ -552,7 +552,7 @@ const COL_ORDER = Array.from({ length: COLS }, (_, i) => i).sort((a, b) => Math.
 /** Teamfight Tactics: a fight starts with every board slot filled — empty slots take bench
  *  units, first slot first, into the back row first (the middle columns first): the front
  *  stays the line the player set up. */
-function autoFill(units: Unit[], level: number): Unit[] {
+function autoFill(units: Unit[], level: number, inventory: string[]): Unit[] {
   let out = units;
   const taken = new Set(
     units.filter((u) => u.placement.kind === "board").map((u) => {
@@ -564,7 +564,7 @@ function autoFill(units: Unit[], level: number): Unit[] {
     .filter((u) => u.placement.kind === "bench")
     .sort((a, b) => (a.placement as { slot: number }).slot - (b.placement as { slot: number }).slot);
   for (const u of bench) {
-    if (boardCount(out) >= boardCap(out, level)) break;
+    if (boardCount(out) >= boardCap(out, level, inventory)) break;
     // into the back rows: the front is the line the player set up themselves
     let cell: { col: number; row: number } | null = null;
     for (const row of PLAYER_ROWS) {
@@ -580,8 +580,13 @@ function autoFill(units: Unit[], level: number): Unit[] {
 }
 
 /** How many Digimon may fight: the level, plus one per Digivice on a fielded unit. */
-export const boardCap = (units: Unit[], level: number) =>
-  level + units.filter((u) => u.placement.kind === "board").reduce((n, u) => n + (u.items ?? []).filter((i) => i === DIGIVICE).length, 0);
+/** Room on the board: the level, plus one for every Digivice owned — it works from the item
+ *  tray (no Digimon has to hold it); one a Digimon holds, from an older save or fused right on
+ *  it, counts all the same. */
+export const boardCap = (units: Unit[], level: number, inventory: string[] = []) =>
+  level +
+  inventory.filter((i) => i === DIGIVICE).length +
+  units.reduce((n, u) => n + (u.items ?? []).filter((i) => i === DIGIVICE).length, 0);
 
 /** A wire board unit as a Unit (for applySynergies, which only counts forms). */
 const wireToUnit = (uid: string, u: PvpBoardUnit): Unit => ({
@@ -714,7 +719,8 @@ export const useGame = create<GameState>((set, get) => ({
 
   equipItem: (uid) => {
     const { selectedItem, inventory, units } = get();
-    if (!selectedItem) return;
+    // a Digivice works from the tray — nobody needs to hold it
+    if (!selectedItem || selectedItem === DIGIVICE) return;
     const unit = units.find((u) => u.uid === uid);
     if (!unit) return;
     const held = unit.items ?? [];
@@ -737,7 +743,7 @@ export const useGame = create<GameState>((set, get) => ({
   },
 
   moveUnit: (uid, target) => {
-    const { units, level } = get();
+    const { units, level, inventory } = get();
     const moving = units.find((u) => u.uid === uid);
     if (!moving) return;
 
@@ -752,7 +758,7 @@ export const useGame = create<GameState>((set, get) => ({
             (u.placement as { col: number; row: number }).row === (target as { col: number; row: number }).row)),
     );
 
-    if (target.kind === "board" && moving.placement.kind === "bench" && !occupant && boardCount(units) >= boardCap(units, level)) {
+    if (target.kind === "board" && moving.placement.kind === "bench" && !occupant && boardCount(units) >= boardCap(units, level, inventory)) {
       return;
     }
 
@@ -771,7 +777,7 @@ export const useGame = create<GameState>((set, get) => ({
     const { round, runSeed, difficulty, pendingEvolution } = get();
     if (pendingEvolution) return;
     // empty board slots take bench units, as in Teamfight Tactics
-    const units = autoFill(get().units, get().level);
+    const units = autoFill(get().units, get().level, get().inventory);
     const onBoard = units.filter((u) => u.placement.kind === "board");
     if (onBoard.length === 0) return;
 
@@ -1234,7 +1240,7 @@ export const useGame = create<GameState>((set, get) => ({
     const drafting = !!c && c.round === round && !c.done && !carouselPick(c, pvp.seat);
     if ((pendingEvolution || drafting || get().augmentOffer) && !force) return;
     // empty board slots take bench units, as in Teamfight Tactics
-    const filled = autoFill(units, get().level);
+    const filled = autoFill(units, get().level, get().inventory);
     if (filled !== units) set({ units: filled });
     const board = wireBoard(filled);
     // an empty board can only go in when the planning timer forces it
