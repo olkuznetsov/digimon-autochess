@@ -415,6 +415,8 @@ function SceneContents() {
   const [hovered, setHovered] = useState<{ col: number; row: number } | null>(null);
   // dusk, and Devimon's gears, while a boss is near
   const boss = useGame((s) => (s.pvp ? vsRoundKind(s.round) === "boss" : isBossRound(s.round)));
+  // the solo run's last round: the final battle, under the eclipse
+  const final = useGame((s) => !s.pvp && !s.ghost && s.round === 15);
 
   const commitDrag = (clientX?: number, clientY?: number) => {
     const { dragId: id, dragPos } = useGame.getState();
@@ -461,7 +463,7 @@ function SceneContents() {
 
   return (
     <>
-      <IslandEnvironment boss={boss} />
+      <IslandEnvironment boss={boss} final={final} />
 
       <CameraRig />
 

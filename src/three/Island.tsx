@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Environment, Lightformer, Line } from "@react-three/drei";
+import { Environment, Lightformer, Line, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 
 /**
- * The board's world after Digimon Adventure: a File Island beach. The play camera looks
- * down at ~34°, so the horizon sits above the screen — what shows above the board is sand,
- * the surf and the sea, painted by one shader; phone booths, telephone poles, palms and the
- * tram on its islet stand around it. Boss rounds turn it to dusk and raise Devimon's Black
- * Gears over the water.
+ * The board's world after Digimon Adventure: a File Island beach. Near the board it's 3D —
+ * sand, the wet band and the surf, painted by one shader, with phone booths, telephone poles
+ * and palms; past the surf the sea melts into a painting (the menu's seascapes, sampled in
+ * screen space by the same shader): the far sea, the horizon, the islands and the sky. The
+ * play camera looks down at ~34°, so the true horizon sits above the screen — the painting's
+ * is set where it reads as the view. Boss rounds turn the beach to dusk under the Black
+ * Gears' sky and raise them over the water; the final round, under the eclipse.
  */
 
 interface Mood {
@@ -42,8 +44,21 @@ const DUSK: Mood = {
   foam: "#ffc6b8",
 };
 
-/** where the sand meets the sea (world z, the enemy side's back edge is at +4.4) */
-const SHORE_Z = 11;
+/** where the sand meets the sea (world z, the enemy side's back edge is at +4.4) — close,
+ *  so the painted sea, horizon and sky have room above it */
+const SHORE_Z = 8;
+
+/** The paintings past the surf: the image, where its horizon is (from the top) and where
+ *  to look across it on a narrow screen (its subject). */
+const PAINTINGS = {
+  day: { src: "/art/sea-day.webp", horizon: 0.628, focus: 0.72 },
+  dusk: { src: "/art/sea-dusk.webp", horizon: 0.633, focus: 0.56 },
+  eclipse: { src: "/art/sea-eclipse.webp", horizon: 0.66, focus: 0.5 },
+} as const;
+type PaintingKey = keyof typeof PAINTINGS;
+/** where the painted horizon sits on screen (from the top), and how tall a phone shows it */
+const PAINT_HORIZON = 0.21;
+const PAINT_MIN_HEIGHT = 0.62;
 
 const GROUND_VERT = /* glsl */ `
 varying vec3 vWorld;
@@ -66,6 +81,11 @@ uniform vec3 uFoam;
 uniform vec3 uFog;
 uniform float uFogNear;
 uniform float uFogFar;
+uniform sampler2D uPaint;
+uniform float uPaintOn;
+uniform vec2 uRes;
+uniform vec4 uPaintMap;
+uniform vec2 uPaintScale;
 varying vec3 vWorld;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -105,6 +125,16 @@ void main() {
   // distance haze
   float dist = length(vWorld - cameraPosition);
   col = mix(col, uFog, smoothstep(uFogNear, uFogFar, dist));
+
+  // past the surf the sea melts into the painting: the far sea, the horizon, the sky —
+  // sampled where this pixel sits on screen (uPaintMap: x the image's u at screen centre,
+  // y its horizon's v, z the horizon's screen y; uPaintScale: image uv per screen uv)
+  if (uPaintOn > 0.5) {
+    vec2 s = gl_FragCoord.xy / uRes;
+    vec2 iuv = vec2(uPaintMap.x + (s.x - 0.5) * uPaintScale.x, uPaintMap.y + (s.y - uPaintMap.z) * uPaintScale.y);
+    vec3 paint = texture2D(uPaint, clamp(iuv, vec2(0.002), vec2(0.998))).rgb;
+    col = mix(col, paint, smoothstep(2.2, 9.0, d));
+  }
   gl_FragColor = vec4(col, 1.0);
 }
 `;
@@ -112,8 +142,9 @@ void main() {
 const FOG_NEAR = 38;
 const FOG_FAR = 110;
 
-/** The beach and the sea: one big plane under everything, colours easing between moods. */
-function Ground({ mood }: { mood: Mood }) {
+/** The beach and the sea: one big plane under everything, colours easing between moods;
+ *  past the surf, the painting. */
+function Ground({ mood, paint }: { mood: Mood; paint: THREE.Texture | null }) {
   const material = useMemo(
     () =>
       new THREE.ShaderMaterial({
@@ -131,14 +162,39 @@ function Ground({ mood }: { mood: Mood }) {
           uFog: { value: new THREE.Color(DAY.fog) },
           uFogNear: { value: FOG_NEAR },
           uFogFar: { value: FOG_FAR },
+          uPaint: { value: null as THREE.Texture | null },
+          uPaintOn: { value: 0 },
+          uRes: { value: new THREE.Vector2(1, 1) },
+          uPaintMap: { value: new THREE.Vector4(0.5, 0.37, 0.79, 0) },
+          uPaintScale: { value: new THREE.Vector2(1, 1) },
         },
       }),
     [],
   );
+  const buffer = useMemo(() => new THREE.Vector2(), []);
   const target = useMemo(() => new THREE.Color(), []);
   useFrame((state, dt) => {
     const u = material.uniforms;
     u.uTime.value = state.clock.elapsedTime;
+    // the painting, laid over the screen: as wide as the screen (a phone shows a slice of it,
+    // at least PAINT_MIN_HEIGHT tall, around its subject), its horizon at PAINT_HORIZON
+    const img = paint?.image as { width: number; height: number } | undefined;
+    u.uPaintOn.value = paint && img ? 1 : 0;
+    if (paint && img) {
+      state.gl.getDrawingBufferSize(buffer);
+      u.uRes.value.copy(buffer);
+      const { width: W, height: H } = state.size;
+      const ia = img.width / img.height;
+      const hs = Math.max(W / ia, H * PAINT_MIN_HEIGHT); // the painting's height on screen (px)
+      const sx = W / (hs * ia); // image u per screen u
+      const sy = H / hs; // image v per screen v
+      const key = (paint.userData.key ?? "day") as PaintingKey;
+      const p = PAINTINGS[key];
+      const focus = Math.min(1 - sx / 2, Math.max(sx / 2, sx >= 1 ? 0.5 : p.focus));
+      u.uPaint.value = paint;
+      u.uPaintScale.value.set(sx, sy);
+      u.uPaintMap.value.set(focus, 1 - p.horizon, 1 - PAINT_HORIZON, 0);
+    }
     const k = Math.min(1, dt * 2.5);
     const ease = (name: string, hex: string) => (u[name].value as THREE.Color).lerp(target.set(hex), k);
     ease("uSand", mood.sand);
@@ -285,41 +341,6 @@ function Palm({ position, lean = 0.4, rotation = 0, scale = 1 }: { position: [nu
   );
 }
 
-/** The streetcar on a little islet in the sea — the kids slept in one (episode 3). */
-function TramIslet({ position }: { position: [number, number, number] }) {
-  return (
-    <group position={position}>
-      <mesh position={[0, -0.1, 0]} scale={[3.6, 0.5, 2.2]}>
-        <sphereGeometry args={[1, 24, 12]} />
-        {toon("#f1dca4")}
-      </mesh>
-      <mesh position={[0, 0.12, 0]} scale={[2.9, 0.32, 1.7]}>
-        <sphereGeometry args={[1, 24, 12]} />
-        {toon("#4cb85a")}
-      </mesh>
-      <group position={[0, 0.55, 0]} rotation={[0, 0.35, 0]}>
-        <mesh position={[0, 0.5, 0]}>
-          <boxGeometry args={[2.6, 1.0, 0.95]} />
-          {toon("#f3ead2")}
-        </mesh>
-        <mesh position={[0, 0.28, 0]}>
-          <boxGeometry args={[2.62, 0.22, 0.97]} />
-          {toon("#2f9e5a")}
-        </mesh>
-        <mesh position={[0, 0.7, -0.48]}>
-          <boxGeometry args={[2.2, 0.34, 0.02]} />
-          {toon("#2b4a6b")}
-        </mesh>
-        <mesh position={[0, 1.06, 0]}>
-          <boxGeometry args={[2.4, 0.12, 0.85]} />
-          {toon("#9aa5b5")}
-        </mesh>
-      </group>
-      <Palm position={[1.6, 0.2, 0.6]} lean={0.3} rotation={2.2} scale={0.7} />
-      <Palm position={[-1.8, 0.15, 0.3]} lean={0.5} rotation={0.4} scale={0.6} />
-    </group>
-  );
-}
 
 /** a gear outline with teeth and a hole, extruded */
 function gearGeometry(radius: number, teeth: number): THREE.ExtrudeGeometry {
@@ -382,9 +403,8 @@ function BlackGears({ show }: { show: boolean }) {
 }
 
 const POLES: [number, number, number][] = [
-  [11, 0, 9],
-  [12, 0, 17],
-  [13, 0, 25],
+  [10.5, 0, 2],
+  [11.5, 0, 7],
 ];
 
 /** Daylight for the island, or a red-violet dusk on boss rounds. */
@@ -416,9 +436,22 @@ function IslandLighting({ boss }: { boss: boolean }) {
   );
 }
 
-/** The whole island: sky, haze, beach and sea, the props, the light — dusk on boss rounds. */
-export function IslandEnvironment({ boss = false }: { boss?: boolean }) {
-  const mood = boss ? DUSK : DAY;
+/** The painting for the mood, once loaded (the plain 3D sea until then). */
+function PaintedGround({ mood, painting }: { mood: Mood; painting: PaintingKey }) {
+  const tex = useTexture(PAINTINGS[painting].src);
+  useEffect(() => {
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.userData.key = painting;
+    tex.needsUpdate = true;
+  }, [tex, painting]);
+  return <Ground mood={mood} paint={tex} />;
+}
+
+/** The whole island: sky, haze, beach and sea, the props, the light — dusk on boss rounds,
+ *  the eclipse on the final one. */
+export function IslandEnvironment({ boss = false, final = false }: { boss?: boolean; final?: boolean }) {
+  const mood = boss || final ? DUSK : DAY;
+  const painting: PaintingKey = final ? "eclipse" : boss ? "dusk" : "day";
   const scene = useThree((s) => s.scene);
   const bg = useMemo(() => new THREE.Color(DAY.sky), []);
   const fog = useMemo(() => new THREE.Fog(DAY.fog, FOG_NEAR, FOG_FAR), []);
@@ -440,17 +473,18 @@ export function IslandEnvironment({ boss = false }: { boss?: boolean }) {
   });
   return (
     <>
-      <IslandLighting boss={boss} />
-      <Ground mood={mood} />
-      <PhoneBooth position={[6.4, -0.16, 8.6]} rotation={0.35} />
-      <PhoneBooth position={[7.6, -0.16, 9.4]} rotation={0.2} />
+      <IslandLighting boss={boss || final} />
+      <Suspense fallback={<Ground mood={mood} paint={null} />}>
+        <PaintedGround mood={mood} painting={painting} />
+      </Suspense>
+      <PhoneBooth position={[6.6, -0.16, 5.9]} rotation={0.35} />
+      <PhoneBooth position={[7.8, -0.16, 6.6]} rotation={0.2} />
       {POLES.map((p, i) => (
         <Pole key={i} position={[p[0], -0.16, p[2]]} />
       ))}
       <Wires poles={POLES.map((p) => [p[0], -0.16, p[2]] as [number, number, number])} />
       <Palm position={[-8.2, -0.16, 1.5]} lean={-0.5} rotation={0.3} />
       <Palm position={[-9.6, -0.16, 7.5]} lean={-0.35} rotation={-0.4} scale={0.9} />
-      <TramIslet position={[-11, -0.3, 25]} />
       <BlackGears show={boss} />
     </>
   );
