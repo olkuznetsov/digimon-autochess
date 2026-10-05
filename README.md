@@ -74,6 +74,7 @@ for where the models, the art and the music come from.*
 - **Leaderboard and ghost battles** against other players' saved boards — season 2 since the tier rules — and a
   **ghost ladder**: your run's board fights a ghost from the same round (other tamers' boards, seeded with the
   bot's), an Elo rating and leagues from In-Training to Mega.
+- **Primary Village mode** (an experiment): a Digimon that falls hatches again, in the same fight, as its line's baby.
 - **Difficulty**: Easy, Normal or Hard for a new run — the enemies' strength, what a lost round costs and the tamer
   XP it pays (the bot wins about 80%, 42% and 15% of its runs).
 - **Game feel**: shots and signature moves in their element (fireballs that shed embers, crackling bolts, water,

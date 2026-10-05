@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState, type CSSProperties } from "react";
 import { FORMS, ELEMENT_COLOR, STAGE_NAME, ATTR_COLOR } from "../game/creatures";
-import { preferredDifficulty, setPreferredDifficulty, useGame } from "../game/store";
+import { preferredDifficulty, preferredVillage, setPreferredDifficulty, setPreferredVillage, useGame } from "../game/store";
 import type { Difficulty } from "../game/tuning";
 import { updateRun } from "../profile/run";
 import { useProfile } from "../profile/store";
@@ -390,6 +390,14 @@ const DIFF: Record<Difficulty, [string, string, string]> = {
 /** The next new run's difficulty (a run that hasn't begun takes it at once). */
 function DifficultyPick({ ongoing }: { ongoing: boolean }) {
   const [d, setD] = useState<Difficulty>(preferredDifficulty);
+  const [village, setVillage] = useState(preferredVillage);
+  const toggleVillage = () => {
+    sfx.click();
+    const on = !village;
+    setVillage(on);
+    setPreferredVillage(on);
+    if (!ongoing) useGame.setState({ village: on });
+  };
   const pick = (x: Difficulty) => {
     sfx.click();
     setD(x);
@@ -410,6 +418,16 @@ function DifficultyPick({ ongoing }: { ongoing: boolean }) {
           <span className="jp">{DIFF[x][1]}</span>
         </button>
       ))}
+      <button
+        role="switch"
+        aria-checked={village}
+        className={`diff vmode${village ? " on" : ""}`}
+        onClick={toggleVillage}
+        title="Primary Village mode: a Digimon that falls in battle hatches again, in the same fight, as its line's baby — off the leaderboard"
+      >
+        <b>VILLAGE</b>
+        <span className="jp">はじまりの町</span>
+      </button>
     </div>
   );
 }

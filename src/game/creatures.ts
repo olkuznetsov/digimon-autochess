@@ -479,6 +479,17 @@ export const WILD_IDS = ALL_FORM_IDS.filter((id) => FORMS[id].wild);
 
 /** A form with nowhere to digivolve (a Mega): three copies star it up instead. */
 export const isTerminal = (formId: string) => !(FORMS[formId]?.evolvesTo?.length);
+
+/** Each form's first parent in the roster's order (what digivolves into it). */
+const PARENT: Record<string, string> = {};
+for (const id of Object.keys(FORMS)) for (const n of FORMS[id].evolvesTo ?? []) PARENT[n] ??= id;
+/** The baby a form's line hatches from: its earliest ancestor (a Fresh, or the Rookie a
+ *  line without babies starts at) — the Primary Village mode reborn a fallen Digimon as it. */
+export function babyOf(formId: string): string {
+  let id = formId;
+  for (let guard = 0; PARENT[id] && guard < 8; guard++) id = PARENT[id];
+  return id;
+}
 /** HP and attack by star level (Teamfight Tactics' ×1.8 a star); a ★★★ Mega's ultimate
  *  hits harder on top. */
 export const STAR_MULT = [1, 1, 1.8, 3.2];

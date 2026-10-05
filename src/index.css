@@ -7170,3 +7170,10 @@ span.lb-face:not(.portrait) {
   font-size: 11px;
   line-height: 1.35;
 }
+.diff.on.vmode {
+  border-color: #ff7ab8;
+  background: #ffe9f4;
+}
+.diff-chip.vmode {
+  background: linear-gradient(90deg, #ff7ab8, #ffb347);
+}

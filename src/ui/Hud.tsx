@@ -81,6 +81,7 @@ export function Hud() {
   const [showLb, setShowLb] = useState(false);
   const ghost = useGame((s) => s.ghost);
   const difficulty = useGame((s) => s.difficulty);
+  const village = useGame((s) => s.village);
   // a ghost-ladder fight's rating (just now)
   const ladderLast = useLadder((s) => s.last);
   const ladderNow = !!ladderLast && Date.now() - ladderLast.key < 120_000;
@@ -192,6 +193,11 @@ export function Hud() {
           <div className={`stat round${!vs && isBossRound(round) ? " boss" : ""}`}>
             <small>ROUND</small> {round}
             {!vs && !ghost && difficulty !== "normal" && <span className={`diff-chip ${difficulty}`}>{difficulty.toUpperCase()}</span>}
+            {!vs && !ghost && village && (
+              <span className="diff-chip vmode" title="Primary Village: the fallen hatch again as babies">
+                VILLAGE
+              </span>
+            )}
             {!vs && isBossRound(round) && (
               <span className="boss-chip">
                 <BlackGear size={16} hole="#ff8a1f" /> BOSS

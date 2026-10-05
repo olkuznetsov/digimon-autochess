@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types";
-import { FORMS, PLAYABLE_IDS, ROOKIE_IDS, costOf, isTerminal, mergeParts, sellValue } from "./creatures";
+import { FORMS, PLAYABLE_IDS, ROOKIE_IDS, babyOf, costOf, isTerminal, mergeParts, sellValue } from "./creatures";
 import { makeFighter, stepCombat, SIM_DT, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
 import { BASE_ITEM_IDS, DIGIVICE, FUSED_ITEM_IDS, RARE_ITEM_IDS, fuseResult } from "./items";
@@ -251,6 +251,9 @@ interface GameState {
   runSeed: number;
   /** the solo run's difficulty (chosen when it starts) */
   difficulty: Difficulty;
+  /** the Primary Village mode: a Digimon that falls in battle hatches again, in the same
+   *  fight, as its line's baby (once a fight) — off the leaderboard */
+  village: boolean;
   streak: number;
   gameOver: boolean;
 
@@ -462,6 +465,22 @@ export function preferredDifficulty(): Difficulty {
     return "normal";
   }
 }
+/** Whether the next new run is a Primary Village one (the menu sets it; remembered). */
+export function preferredVillage(): boolean {
+  try {
+    return localStorage.getItem("dac-village") === "1";
+  } catch {
+    return false;
+  }
+}
+export function setPreferredVillage(on: boolean) {
+  try {
+    localStorage.setItem("dac-village", on ? "1" : "0");
+  } catch {
+    /* not remembered */
+  }
+}
+
 export function setPreferredDifficulty(d: Difficulty) {
   try {
     localStorage.setItem("dac-difficulty", d);
@@ -479,6 +498,7 @@ function initialState() {
     round: 1,
     runSeed: newRunSeed(),
     difficulty: preferredDifficulty(),
+    village: preferredVillage(),
     streak: 0,
     gameOver: false,
     shop: rollShop(START_LEVEL, []),
@@ -764,7 +784,13 @@ export const useGame = create<GameState>((set, get) => ({
 
     const playerFighters: Fighter[] = onBoard.map((u) => {
       const p = u.placement as { col: number; row: number };
-      return makeFighter(u.formId, u.uid, "player", p.col, p.row, 1, u.items ?? [], u.star ?? 1);
+      const f = makeFighter(u.formId, u.uid, "player", p.col, p.row, 1, u.items ?? [], u.star ?? 1);
+      // Primary Village: when it falls, its line's baby hatches where it stood
+      if (get().village) {
+        const baby = makeFighter(babyOf(u.formId), `${u.uid}~`, "player", p.col, p.row);
+        f.rebirth = { formId: baby.formId, maxHp: baby.maxHp, attack: baby.attack };
+      }
+      return f;
     });
 
     applySynergies(playerFighters, onBoard);
@@ -918,8 +944,8 @@ export const useGame = create<GameState>((set, get) => ({
           if (state.round > best) localStorage.setItem("dac-best-round", String(state.round));
           localStorage.removeItem(SAVE_KEY);
         } catch { /* ignore */ }
-        if (state.difficulty !== "easy") submitScore({ best: state.round, board: wireBoard(state.boardSnapshot ?? state.units) });
-      } else if (win && state.round >= 15 && state.difficulty !== "easy") {
+        if (state.difficulty !== "easy" && !state.village) submitScore({ best: state.round, board: wireBoard(state.boardSnapshot ?? state.units) });
+      } else if (win && state.round >= 15 && state.difficulty !== "easy" && !state.village) {
         // run complete (and endless milestones) — post the winning board (an easy run stays off the board)
         submitScore({ best: state.round, board: wireBoard(state.boardSnapshot ?? state.units) });
       }
@@ -1321,7 +1347,7 @@ function saveRun() {
     localStorage.setItem(
       SAVE_KEY,
       JSON.stringify({
-        gold: s.gold, level: s.level, xp: s.xp, health: s.health, round: s.round, runSeed: s.runSeed, difficulty: s.difficulty,
+        gold: s.gold, level: s.level, xp: s.xp, health: s.health, round: s.round, runSeed: s.runSeed, difficulty: s.difficulty, village: s.village,
         streak: s.streak, units: s.units, inventory: s.inventory, shop: s.shop,
         discovered: s.discovered, shopLocked: s.shopLocked, uidCounter,
       }),
@@ -1350,6 +1376,7 @@ function savedRun(): Partial<GameState> {
       runSeed: Number(d.runSeed) || 0,
       // a run saved before difficulties was a normal one
       difficulty: isDifficulty(d.difficulty) ? d.difficulty : "normal",
+      village: d.village === true,
       streak: d.streak, units: d.units, inventory: d.inventory ?? [], shop: d.shop,
       // a run saved before discovery: what it holds counts as discovered
       discovered: Array.isArray(d.discovered) ? d.discovered : discover([], d.units),
