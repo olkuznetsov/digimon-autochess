@@ -41,7 +41,7 @@ export function Onboarding() {
     step === 1
       ? "Buy a Digimon from the shop — tap a card"
       : step === 2
-        ? "Drag it from your bench onto the blue half of the board"
+        ? "Drag it from your bench onto your half of the board — the grass"
         : "Ready? Start the battle — your team fights on its own";
 
   return (
