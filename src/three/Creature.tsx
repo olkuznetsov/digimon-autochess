@@ -7,6 +7,7 @@ import { CreatureModel } from "./CreatureModel";
 import { modelFor, tweakFor } from "./models";
 import { angleDelta, newDrive, type UnitDrive } from "./unitDrive";
 import type { Stage } from "../game/types";
+import { useGame } from "../game/store";
 
 /** pip colour by a Mega's star level */
 const STAR_PIP = ["", "#ffd34d", "#bfefff", "#ff7ad9"];
@@ -256,7 +257,9 @@ export function Creature({
         position={[0, 0.55, 0]}
         onPointerDown={onPointerDown}
         onPointerOver={(e) => {
-          if (onPointerDown) {
+          // while a Digimon is being dragged the others let the pointer through: a tall one
+          // in front of a cell would otherwise hide the cell from the drop
+          if (onPointerDown && !useGame.getState().dragId) {
             e.stopPropagation();
             document.body.style.cursor = "grab";
           }
