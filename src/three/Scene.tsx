@@ -34,6 +34,11 @@ let dragStart: { x: number; z: number } | null = null;
 /** Camera: portrait/landscape framing, a gentle push toward the fight during
  *  battles, and trauma-based shake. Also ticks the shared juice clock first thing
  *  every frame. */
+/** dev: a camera for recorded clips — `__cam.k` (0…1) pulls the board camera in toward
+ *  where it looks, `__cam.x` / `__cam.z` pan it (world units) */
+const devCam = { k: 0, x: 0, z: 0 };
+if (import.meta.env.DEV) Object.assign(window, { __cam: devCam });
+
 function CameraRig() {
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
@@ -94,6 +99,13 @@ function CameraRig() {
     push.current += (target - push.current) * (1 - Math.exp(-dt * 1.8));
     look.lerp(battleLook, push.current);
     pos.lerp(look, push.current * (portrait ? 0.05 : 0.14));
+    if (import.meta.env.DEV && (devCam.k || devCam.x || devCam.z)) {
+      pos.lerp(look, devCam.k);
+      pos.x += devCam.x;
+      look.x += devCam.x;
+      pos.z += devCam.z;
+      look.z += devCam.z;
+    }
 
     // trauma^2 shake: small positional jitter + a touch of roll
     const t = juice.trauma * juice.trauma;

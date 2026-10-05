@@ -20,7 +20,8 @@
     "optimize-models": "node scripts/optimize-models.mjs",
     "check-models": "node scripts/check-models.mjs",
     "runsim": "node scripts/run-ts.mjs scripts/run-sim.ts",
-    "lobbycheck": "node scripts/run-ts.mjs scripts/lobby-check.ts"
+    "lobbycheck": "node scripts/run-ts.mjs scripts/lobby-check.ts",
+    "clip": "node scripts/clip/record.mjs && python3 scripts/clip/assemble.py"
   },
   "dependencies": {
     "@fontsource/dela-gothic-one": "^5.3.0",
@@ -44,6 +45,7 @@
     "esbuild": "^0.28.1",
     "meshoptimizer": "^1.3.0",
     "oxlint": "^1.69.0",
+    "puppeteer-core": "^24.43.1",
     "sharp": "^0.35.5",
     "subset-font": "^2.9.0",
     "typescript": "~6.0.2",

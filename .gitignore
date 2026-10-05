@@ -28,3 +28,6 @@ model-sources/
 
 # wrangler local cache
 .wrangler/
+
+# recorded clips (npm run clip)
+clips/

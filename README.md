@@ -163,6 +163,7 @@ npm run runsim         # bot full-run simulator (runs=300 seed=1; dumpBoards=fil
 npm run lobbycheck     # VS lobby rules: pairings, ghosts, knockouts, places, the shared pool
 npm run optimize-models
 npm run check-models
+npm run clip           # the 20 s vertical clip of a final battle (needs the dev server; clips/)
 ```
 
 The worker lives in `server/` (`npx wrangler deploy --config server/wrangler.jsonc`); the site goes to Pages and to its
