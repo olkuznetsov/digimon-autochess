@@ -28,6 +28,8 @@ export const ICON = {
   unlock: "M6 11h12v9H6z M8.5 11V8a3.5 3.5 0 0 1 6.8-1.2",
   levelUp: "M12 19.5v-14 M6.5 11L12 5.5l5.5 5.5",
   reroll: "M19.5 8.5A8 8 0 1 0 20 14 M19.5 3.5v5h-5",
+  /** a dumbbell: training */
+  train: "M6.5 7.5v9 M17.5 7.5v9 M3.5 10v4 M20.5 10v4 M6.5 12h11",
 } as const;
 
 /** The crests' emblems: drawn in their spirit, not copies of the show's symbols. */
@@ -101,6 +103,20 @@ export function BlackGear({ size = 22, hole = "#3a1530", className = "" }: { siz
       <circle cx="24" cy="24" r="17" fill="none" stroke="#07070d" strokeWidth="9" strokeDasharray="6.2 7.15" />
       <circle cx="24" cy="24" r="14" fill="#07070d" />
       <circle cx="24" cy="24" r="6" fill={hole} />
+    </svg>
+  );
+}
+
+/** The V-Pet's meat on the bone: what the partner eats. */
+export function Meat({ size = 18 }: { size?: number }) {
+  return (
+    <svg className="meat" width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M14 10l5.6-5.6" stroke="#6b2410" strokeWidth="4.6" strokeLinecap="round" />
+      <path d="M14 10l5.6-5.6" stroke="#ffffff" strokeWidth="2.6" strokeLinecap="round" />
+      <circle cx="19.2" cy="3" r="2" fill="#ffffff" stroke="#6b2410" strokeWidth="1.1" />
+      <circle cx="21" cy="4.8" r="2" fill="#ffffff" stroke="#6b2410" strokeWidth="1.1" />
+      <ellipse cx="9.6" cy="14.4" rx="7.6" ry="6.2" transform="rotate(-40 9.6 14.4)" fill="#d0602f" stroke="#6b2410" strokeWidth="1.4" />
+      <ellipse cx="7.9" cy="12.6" rx="2.8" ry="1.4" transform="rotate(-40 7.9 12.6)" fill="#f19a6a" />
     </svg>
   );
 }

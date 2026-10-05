@@ -164,6 +164,16 @@ export const sfx = {
     tone(1175, 0.09, { vol: 0.09, at: 0.05, send: 0.3 });
   },
   click: () => tone(600, 0.04, { vol: 0.05 }),
+  /** the partner eats: three soft bites and a happy chirp */
+  munch: () => {
+    [0, 0.15, 0.3].forEach((t) => noise(0.05, { freq: 900, q: 1.5, vol: 0.07, at: t }));
+    tone(587, 0.1, { type: "triangle", vol: 0.07, at: 0.44, to: 880 });
+  },
+  /** a training blow */
+  punch: () => {
+    tone(150, 0.12, { vol: 0.28, to: 60 });
+    noise(0.06, { freq: 1600, vol: 0.08 });
+  },
   /** a riser into the "FIGHT!" hit, timed to the 0.9 s battle intro */
   battleStart: () => {
     noise(0.85, { freq: 400, to: 5000, q: 1.2, vol: 0.09, attack: 0.7 });

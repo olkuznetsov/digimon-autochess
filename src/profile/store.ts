@@ -1,9 +1,10 @@
 import { create } from "zustand";
 import { FORMS } from "../game/creatures";
+import { CARE, careBonus, careFx, careNow, newCare, type Care } from "./care";
 import {
   CRESTS,
   MAX_PARTNERS,
-  bondLevel,
+  partnerLevel,
   levelFor,
   newProfile,
   offerBranches,
@@ -25,10 +26,19 @@ function load(): Profile {
         const out: Profile = { ...newProfile(), ...p, stats: { ...newProfile().stats, ...p.stats } };
         // a partner is just its forms and its bond (a save from 05.10 also held an avatar and
         // per-partner records: dropped)
-        const clean = (x: Partner): Partner => ({ formId: x.formId, star: x.star, since: x.since, history: x.history, xp: x.xp });
+        // a partner from before care began: fairly fed and glad, two hearts of friendship already
+        const clean = (x: Partner): Partner => ({
+          formId: x.formId,
+          star: x.star,
+          since: x.since,
+          history: x.history,
+          xp: x.xp,
+          care: x.care ?? newCare(Date.now(), 40),
+        });
         out.others = Array.isArray(p.others) ? p.others.filter((x) => FORMS[x?.formId]).map(clean) : [];
-        // a partner from before bonds grew with the tamer: its bond is the tamer's XP
+        // a partner from before partners had their own XP: theirs is the tamer's
         if (out.partner) out.partner = clean({ ...out.partner, xp: out.partner.xp ?? out.xp });
+        out.meat = Number.isFinite(p.meat) ? Math.max(0, Math.min(CARE.maxMeat, p.meat)) : CARE.startMeat;
         delete (out as Partial<Profile> & { avatar?: unknown }).avatar;
         return out;
       }
@@ -39,7 +49,16 @@ function load(): Profile {
   return newProfile();
 }
 
-const hatch = (formId: string, xp: number): Partner => ({ formId, star: 1, since: Date.now(), history: [formId], xp });
+const hatch = (formId: string, xp: number): Partner => ({ formId, star: 1, since: Date.now(), history: [formId], xp, care: newCare() });
+
+/** a partner's needs as they are now (a resting partner's clock starts again when it's called) */
+const careOf = (p: Partner, now = Date.now()): Care => careNow(p.care ?? newCare(now, 40), now);
+const bump = (c: Care, d: Partial<Record<"fed" | "mood" | "bond", number>>): Care => ({
+  ...c,
+  fed: Math.max(0, Math.min(100, c.fed + (d.fed ?? 0))),
+  mood: Math.max(0, Math.min(100, c.mood + (d.mood ?? 0))),
+  bond: Math.max(0, Math.min(100, c.bond + (d.bond ?? 0))),
+});
 
 export type Screen = "menu" | "game";
 
@@ -65,8 +84,20 @@ interface ProfileState extends Profile {
   evolutionOptions: () => string[];
   evolvePartner: (formId: string) => void;
   starUpPartner: () => void;
-  /** `quiet`: no toast (the run report shows it) */
-  gainXp: (amount: number, reason: string, quiet?: boolean) => void;
+  /** XP for the tamer and the partner at their side, with the partner's bonus (a happy
+   *  partner, a best friend) unless `bonus` is false; `quiet`: no toast (the run report shows
+   *  it). Returns what was given. */
+  gainXp: (amount: number, reason: string, quiet?: boolean, bonus?: boolean) => number;
+  /** feed the partner a piece of meat */
+  feed: () => void;
+  /** a tap on the partner */
+  pet: () => void;
+  /** a training session: an hour's rest after it */
+  train: () => void;
+  /** meat earned in a battle (capped) */
+  earnMeat: (n: number) => void;
+  /** a battle won with the partner at the tamer's side: it's glad */
+  cheer: () => void;
   record: (fn: (s: TamerStats) => void) => void;
   clearToasts: () => void;
 }
@@ -108,13 +139,18 @@ export const useProfile = create<ProfileState>()((set, get) => {
       const { partner, others } = get();
       const next = others[i];
       if (!next) return;
-      set({ partner: next, others: [...(partner ? [partner] : []), ...others.filter((_, j) => j !== i)] });
+      const now = Date.now();
+      // the one going to rest keeps its needs as they are now; the one called back picks up
+      // where it was left (its clock didn't run in the Digivice)
+      const resting = partner ? { ...partner, care: careOf(partner, now) } : null;
+      const called = { ...next, care: { ...(next.care ?? newCare(now, 40)), at: now } };
+      set({ partner: called, others: [...(resting ? [resting] : []), ...others.filter((_, j) => j !== i)] });
     },
     evolutionOptions: () => {
       const { partner, stats } = get();
       if (!partner) return [];
       const stage = FORMS[partner.formId]?.stage ?? 1;
-      if (stage >= partnerStageCap(bondLevel(partner))) return [];
+      if (stage >= partnerStageCap(partnerLevel(partner))) return [];
       return offerBranches(partner.formId, stats);
     },
     evolvePartner: (to) => {
@@ -128,23 +164,66 @@ export const useProfile = create<ProfileState>()((set, get) => {
     },
     starUpPartner: () => {
       const { partner } = get();
-      if (!partner || (FORMS[partner.formId]?.stage ?? 1) < 5 || partner.star >= partnerStarCap(bondLevel(partner))) return;
+      if (!partner || (FORMS[partner.formId]?.stage ?? 1) < 5 || partner.star >= partnerStarCap(partnerLevel(partner))) return;
       const star = partner.star + 1;
       set({ partner: { ...partner, star }, grew: { from: partner.formId, to: partner.formId, star, key: Date.now() } });
     },
-    gainXp: (amount, reason, quiet = false) => {
-      if (amount <= 0) return;
+    gainXp: (base, reason, quiet = false, bonus = true) => {
+      if (base <= 0) return 0;
       const { partner } = get();
+      const b = bonus ? careBonus(partner?.care) : { mult: 1, happy: false, friends: false };
+      // each bonus is its own share of the base (the run report lists them that way)
+      const amount = base + (b.happy ? Math.round(base * CARE.bonus) : 0) + (b.friends ? Math.round(base * CARE.bonus) : 0);
       const before = levelFor(get().xp).level;
       const xp = get().xp + amount;
       const after = levelFor(xp).level;
+      const why = b.mult > 1 ? `${reason} (${[b.happy && "happy partner", b.friends && "best friends"].filter(Boolean).join(", ")} +${Math.round((b.mult - 1) * 100)}%)` : reason;
       set({
         xp,
         // the partner at the tamer's side grows with them (every partner at the same pace)
         partner: partner ? { ...partner, xp: (partner.xp ?? 0) + amount } : null,
-        ...(quiet ? {} : { gain: { amount, reason, levelUp: after > before ? after : null, key: Date.now() } }),
+        ...(quiet ? {} : { gain: { amount, reason: why, levelUp: after > before ? after : null, key: Date.now() } }),
       });
       checkCrests();
+      return amount;
+    },
+    feed: () => {
+      const { partner, meat } = get();
+      if (!partner) return;
+      const c = careOf(partner);
+      if (meat <= 0) return careFx("nomeat");
+      if (c.fed >= CARE.fullAt) return careFx("full");
+      const care = bump(c, { fed: CARE.meatFill, mood: CARE.meatMood, bond: c.fed < 50 ? CARE.meatBondHungry : CARE.meatBond });
+      set({ partner: { ...partner, care }, meat: meat - 1 });
+      careFx("feed");
+    },
+    pet: () => {
+      const { partner } = get();
+      if (!partner) return;
+      const now = Date.now();
+      const c = careOf(partner, now);
+      // a run of taps counts as one pet; the bond grows from a pet every few hours
+      if (now - (c.petAt ?? 0) < CARE.petGapMs) return careFx("pet");
+      const bond = now - (c.petBondAt ?? 0) >= CARE.petBondGapMs;
+      const care = { ...bump(c, { mood: CARE.petMood, bond: bond ? CARE.petBond : 0 }), petAt: now, ...(bond ? { petBondAt: now } : {}) };
+      set({ partner: { ...partner, care } });
+      careFx("pet");
+    },
+    train: () => {
+      const { partner } = get();
+      if (!partner) return;
+      const now = Date.now();
+      const c = careOf(partner, now);
+      if (c.fed < CARE.trainMinFed) return careFx("hungry");
+      if (now - (c.trainAt ?? 0) < CARE.trainGapMs) return careFx("tired");
+      const care = { ...bump(c, { fed: -CARE.trainFed, mood: CARE.trainMood, bond: CARE.trainBond }), trainAt: now };
+      set({ partner: { ...partner, care, xp: (partner.xp ?? 0) + CARE.trainXp } });
+      careFx("train");
+    },
+    earnMeat: (n) => set({ meat: Math.min(CARE.maxMeat, get().meat + n) }),
+    cheer: () => {
+      const { partner } = get();
+      if (partner) set({ partner: { ...partner, care: bump(careOf(partner), { mood: CARE.winMood }) } });
     },
     record: (fn) => {
       const stats = structuredClone(get().stats);
@@ -160,7 +239,7 @@ export const useProfile = create<ProfileState>()((set, get) => {
 // start, so a save in an older layout is stored (and synced) in the current one
 let saved = "";
 function persist(s: ProfileState) {
-  const p: Profile = { v: 1, xp: s.xp, partner: s.partner, others: s.others, stats: s.stats, crests: s.crests };
+  const p: Profile = { v: 1, xp: s.xp, partner: s.partner, others: s.others, meat: s.meat, stats: s.stats, crests: s.crests };
   const json = JSON.stringify(p);
   if (json === saved) return;
   saved = json;

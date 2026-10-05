@@ -54,8 +54,10 @@ for where the models, the art and the music come from.*
   a board against its own mirror is a draw.
 - **A V-Pet partner on top of the auto chess**: hatch one of five Fresh in Primary Village and raise it on File
   Island — it greets you, reacts when you pet it and digivolves as it levels up with the XP you earn, into the
-  branch you choose among those your play style points to (with Adventure's 「アグモン進化ー！」 call-out). The
-  partner at your side is your avatar; the **Digivice** holds up to six, so you can hatch another egg and call a
+  branch you choose among those your play style points to (with Adventure's 「アグモン進化ー！」 call-out). Care
+  for it like a V-Pet — feed it the meat you win in battles, pet it, train it; fullness and mood drift with real
+  time, the bond grows over days — and a happy partner or a best friend earns you more XP. The partner at your
+  side is your avatar; the **Digivice** holds up to six, so you can hatch another egg and call a
   resting one back. A tamer card keeps your records and Adventure's crests as achievements. Purely cosmetic: a
   partner never touches a fight.
 - **Tamer XP paid at the end of a run**: a solo run counts its XP as you play — battles won and lost, bosses, the

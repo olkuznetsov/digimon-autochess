@@ -64,12 +64,13 @@ function CameraRig() {
     if (useProfile.getState().screen === "menu") {
       // the main menu: the partner on the painted beach, its feet low in the frame, with a
       // slow drift. Wide screens shift it left of centre (screen right is world -x here),
-      // clear of the partner card; portrait frames it above the mode buttons.
+      // clear of the partner card; portrait frames it high, above the partner card and its
+      // care buttons.
       const t = state.clock.elapsedTime;
       const aspect = size.width / size.height;
       if (portrait) {
-        pos.set(Math.sin(t * 0.12) * 0.3, 2.0, -5.8);
-        look.set(0, 0.95, 0);
+        pos.set(Math.sin(t * 0.12) * 0.3, 2.0, -6.2);
+        look.set(0, -0.55, 0);
       } else {
         const shift = aspect >= 1.6 ? -0.75 : aspect >= 1.3 ? -0.35 : 0;
         pos.set(shift + Math.sin(t * 0.12) * 0.35, 1.6, -4.4);

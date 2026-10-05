@@ -5,7 +5,8 @@ import { levelFor } from "../profile/profile";
 import { RUN_ROUNDS, runXp, useRun, xpLines } from "../profile/run";
 import { useProfile } from "../profile/store";
 import { sfx } from "../audio/sfx";
-import { ELEMENT_PATH, ICON, Icon } from "./kit";
+import { ELEMENT_PATH, ICON, Icon, Meat } from "./kit";
+import { CARE } from "../profile/care";
 import { Portrait } from "./Portrait";
 
 /** how a run report opens: round 15 won, round 15 lost (still standing), or game over */
@@ -83,6 +84,10 @@ export function RunReport({
   const mvp = Object.values(l.units).sort((a, b) => b.dealt - a.dealt)[0];
   const topEl = (Object.entries(l.elements) as [Element, number][]).sort((a, b) => b[1] - a[1])[0]?.[0];
   const lines = xpLines(l).filter((x) => x.count > 0);
+  // the partner's bonus: a happy partner, a best friend (each a share of the base XP)
+  const base = l.paid?.base ?? xp;
+  const bonusEach = Math.round(base * CARE.bonus);
+  const bonuses = [l.paid?.happy && "Happy partner", l.paid?.friends && "Best friends"].filter(Boolean) as string[];
   const tiles: [string, string][] = [
     ["ROUND", String(l.round)],
     ["BATTLES", `${l.won}–${l.lost}`],
@@ -173,6 +178,13 @@ export function RunReport({
                 </div>
               ))}
               {!lines.length && <div className="rr-line dim">No battles fought this run</div>}
+              {bonuses.map((b) => (
+                <div key={b} className="rr-line bonus">
+                  <span>{b}</span>
+                  <i>+{Math.round(CARE.bonus * 100)}%</i>
+                  <b>+{bonusEach}</b>
+                </div>
+              ))}
               <div className="rr-line total">
                 <span>Total</span>
                 <i />
@@ -192,6 +204,11 @@ export function RunReport({
                 {Math.floor(now.into)} / {now.need}
               </span>
             </div>
+            {(l.meat ?? 0) > 0 && (
+              <div className="rr-meat">
+                <Meat size={20} /> +{l.meat} meat for your partner <span className="jp">おにく</span>
+              </div>
+            )}
             {leveled && (
               <div className="rr-levelup">
                 <Icon d={ICON.levelUp} size={18} width={2.6} /> TAMER LEVEL UP! <span className="jp">レベルアップ</span>

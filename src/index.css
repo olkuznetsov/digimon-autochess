@@ -6273,3 +6273,186 @@ button.dv-slot:hover {
     scrollbar-width: thin;
   }
 }
+
+/* ---------- the partner's care (the V-Pet): needs, meat, training ---------- */
+.care {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 18px 2px;
+  pointer-events: auto;
+}
+.care-meters {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+.care-meter,
+.care-hearts {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.care-meter > span,
+.care-hearts > span:first-child {
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #4a5378;
+  white-space: nowrap;
+}
+.care .jp {
+  font-style: normal;
+  font-weight: 800;
+  color: #8a91ad;
+}
+.care-meter b {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(27, 35, 80, 0.1);
+  overflow: hidden;
+}
+.care-meter em {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.4s;
+}
+.care-meter.fed em {
+  background: linear-gradient(90deg, #ff9b3d, #ffd23f);
+}
+.care-meter.mood em {
+  background: linear-gradient(90deg, #ff7ab8, #ffb3d9);
+}
+.care-meter.low em {
+  background: #ff5c5c;
+  animation: care-blink 1.2s ease-in-out infinite;
+}
+.care-meter.mood.max em {
+  background: linear-gradient(90deg, #ff5c8a, #ffd23f);
+  box-shadow: 0 0 8px rgba(255, 92, 138, 0.6);
+}
+@keyframes care-blink {
+  50% {
+    opacity: 0.45;
+  }
+}
+.hearts {
+  display: flex;
+  gap: 1px;
+  color: #d4d8e6;
+}
+.hearts .ki.on {
+  color: #ff5c8a;
+}
+.care-actions {
+  display: flex;
+  gap: 8px;
+}
+.care-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: #ffffff;
+  cursor: pointer;
+  transition:
+    transform 0.1s,
+    filter 0.1s;
+}
+.care-btn b {
+  font-weight: 400;
+  opacity: 0.9;
+}
+.care-btn.feed {
+  background: linear-gradient(100deg, #ff7a1a, #ffb347);
+  box-shadow: 0 4px 12px rgba(255, 122, 26, 0.35);
+}
+.care-btn.train {
+  background: linear-gradient(100deg, #2f7bff, #5ec8ff);
+  box-shadow: 0 4px 12px rgba(47, 123, 255, 0.35);
+}
+.care-btn:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+.care-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.care-btn:disabled {
+  cursor: default;
+  background: rgba(27, 35, 80, 0.1);
+  color: #7a8199;
+  box-shadow: none;
+}
+.care-bonus {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 92, 138, 0.15), rgba(255, 210, 63, 0.2));
+  color: #c2185b;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+.care-bonus b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  color: #ff7a1a;
+}
+/* a piece of meat floats up over the partner as it eats */
+.meat-pop {
+  position: absolute;
+  left: -40px;
+  top: 20px;
+  pointer-events: none;
+  animation: meat-pop 1.2s ease-out forwards;
+}
+@keyframes meat-pop {
+  0% {
+    transform: translateY(10px) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    transform: translateY(0) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-50px) scale(0.8);
+    opacity: 0;
+  }
+}
+@media (max-width: 640px) {
+  .care {
+    padding: 8px 14px 0;
+    gap: 6px;
+  }
+  .care-btn {
+    height: 32px;
+    font-size: 12px;
+  }
+}
+.rr-line.bonus {
+  color: #c2185b;
+}
+.rr-meat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #6a4a2a;
+}
+.rr-meat .jp {
+  font-size: 10.5px;
+  color: #a0846a;
+}

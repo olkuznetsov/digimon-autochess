@@ -31,14 +31,17 @@ export interface RunLedger {
   /** forms raised for the first time ever during this run */
   firsts: string[];
   items: number;
+  /** meat earned for the partner (a battle won: one) */
+  meat?: number;
   /** damage by unit, under its latest form (the MVP) */
   units: Record<string, { formId: string; dealt: number }>;
   /** how often each element stood on the board */
   elements: Partial<Record<Element, number>>;
   /** what earns XP: rounds 1–15 */
   scored: { won: number; lost: number; bosses: number; runWon: boolean };
-  /** the XP went to the tamer: how much, and their XP before it */
-  paid: { xp: number; before: number; at: number } | null;
+  /** the XP went to the tamer: how much (with the partner's bonus on top of `base`: a happy
+   *  partner, a best friend), and their XP before it */
+  paid: { xp: number; before: number; at: number; base?: number; happy?: boolean; friends?: boolean } | null;
   /** the board in the last battle */
   board: string[];
   endedAt: number | null;
@@ -60,6 +63,7 @@ export function newLedger(seed: number, round: number): RunLedger {
     digivolutions: 0,
     firsts: [],
     items: 0,
+    meat: 0,
     units: {},
     elements: {},
     scored: { won: 0, lost: 0, bosses: 0, runWon: false },

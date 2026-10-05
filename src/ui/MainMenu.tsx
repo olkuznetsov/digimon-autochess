@@ -22,7 +22,8 @@ import { AccountBox } from "./AccountBox";
 import { EvoCutIn } from "./Moments";
 import { Digivice } from "./Digivice";
 import { Portrait } from "./Portrait";
-import { ATTR_PATH, CREST_ICON, ELEMENT_PATH, ICON, Icon, STAGE_JP, orList } from "./kit";
+import { ATTR_PATH, CREST_ICON, ELEMENT_PATH, ICON, Icon, Meat, STAGE_JP, orList } from "./kit";
+import { CARE, careBonus, careNow, hearts, isHungry } from "../profile/care";
 import { sfx } from "../audio/sfx";
 import { isMuted, onAudioChange, setMuted } from "../audio/engine";
 
@@ -200,6 +201,80 @@ function TamerFile({ onDigivice }: { onDigivice: () => void }) {
   );
 }
 
+/** The V-Pet: fullness, mood and the bond's five hearts, meat to feed and a training session
+ *  — a happy partner or a best friend earns the tamer more XP. */
+function CareBlock() {
+  const partner = useProfile((s) => s.partner);
+  const meat = useProfile((s) => s.meat);
+  const feed = useProfile((s) => s.feed);
+  const train = useProfile((s) => s.train);
+  // needs drop with time: look again every half a minute
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, []);
+  if (!partner?.care) return null;
+  // the clock ticks every half a minute; an action since then settled the needs at its time
+  const t = Math.max(now, partner.care.at);
+  const c = careNow(partner.care, t);
+  const h = hearts(c);
+  const bonus = careBonus(partner.care);
+  const rest = Math.max(0, (c.trainAt ?? 0) + CARE.trainGapMs - t);
+  const tooHungry = c.fed < CARE.trainMinFed;
+  return (
+    <div className="care">
+      <div className="care-meters">
+        <div className={`care-meter fed${isHungry(c) ? " low" : ""}`} title={`Fullness ${Math.round(c.fed)}/100`}>
+          <span>
+            FULL <i className="jp">おなか</i>
+          </span>
+          <b>
+            <em style={{ width: `${c.fed}%` }} />
+          </b>
+        </div>
+        <div className={`care-meter mood${bonus.happy ? " max" : c.mood < 30 ? " low" : ""}`} title={`Mood ${Math.round(c.mood)}/100`}>
+          <span>
+            MOOD <i className="jp">きげん</i>
+          </span>
+          <b>
+            <em style={{ width: `${c.mood}%` }} />
+          </b>
+        </div>
+        <div className="care-hearts" title={`Bond ${Math.round(c.bond)}/100 — care grows it`}>
+          <span>
+            BOND <i className="jp">きずな</i>
+          </span>
+          <span className="hearts">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Icon key={i} d={ICON.heart} size={15} width={2.2} fill={i < h ? "currentColor" : undefined} className={i < h ? "on" : ""} />
+            ))}
+          </span>
+        </div>
+      </div>
+      <div className="care-actions">
+        <button className="care-btn feed" onClick={feed} disabled={meat <= 0} title={meat > 0 ? "Feed your partner" : "Win battles to earn meat"}>
+          <Meat size={20} /> FEED <b>×{meat}</b>
+        </button>
+        <button
+          className="care-btn train"
+          onClick={train}
+          disabled={rest > 0 || tooHungry}
+          title={tooHungry ? "Too hungry to train" : rest > 0 ? "Resting after training" : "A training session: +mood, +bond, +XP"}
+        >
+          <Icon d={ICON.train} size={18} width={2.6} />
+          {rest > 0 ? `REST ${Math.ceil(rest / 60000)}m` : tooHungry ? "HUNGRY" : "TRAIN"}
+        </button>
+      </div>
+      {bonus.mult > 1 && (
+        <div className="care-bonus">
+          {[bonus.happy && "HAPPY", bonus.friends && "BEST FRIENDS"].filter(Boolean).join(" · ")} <b>+{Math.round((bonus.mult - 1) * 100)}% XP</b>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Bottom right: who the partner is, where it can grow and when. */
 function PartnerCard({ onEvolve, onDigivice }: { onEvolve: () => void; onDigivice: () => void }) {
   const partner = useProfile((s) => s.partner);
@@ -209,7 +284,7 @@ function PartnerCard({ onEvolve, onDigivice }: { onEvolve: () => void; onDigivic
   const starUp = useProfile((s) => s.starUpPartner);
   if (!partner) return null;
   const form = FORMS[partner.formId];
-  // a partner grows with its bond: the XP earned at the tamer's side
+  // a partner grows with its own XP: what was earned at the tamer's side
   const xp = partner.xp ?? 0;
   const level = levelFor(xp).level;
   const canStar = form.stage >= 5 && partner.star < partnerStarCap(level);
@@ -238,7 +313,7 @@ function PartnerCard({ onEvolve, onDigivice }: { onEvolve: () => void; onDigivic
           {partner.star > 1 && <span className="pc-stars"> {"★".repeat(partner.star)}</span>}
         </b>
         <span className="pc-stage">
-          {STAGE_NAME[form.stage].toUpperCase()} · {STAGE_JP[form.stage]} · BOND Lv.{level}
+          {STAGE_NAME[form.stage].toUpperCase()} · {STAGE_JP[form.stage]} · Lv.{level}
         </span>
       </div>
       <div className="pc-chips">
@@ -250,6 +325,7 @@ function PartnerCard({ onEvolve, onDigivice }: { onEvolve: () => void; onDigivic
         </span>
         <span className="chip line">{form.role.toUpperCase()}</span>
       </div>
+      <CareBlock />
       {next !== null && (
         <div className="pc-next">
           <div className="pc-next-row">

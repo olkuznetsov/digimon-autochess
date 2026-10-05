@@ -1,6 +1,7 @@
 import { FORMS } from "../game/creatures";
 import { meterRows, pvpMe, useGame } from "../game/store";
 import { isBossRound, vsRoundKind } from "../game/tuning";
+import { careBonus } from "./care";
 import { XP } from "./profile";
 import { RUN_ROUNDS, newLedger, runXp, updateRun, useRun } from "./run";
 import { useProfile } from "./store";
@@ -12,16 +13,18 @@ import { useProfile } from "./store";
  * and ghost battles pay as they finish.
  */
 
-/** Hand a run's XP to the tamer (once). `quiet` when the run report shows it. */
+/** Hand a run's XP to the tamer (once), with the partner's bonus. `quiet` when the run
+ *  report shows it. */
 function payRun(reason: string, quiet: boolean) {
   const l = useRun.getState().ledger;
   if (!l || l.paid) return;
-  const xp = runXp(l);
-  const before = useProfile.getState().xp;
+  const base = runXp(l);
+  const { xp: before, partner } = useProfile.getState();
+  const { happy, friends } = careBonus(partner?.care);
+  const xp = useProfile.getState().gainXp(base, reason, quiet);
   updateRun((r) => {
-    r.paid = { xp, before, at: Date.now() };
+    r.paid = { xp, before, at: Date.now(), base, happy, friends };
   });
-  useProfile.getState().gainXp(xp, reason, quiet);
 }
 
 /** The ledger follows the solo run: a new run (a reset, or one another device started) pays
@@ -61,6 +64,7 @@ export function startProfileTracker() {
             st.ghostWins++;
           });
           profile.gainXp(XP.ghostWon, "Ghost battle won");
+          profile.earnMeat(1);
         }
         return;
       }
@@ -83,6 +87,11 @@ export function startProfileTracker() {
         }
       });
       if (s.pvp) return; // a VS match pays when it's over
+      // a win lifts the partner's mood and fills its larder
+      if (win) {
+        profile.cheer();
+        profile.earnMeat(1);
+      }
 
       // the solo run's ledger
       if (useRun.getState().ledger?.seed !== s.runSeed) followRun(s.runSeed, s.round);
@@ -112,6 +121,7 @@ export function startProfileTracker() {
           if (f) r.elements[f.element] = (r.elements[f.element] ?? 0) + 1;
         }
         r.board = board.map((u) => u.formId);
+        if (win) r.meat = (r.meat ?? 0) + 1;
         if (s.round <= RUN_ROUNDS) {
           if (win) r.scored.won++;
           else r.scored.lost++;
@@ -132,6 +142,7 @@ export function startProfileTracker() {
         if (place === 1) st.vsWins++;
       });
       profile.gainXp(XP.vsBase + XP.vsPerPlace * Math.max(0, s.pvp.snap.players - place), place === 1 ? "VS won" : `VS #${place}`);
+      profile.earnMeat(2);
     }
 
     // a merge digivolved something: the tamer has raised it

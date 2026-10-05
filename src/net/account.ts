@@ -18,8 +18,8 @@ const SESSION_KEY = "dac-session";
 /** the account version this device last matched */
 const SYNC_KEY = "dac-sync-at";
 /** the layout of what's synced: the worker refuses saves from a game older than the last
- *  one to save (2: partners in the Digivice and the avatar joined the profile) */
-const DATA_SCHEMA = 2;
+ *  one to save (2: partners in the Digivice joined the profile; 3: their care and the meat) */
+const DATA_SCHEMA = 3;
 /** what travels with the account (device preferences, like graphics quality, stay put) */
 const SYNCED = ["dac-profile-v1", "dac-save-v3", "dac-run-v1", "dac-name", "dac-best-round", "dac-onboarded"];
 

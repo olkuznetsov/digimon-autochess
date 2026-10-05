@@ -4,6 +4,8 @@ import { Environment, Html, Lightformer, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { FORMS, ATTR_COLOR } from "../game/creatures";
 import { useProfile } from "../profile/store";
+import { CARE, careNow, isHungry, useCareFx, type CareFx } from "../profile/care";
+import { Meat } from "../ui/kit";
 import { playerName } from "../net/leaderboard";
 import { CreatureModel } from "./CreatureModel";
 import { modelFor, tweakFor } from "./models";
@@ -185,20 +187,58 @@ function GrowthBeam({ grewKey }: { grewKey: number | undefined }) {
   );
 }
 
-/** "Let's go!" over the partner's head for a few seconds after the menu opens. */
-function Greeting({ y }: { y: number }) {
-  const [show, setShow] = useState(true);
+/** What the partner says to what just happened. */
+const SAY: Record<CareFx["kind"], [string, string] | null> = {
+  feed: ["Yum!", "おいしい！"],
+  train: ["Hyah!", "やあっ！"],
+  pet: null,
+  full: ["I'm full!", "おなかいっぱい！"],
+  hungry: ["Too hungry to train…", "おなかすいた…"],
+  tired: ["Let me rest a bit…", "ひとやすみ…"],
+  nomeat: ["We're out of meat!", "おにくがない！"],
+};
+
+/** A speech bubble over the partner's head: how it feels when the menu opens, then what it
+ *  thinks of being fed, trained or turned down. */
+function Bubble({ y }: { y: number }) {
+  const fx = useCareFx((s) => s.fx);
+  const [line, setLine] = useState<{ text: string; jp: string; meat: boolean; key: number } | null>(() => {
+    const p = useProfile.getState().partner;
+    const c = p?.care ? careNow(p.care) : null;
+    const name = playerName();
+    const [text, jp] = !c
+      ? [`Let’s go, ${name}!`, "いこう！"]
+      : isHungry(c)
+        ? [`I'm hungry, ${name}…`, "おなかすいた…"]
+        : c.mood < 30
+          ? ["Play with me!", "あそぼうよ！"]
+          : c.mood >= CARE.happyAt
+            ? [`I'm so happy, ${name}!`, "うれしい！"]
+            : [`Let’s go, ${name}!`, "いこう！"];
+    return { text, jp, meat: false, key: 0 };
+  });
   useEffect(() => {
-    const t = setTimeout(() => setShow(false), 5000);
+    if (!fx || Date.now() - fx.key > 1500) return;
+    const say = SAY[fx.kind];
+    if (say) setLine({ text: say[0], jp: say[1], meat: fx.kind === "feed", key: fx.key });
+  }, [fx]);
+  useEffect(() => {
+    if (!line) return;
+    const t = setTimeout(() => setLine(null), line.key ? 2200 : 5000);
     return () => clearTimeout(t);
-  }, []);
-  if (!show) return null;
+  }, [line]);
+  if (!line) return null;
   return (
     <Html position={[0, y, 0]} zIndexRange={[4, 0]} style={{ pointerEvents: "none" }}>
-      <div className="menu-bubble">
-        <b>Let’s go, {playerName()}!</b>
-        <span className="jp">いこう！</span>
+      <div className="menu-bubble" key={line.key}>
+        <b>{line.text}</b>
+        <span className="jp">{line.jp}</span>
       </div>
+      {line.meat && (
+        <span className="meat-pop" key={`m${line.key}`}>
+          <Meat size={34} />
+        </span>
+      )}
     </Html>
   );
 }
@@ -210,6 +250,29 @@ function Partner({ formId, star }: { formId: string; star: number }) {
   const g = useRef<THREE.Group>(null);
   const [hearts, setHearts] = useState(0);
   const petUntil = useRef(0);
+  // care: eating is a glad little dance and hearts; training, three blows and a cheer (a
+  // refusal is only words, in the bubble)
+  const fx = useCareFx((s) => s.fx);
+  useEffect(() => {
+    if (!fx || Date.now() - fx.key > 1500) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    if (fx.kind === "feed") {
+      sfx.munch();
+      petUntil.current = performance.now() + 1700;
+      setHearts((h) => h + 1);
+    } else if (fx.kind === "train") {
+      [0, 480, 960].forEach((ms) =>
+        timers.push(
+          setTimeout(() => {
+            drive.current.attackKey++;
+            sfx.punch();
+          }, ms),
+        ),
+      );
+      timers.push(setTimeout(() => (petUntil.current = performance.now() + 1300), 1500));
+    }
+    return () => timers.forEach(clearTimeout);
+  }, [fx]);
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     if (g.current) g.current.rotation.y = Math.PI + Math.sin(t * 0.4) * 0.35;
@@ -227,6 +290,7 @@ function Partner({ formId, star }: { formId: string; star: number }) {
           petUntil.current = performance.now() + 1700;
           setHearts((h) => h + 1);
           sfx.buy();
+          useProfile.getState().pet();
         }}
       >
         <Suspense fallback={null}>
@@ -241,7 +305,7 @@ function Partner({ formId, star }: { formId: string; star: number }) {
         </Suspense>
         <Hearts burst={hearts} />
       </group>
-      <Greeting y={TOP + 1.2 * scale} />
+      <Bubble y={TOP + 1.2 * scale} />
     </>
   );
 }

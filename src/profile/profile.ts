@@ -1,5 +1,6 @@
 import { FORMS, isPlayable } from "../game/creatures";
 import type { Element } from "../game/types";
+import { CARE, type Care } from "./care";
 
 /**
  * The tamer's profile: a level earned by playing, and a partner Digimon raised from a Fresh
@@ -67,13 +68,15 @@ export interface Partner {
   since: number;
   /** the forms it has been, oldest first */
   history: string[];
-  /** bond: the XP it has earned at the tamer's side — its level gates its growth (a save
-   *  from before the Digivice held more partners: the tamer's XP) */
+  /** the XP it has earned at the tamer's side — its level gates its growth (a save from
+   *  before the Digivice held more partners: the tamer's XP) */
   xp?: number;
+  /** its needs: fullness, mood and the bond (./care.ts) */
+  care?: Care;
 }
 
-/** A partner's own level, from its bond XP. */
-export const bondLevel = (p: Partner) => levelFor(p.xp ?? 0).level;
+/** A partner's own level, from its XP. */
+export const partnerLevel = (p: Partner) => levelFor(p.xp ?? 0).level;
 
 export interface Profile {
   v: 1;
@@ -82,6 +85,8 @@ export interface Profile {
   partner: Partner | null;
   /** the others, resting in the Digivice */
   others: Partner[];
+  /** meat for the partner, earned in battles */
+  meat: number;
   stats: TamerStats;
   /** crest ids earned */
   crests: string[];
@@ -93,6 +98,7 @@ export function newProfile(): Profile {
     xp: 0,
     partner: null,
     others: [],
+    meat: CARE.startMeat,
     stats: {
       runs: 0,
       runsWon: 0,

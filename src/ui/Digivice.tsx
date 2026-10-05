@@ -1,5 +1,5 @@
 import { FORMS } from "../game/creatures";
-import { MAX_PARTNERS, bondLevel, type Partner } from "../profile/profile";
+import { MAX_PARTNERS, partnerLevel, type Partner } from "../profile/profile";
 import { useProfile } from "../profile/store";
 import { sfx } from "../audio/sfx";
 import { STAGE_JP } from "./kit";
@@ -49,7 +49,7 @@ export function Digivice({ onClose, onHatch }: { onClose: () => void; onHatch: (
                   {p.star > 1 && <span className="dv-stars"> {"★".repeat(p.star)}</span>}
                 </b>
                 <span className="dv-stage">
-                  {STAGE_JP[f.stage]} · Lv.{bondLevel(p)}
+                  {STAGE_JP[f.stage]} · Lv.{partnerLevel(p)}
                 </span>
               </>
             );
