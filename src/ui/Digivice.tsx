@@ -6,20 +6,15 @@ import { STAGE_JP } from "./kit";
 import { Portrait } from "./Portrait";
 
 /**
- * The Digivice: every partner the tamer has hatched — one at their side, the others resting,
- * each growing on its own — a new egg while there's room, and the avatar on the tamer card
- * (the partner, or any Digimon they've raised).
+ * The Digivice: the V-Pet side of the game. Every partner the tamer has hatched — one at their
+ * side (it's also their avatar), the others resting, each grown on its own — and a new egg
+ * while there's room. Cosmetic only: a partner never touches a fight or the tamer's records.
  */
 export function Digivice({ onClose, onHatch }: { onClose: () => void; onHatch: () => void }) {
   const partner = useProfile((s) => s.partner);
   const others = useProfile((s) => s.others);
-  const avatar = useProfile((s) => s.avatar);
-  const raised = useProfile((s) => s.stats.raised);
   const switchTo = useProfile((s) => s.switchPartner);
-  const setAvatar = useProfile((s) => s.setAvatar);
   const all = [partner, ...others].filter((p): p is Partner => !!p);
-  // every Digimon the tamer has raised: their partners' forms first, then the board's
-  const known = [...new Set([...all.flatMap((p) => [...p.history].reverse()), ...[...raised].reverse()])].filter((id) => FORMS[id]);
   return (
     <div className="dv-overlay" onClick={onClose}>
       <section className="dv glass" onClick={(e) => e.stopPropagation()} aria-label="Digivice">
@@ -41,8 +36,7 @@ export function Digivice({ onClose, onHatch }: { onClose: () => void; onHatch: (
           </span>
         </div>
         <p className="dv-note">
-          Each partner grows on its own, with the XP you earn while it's at your side. A new one learns twice as fast until it reaches your
-          tamer level.
+          The one at your side is your avatar and grows with the XP you earn; the others wait here, just as you left them.
         </p>
         <div className="dv-partners">
           {all.map((p, i) => {
@@ -55,10 +49,7 @@ export function Digivice({ onClose, onHatch }: { onClose: () => void; onHatch: (
                   {p.star > 1 && <span className="dv-stars"> {"★".repeat(p.star)}</span>}
                 </b>
                 <span className="dv-stage">
-                  {STAGE_JP[f.stage]} · BOND Lv.{bondLevel(p)}
-                </span>
-                <span className="dv-rec">
-                  {p.runs ?? 0} runs · best {p.best || "—"}
+                  {STAGE_JP[f.stage]} · Lv.{bondLevel(p)}
                 </span>
               </>
             );
@@ -95,23 +86,6 @@ export function Digivice({ onClose, onHatch }: { onClose: () => void; onHatch: (
             </button>
           )}
         </div>
-
-        <div className="dv-sub">
-          <b>AVATAR · アバター</b>
-          <span>on your tamer card</span>
-        </div>
-        <div className="dv-avatars">
-          <button className={`dv-av partner${avatar === null ? " on" : ""}`} onClick={() => setAvatar(null)} title="Your partner">
-            {partner && <Portrait formId={partner.formId} className="dv-av-face" />}
-            <span>PARTNER</span>
-          </button>
-          {known.map((id) => (
-            <button key={id} className={`dv-av${avatar === id ? " on" : ""}`} onClick={() => setAvatar(id)} title={FORMS[id].name}>
-              <Portrait formId={id} className="dv-av-face" />
-            </button>
-          ))}
-        </div>
-        {known.length <= 1 && <p className="dv-note">Every Digimon you raise in a run joins this list.</p>}
       </section>
     </div>
   );

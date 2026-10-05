@@ -47,14 +47,10 @@ export function startProfileTracker() {
     if (solo && s.runSeed !== prev.runSeed) followRun(s.runSeed, s.round);
 
     // a solo run begins with its first battle
-    if (prev.phase === "prep" && s.phase === "battle" && solo && s.round === 1) {
+    if (prev.phase === "prep" && s.phase === "battle" && solo && s.round === 1)
       profile.record((st) => {
         st.runs++;
       });
-      profile.recordPartner((p) => {
-        p.runs = (p.runs ?? 0) + 1;
-      });
-    }
 
     // a battle is over
     if (prev.phase === "battle" && s.phase === "result") {
@@ -87,10 +83,6 @@ export function startProfileTracker() {
         }
       });
       if (s.pvp) return; // a VS match pays when it's over
-      useProfile.getState().recordPartner((p) => {
-        p.best = Math.max(p.best ?? 0, s.round);
-        if (win && boss) p.bosses = (p.bosses ?? 0) + 1;
-      });
 
       // the solo run's ledger
       if (useRun.getState().ledger?.seed !== s.runSeed) followRun(s.runSeed, s.round);

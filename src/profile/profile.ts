@@ -70,18 +70,10 @@ export interface Partner {
   /** bond: the XP it has earned at the tamer's side — its level gates its growth (a save
    *  from before the Digivice held more partners: the tamer's XP) */
   xp?: number;
-  /** runs played with it, the furthest round, bosses beaten */
-  runs?: number;
-  best?: number;
-  bosses?: number;
 }
 
 /** A partner's own level, from its bond XP. */
 export const bondLevel = (p: Partner) => levelFor(p.xp ?? 0).level;
-/** Bond XP for what the tamer earns: a partner below the tamer's level learns twice as fast
- *  (an experienced tamer raises a new one quicker). */
-export const bondGain = (p: Partner, tamerXp: number, amount: number) =>
-  bondLevel(p) < levelFor(tamerXp).level ? amount * 2 : amount;
 
 export interface Profile {
   v: 1;
@@ -90,8 +82,6 @@ export interface Profile {
   partner: Partner | null;
   /** the others, resting in the Digivice */
   others: Partner[];
-  /** a favourite Digimon shown as the tamer's avatar (null: the partner) */
-  avatar: string | null;
   stats: TamerStats;
   /** crest ids earned */
   crests: string[];
@@ -103,7 +93,6 @@ export function newProfile(): Profile {
     xp: 0,
     partner: null,
     others: [],
-    avatar: null,
     stats: {
       runs: 0,
       runsWon: 0,

@@ -43,8 +43,7 @@ function xpForLevel(level: number): number {
 function TamerBadge({ onAvatar }: { onAvatar: () => void }) {
   const xp = useProfile((s) => s.xp);
   const partner = useProfile((s) => s.partner);
-  const avatar = useProfile((s) => s.avatar);
-  const face = avatar ?? partner?.formId;
+  const face = partner?.formId;
   const { level, into, need } = levelFor(xp);
   const [name, setName] = useState(playerName());
   const [editing, setEditing] = useState(false);
@@ -173,7 +172,7 @@ function TamerFile({ onDigivice }: { onDigivice: () => void }) {
         <b>{stats.raised.length}</b>
       </div>
       <button className="tf-digivice" onClick={onDigivice}>
-        <Icon d={ICON.digivice} size={16} width={2.4} /> PARTNERS &amp; AVATAR <span className="jp">デジヴァイス</span>
+        <Icon d={ICON.digivice} size={16} width={2.4} /> PARTNERS <span className="jp">デジヴァイス</span>
       </button>
       <div className="tf-crests-head">
         <span>CRESTS · 紋章</span>
@@ -229,7 +228,7 @@ function PartnerCard({ onEvolve, onDigivice }: { onEvolve: () => void; onDigivic
             PARTNER <span className="jp">パートナー</span>
           </span>
         </h2>
-        <button className="pc-switch" onClick={onDigivice} title="Your partners and avatar">
+        <button className="pc-switch" onClick={onDigivice} title="Your partners (the Digivice)">
           <Icon d={ICON.digivice} size={14} width={2.4} /> {count}/{MAX_PARTNERS}
         </button>
       </div>
@@ -449,7 +448,7 @@ function PartnerChoice({ extra, onDone }: { extra?: boolean; onDone?: () => void
         </h1>
         <p className="v-sub">
           {extra
-            ? "It hatches at your side and grows on its own — twice as fast until it reaches your tamer level. Your other partners wait in the Digivice."
+            ? "It hatches at your side, becomes your avatar and grows with the XP you earn. Your other partners wait in the Digivice, just as you left them."
             : "Every Digimon starts as a baby. Yours grows as you play — and you choose who it becomes."}
         </p>
       </div>

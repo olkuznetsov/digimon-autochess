@@ -3,7 +3,6 @@ import { FORMS } from "../game/creatures";
 import {
   CRESTS,
   MAX_PARTNERS,
-  bondGain,
   bondLevel,
   levelFor,
   newProfile,
@@ -24,10 +23,13 @@ function load(): Profile {
       const p = JSON.parse(raw) as Profile;
       if (p?.v === 1) {
         const out: Profile = { ...newProfile(), ...p, stats: { ...newProfile().stats, ...p.stats } };
-        out.others = Array.isArray(p.others) ? p.others : [];
-        out.avatar = typeof p.avatar === "string" && FORMS[p.avatar] ? p.avatar : null;
+        // a partner is just its forms and its bond (a save from 05.10 also held an avatar and
+        // per-partner records: dropped)
+        const clean = (x: Partner): Partner => ({ formId: x.formId, star: x.star, since: x.since, history: x.history, xp: x.xp });
+        out.others = Array.isArray(p.others) ? p.others.filter((x) => FORMS[x?.formId]).map(clean) : [];
         // a partner from before bonds grew with the tamer: its bond is the tamer's XP
-        if (out.partner && out.partner.xp === undefined) out.partner = { ...out.partner, xp: out.xp };
+        if (out.partner) out.partner = clean({ ...out.partner, xp: out.partner.xp ?? out.xp });
+        delete (out as Partial<Profile> & { avatar?: unknown }).avatar;
         return out;
       }
     }
@@ -37,7 +39,7 @@ function load(): Profile {
   return newProfile();
 }
 
-const hatch = (formId: string, xp: number): Partner => ({ formId, star: 1, since: Date.now(), history: [formId], xp, runs: 0, best: 0, bosses: 0 });
+const hatch = (formId: string, xp: number): Partner => ({ formId, star: 1, since: Date.now(), history: [formId], xp });
 
 export type Screen = "menu" | "game";
 
@@ -59,9 +61,6 @@ interface ProfileState extends Profile {
   hatchPartner: (formId: string) => void;
   /** call a resting partner (`others[i]`) to the tamer's side */
   switchPartner: (i: number) => void;
-  setAvatar: (formId: string | null) => void;
-  /** the partner at the tamer's side: its own records */
-  recordPartner: (fn: (p: Partner) => void) => void;
   /** the next forms on offer, if the tamer's level lets the partner grow */
   evolutionOptions: () => string[];
   evolvePartner: (formId: string) => void;
@@ -111,14 +110,6 @@ export const useProfile = create<ProfileState>()((set, get) => {
       if (!next) return;
       set({ partner: next, others: [...(partner ? [partner] : []), ...others.filter((_, j) => j !== i)] });
     },
-    setAvatar: (formId) => set({ avatar: formId && FORMS[formId] ? formId : null }),
-    recordPartner: (fn) => {
-      const { partner } = get();
-      if (!partner) return;
-      const next = { ...partner };
-      fn(next);
-      set({ partner: next });
-    },
     evolutionOptions: () => {
       const { partner, stats } = get();
       if (!partner) return [];
@@ -149,8 +140,8 @@ export const useProfile = create<ProfileState>()((set, get) => {
       const after = levelFor(xp).level;
       set({
         xp,
-        // the partner at the tamer's side grows with them
-        partner: partner ? { ...partner, xp: (partner.xp ?? 0) + bondGain(partner, get().xp, amount) } : null,
+        // the partner at the tamer's side grows with them (every partner at the same pace)
+        partner: partner ? { ...partner, xp: (partner.xp ?? 0) + amount } : null,
         ...(quiet ? {} : { gain: { amount, reason, levelUp: after > before ? after : null, key: Date.now() } }),
       });
       checkCrests();
@@ -165,16 +156,19 @@ export const useProfile = create<ProfileState>()((set, get) => {
   };
 });
 
-// saved whenever the profile itself changes (not the screen or the toasts)
+// saved whenever the profile itself changes (not the screen or the toasts) — and once at
+// start, so a save in an older layout is stored (and synced) in the current one
 let saved = "";
-useProfile.subscribe((s) => {
-  const p: Profile = { v: 1, xp: s.xp, partner: s.partner, others: s.others, avatar: s.avatar, stats: s.stats, crests: s.crests };
+function persist(s: ProfileState) {
+  const p: Profile = { v: 1, xp: s.xp, partner: s.partner, others: s.others, stats: s.stats, crests: s.crests };
   const json = JSON.stringify(p);
   if (json === saved) return;
   saved = json;
   try {
-    localStorage.setItem(KEY, json);
+    if (localStorage.getItem(KEY) !== json) localStorage.setItem(KEY, json);
   } catch {
     /* storage full or blocked: the profile lives for this visit */
   }
-});
+}
+useProfile.subscribe(persist);
+persist(useProfile.getState());

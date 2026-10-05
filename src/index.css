@@ -5931,7 +5931,7 @@ html, body {
     #14205a url(/art/sea-day.webp) 74% center / cover no-repeat;
 }
 
-/* ---------- the Digivice: partners and the avatar ---------- */
+/* ---------- the Digivice: the partners (the V-Pet side) ---------- */
 .pc-switch {
   display: inline-flex;
   align-items: center;
@@ -6093,11 +6093,6 @@ button.dv-slot:hover {
   font-weight: 800;
   color: #4a5378;
 }
-.dv-rec {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #8a91ad;
-}
 .dv-call {
   margin-top: 4px;
   padding: 2px 10px;
@@ -6124,46 +6119,6 @@ button.dv-slot:hover {
     radial-gradient(circle at 74% 52%, #7cc6ff 0 5px, transparent 6px),
     radial-gradient(circle at 50% 30%, #ffffff 0%, #f6efe6 100%);
   box-shadow: 0 5px 10px rgba(150, 60, 110, 0.25);
-}
-.dv-avatars {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
-  gap: 6px;
-  max-height: 210px;
-  overflow-y: auto;
-  padding: 2px;
-}
-.dv-av {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0;
-  border: none;
-  border-radius: 12px;
-  background: none;
-  cursor: pointer;
-}
-.dv-av-face {
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
-}
-.dv-av.on .dv-av-face {
-  box-shadow:
-    0 0 0 3px var(--orange),
-    0 0 12px rgba(255, 122, 26, 0.6);
-}
-.dv-av.partner span {
-  position: absolute;
-  bottom: 2px;
-  padding: 0 4px;
-  border-radius: 6px;
-  background: rgba(27, 35, 80, 0.75);
-  color: #ffffff;
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: 0.05em;
 }
 .v-cancel {
   margin-top: 10px;
