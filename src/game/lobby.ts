@@ -308,6 +308,8 @@ export interface WireUnit {
 export interface LobbySeat {
   seat: number;
   name: string;
+  /** the tamer's partner: their avatar (null: none, or a room from before avatars) */
+  partner?: string | null;
   online: boolean;
   /** playing the current (or last) match — false for someone who joined after it ended */
   inMatch: boolean;

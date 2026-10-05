@@ -45,7 +45,7 @@ export function LeaderboardModal({ onClose }: { onClose: () => void }) {
     setBusy(e.id);
     try {
       const board = await fetchBoard(e.id);
-      ghostFight(board, e.name);
+      ghostFight(board, e.name, e.partner);
       onClose();
     } catch {
       setError(`${e.name}'s board could not be loaded.`);

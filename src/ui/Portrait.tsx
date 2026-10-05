@@ -8,6 +8,11 @@ function portraitUrl(formId: string): string {
   return `/portraits/${formId}.webp?v=${MODEL_HASH[formId] ?? "0"}`;
 }
 
+/** A tamer's avatar: their partner's portrait, or an empty badge when they have none. */
+export function Avatar({ formId, className = "" }: { formId?: string | null; className?: string }) {
+  return formId && FORMS[formId] ? <Portrait formId={formId} className={`avatar ${className}`} /> : <span className={`avatar empty ${className}`} />;
+}
+
 /** A form's portrait on an attribute-tinted backdrop. Size comes from CSS. */
 export function Portrait({ formId, className = "" }: { formId: string; className?: string }) {
   const form = FORMS[formId];

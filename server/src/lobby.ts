@@ -47,6 +47,8 @@ import { AUGMENTS, MAX_AUGMENTS } from "../../src/game/augments";
 interface Seat {
   seat: number;
   name: string;
+  /** the tamer's partner (their avatar) */
+  partner?: string | null;
   /** secret that lets a dropped player reclaim the seat */
   pid: string;
   /** leaderboard id for the rating; null = unrated (dev builds) */
@@ -191,6 +193,7 @@ export class Lobby extends DurableObject<Env> {
       seats: room.seats.map((s) => ({
         seat: s.seat,
         name: s.name,
+        partner: s.partner ?? null,
         online: online.has(s.seat),
         inMatch: s.inMatch,
         hp: Math.max(0, s.hp),
@@ -250,6 +253,8 @@ export class Lobby extends DurableObject<Env> {
     const url = new URL(request.url);
     const room = await this.load();
     const name = cleanName(url.searchParams.get("name"));
+    const partnerId = url.searchParams.get("partner") ?? "";
+    const partner = partnerId && formOf(partnerId) ? partnerId : null;
     const pid = url.searchParams.get("pid") ?? "";
     const want = Number(url.searchParams.get("seat"));
     const lb = url.searchParams.get("rated") === "1" ? (url.searchParams.get("lb") ?? "").slice(0, 40) || null : null;
@@ -263,6 +268,7 @@ export class Lobby extends DurableObject<Env> {
     const need = seat && room.stage === "match" ? room.version : RULES_VERSION;
     if (need && v !== need) return outdatedSocket(this.ctx);
     if (seat) {
+      seat.partner = partner;
       // reclaiming a seat after a drop: retire the old socket (phones leave half-dead ones)
       for (const ws of this.ctx.getWebSockets()) {
         if ((ws.deserializeAttachment() as Attach | null)?.seat !== seat.seat) continue;
@@ -283,7 +289,7 @@ export class Lobby extends DurableObject<Env> {
       }
       let n = 0;
       while (room.seats.some((s) => s.seat === n)) n++;
-      seat = { seat: n, name, pid: crypto.randomUUID(), lb, inMatch: false, hp: START_HP, alive: true, placement: null, ready: false };
+      seat = { seat: n, name, partner, pid: crypto.randomUUID(), lb, inMatch: false, hp: START_HP, alive: true, placement: null, ready: false };
       if (!room.seats.some((s) => online.has(s.seat))) room.creator = n;
       room.seats = [...room.seats, seat].sort((a, b) => a.seat - b.seat);
     }

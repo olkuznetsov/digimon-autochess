@@ -99,7 +99,7 @@ export async function fightGhost(): Promise<void> {
     const mine = wireBoard(useGame.getState().units);
     useLadder.setState({ fight: { gid: g.gid, name: g.name, lp: g.lp, round, board: mine }, busy: false });
     useProfile.getState().setScreen("game");
-    useGame.getState().ghostFight(g.board, g.name);
+    useGame.getState().ghostFight(g.board, g.name, g.partner);
     // the fight didn't start (the board changed meanwhile): nothing to report
     if (useGame.getState().phase !== "battle") useLadder.setState({ fight: null });
   } catch (e) {

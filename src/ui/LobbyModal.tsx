@@ -3,6 +3,7 @@ import { useGame, pvpName } from "../game/store";
 import { MAX_PLAYERS } from "../game/lobby";
 import { lobbyConnect, lobbyLeave, OUTDATED_MESSAGE, randomCode } from "../net/lobby";
 import { queueJoin, queueLeave, type QueueStatus } from "../net/queue";
+import { Avatar } from "./Portrait";
 
 function savedName() {
   try {
@@ -204,6 +205,7 @@ export function LobbyModal({ onClose, initialCode = "" }: { onClose: () => void;
         <div className="lobby-seats">
           {seats.map((s) => (
             <div key={s.seat} className={`lobby-seat${s.seat === pvp.seat ? " me" : ""}${s.online ? "" : " away"}`}>
+              <Avatar formId={s.partner} className="seat-face" />
               <span className="lobby-name">{s.name}</span>
               {s.seat === pvp.snap.host && <span title="Host — starts the match">👑</span>}
               {!s.online && <span title="Disconnected">📡</span>}

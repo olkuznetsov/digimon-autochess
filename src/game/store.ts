@@ -305,7 +305,7 @@ interface GameState {
   /** render the battle mirrored (PvP guest: the canonical sim has host at the bottom) */
   viewFlip: boolean;
   /** ghost battle vs a leaderboard player's saved board (no run consequences) */
-  ghost: { name: string } | null;
+  ghost: { name: string; partner?: string | null } | null;
 
   reroll: () => void;
   buy: (shopIndex: number) => void;
@@ -362,7 +362,7 @@ interface GameState {
   pickAugment: (id: string) => void;
   rerollAugments: () => void;
 
-  ghostFight: (board: PvpBoardUnit[], name: string) => void;
+  ghostFight: (board: PvpBoardUnit[], name: string, partner?: string | null) => void;
   ghostReturn: () => void;
 }
 
@@ -513,7 +513,7 @@ function initialState() {
     dragPos: null as { x: number; z: number } | null,
     pvp: null as PvpState | null,
     viewFlip: false,
-    ghost: null as { name: string } | null,
+    ghost: null as { name: string; partner?: string | null } | null,
   };
 }
 
@@ -1263,7 +1263,7 @@ export const useGame = create<GameState>((set, get) => ({
   },
 
   // ---------- ghost battles (leaderboard scrims) ----------
-  ghostFight: (board, name) => {
+  ghostFight: (board, name, partner = null) => {
     const state = get();
     if (state.phase !== "prep" || state.pvp || state.pendingEvolution) return;
     const mine = wireBoard(state.units);
@@ -1281,7 +1281,7 @@ export const useGame = create<GameState>((set, get) => ({
       phase: "battle",
       battleSeq: get().battleSeq + 1,
       meter: {},
-      ghost: { name },
+      ghost: { name, partner },
       viewFlip: false,
       result: null,
       boardSnapshot: state.units,

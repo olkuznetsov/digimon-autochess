@@ -12,6 +12,7 @@ import { useProfile } from "../profile/store";
 import { XP } from "../profile/profile";
 import { runXp, useRun } from "../profile/run";
 import { RunReport, type RunEnd } from "./RunReport";
+import { Avatar } from "./Portrait";
 import { beginBattle } from "./Moments";
 import { fightGhost, leagueOf, useLadder } from "../net/ladder";
 // panels opened on demand load on demand (the Guide carries every Digimon's card)
@@ -297,7 +298,9 @@ export function Hud() {
             <span className="result-text">
               {result === "win" ? "GHOST VICTORY" : "GHOST DEFEAT"}
             </span>
-            <span className="runwon-sub">vs {ghost.name} — your run is untouched</span>
+            <span className="runwon-sub ghost-vs">
+              vs <Avatar formId={ghost.partner} className="ghost-face" /> {ghost.name} — your run is untouched
+            </span>
             {ladderNow && ladderLast && (
               <span className="xp-pill">
                 {ladderLast.delta === null
@@ -416,6 +419,7 @@ export function Hud() {
               .map((s) => (
                 <div key={s.seat} className={`final-rank${s.seat === pvp.seat ? " me" : ""}`}>
                   <span className="fr-place">#{s.placement}</span>
+                  <Avatar formId={s.partner} className="rank-face" />
                   <span className="fr-name">{s.name}</span>
                   {s.placement === 1 && <span>🏆</span>}
                 </div>

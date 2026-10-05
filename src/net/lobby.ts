@@ -2,7 +2,7 @@ import { useGame, wireBoard, pvpMe, type PvpBoardUnit } from "../game/store";
 import { CLOSE_OUTDATED, heldCopies, type LobbyFight, type LobbySnapshot } from "../game/lobby";
 import { RULES_VERSION } from "../game/rules-version";
 import { net } from "./bus";
-import { playerId } from "./leaderboard";
+import { partnerForm, playerId } from "./leaderboard";
 import { WORKER_WS } from "../channel";
 
 /** WebSocket client for VS lobbies (2–8 players, the Lobby Durable Object).
@@ -49,7 +49,7 @@ function open() {
   const pvp = useGame.getState().pvp;
   const back = pvp && pvp.code === code ? `&seat=${pvp.seat}&pid=${encodeURIComponent(pvp.pid)}` : "";
   const url =
-    `${WS_BASE}${code}?name=${encodeURIComponent(name)}&lb=${encodeURIComponent(playerId())}` +
+    `${WS_BASE}${code}?name=${encodeURIComponent(name)}&lb=${encodeURIComponent(playerId())}&partner=${encodeURIComponent(partnerForm() ?? "")}` +
     `&rated=${rated() ? 1 : 0}&v=${RULES_VERSION}${back}`;
   const socket = new WebSocket(url);
   ws = socket;

@@ -1,6 +1,7 @@
 import { useGame } from "../game/store";
 import { opponentOf, START_HP } from "../game/lobby";
 import { AUGMENTS } from "../game/augments";
+import { Avatar } from "./Portrait";
 
 /** VS lobby players: HP, who's locked in, who we fight; click one to scout their board. */
 export function Standings() {
@@ -43,6 +44,7 @@ export function Standings() {
           >
             <span className="st-name">
               {against && <span className="st-tag">{opp?.ghost ? "👻" : "⚔"}</span>}
+              <Avatar formId={s.partner} className="st-face" />
               <span className="st-label">{s.name}</span>
               {!s.online && <span className="st-off" title="Offline — their last board plays">📡</span>}
               {(s.augments ?? []).length > 0 && (
