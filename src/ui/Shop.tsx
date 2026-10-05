@@ -128,7 +128,7 @@ export function Shop() {
       <button
         className={`econ-btn lock${locked ? " on" : ""}`}
         onClick={toggleLock}
-        title={locked ? "Shop locked — kept next round (L)" : "Lock the shop for next round (L)"}
+        title={locked ? "Shop locked — kept for the next round (L)" : "Lock the shop: keep these offers for the next round (L)"}
       >
         <Icon d={locked ? ICON.lock : ICON.unlock} size={18} />
       </button>

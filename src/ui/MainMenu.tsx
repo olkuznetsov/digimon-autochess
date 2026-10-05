@@ -423,7 +423,7 @@ function DifficultyPick({ ongoing }: { ongoing: boolean }) {
         aria-checked={village}
         className={`diff vmode${village ? " on" : ""}`}
         onClick={toggleVillage}
-        title="Primary Village mode: a Digimon that falls in battle hatches again, in the same fight, as its line's baby — off the leaderboard"
+        title="Primary Village mode: a Digimon that falls in battle — yours or the wild ones — hatches again, in the same fight, as its line's baby; off the leaderboard"
       >
         <b>VILLAGE</b>
         <span className="jp">はじまりの町</span>

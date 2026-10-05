@@ -7,6 +7,7 @@ import type { Attribute, Element } from "../game/types";
 
 /** 24×24 stroke paths (the play triangle is filled). */
 export const ICON = {
+  eye: "M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z M12 9.2a2.8 2.8 0 1 0 0 5.6a2.8 2.8 0 1 0 0-5.6z",
   home: "M3.5 11.5L12 4l8.5 7.5 M6 10v9.5h12V10 M10 19.5v-5h4v5",
   trophy: "M7 4h10v4.5a5 5 0 0 1-10 0z M7 6.5H4.5a3 3 0 0 0 3 3.5 M17 6.5h2.5a3 3 0 0 1-3 3.5 M12 13.5V17 M8.5 20h7",
   book: "M12 6.5c-2-1.6-4.8-2.2-8.5-2v13c3.7-.2 6.5.4 8.5 2 2-1.6 4.8-2.2 8.5-2v-13c-3.7-.2-6.5.4-8.5 2z M12 6.5v13",

@@ -1,11 +1,21 @@
+import { useEffect } from "react";
+import { create } from "zustand";
 import { useGame } from "../game/store";
 import { FORMS, ATTR_COLOR, ELEMENT_COLOR, ELEMENT_ICON, STAGE_NAME } from "../game/creatures";
+import { ICON, Icon } from "./kit";
 import { Portrait } from "./Portrait";
+
+/** The choice tucked away to look at the board (or the Guide) first — the HUD's action
+ *  button brings it back. */
+export const useEvoPeek = create<{ peek: boolean }>(() => ({ peek: false }));
 
 export function EvolutionChoice() {
   const pending = useGame((s) => s.pendingEvolution);
   const choose = useGame((s) => s.chooseEvolution);
-  if (!pending) return null;
+  const peek = useEvoPeek((s) => s.peek);
+  // every new choice opens up front
+  useEffect(() => useEvoPeek.setState({ peek: false }), [pending]);
+  if (!pending || peek) return null;
 
   const from = FORMS[pending.fromFormId];
 
@@ -37,6 +47,9 @@ export function EvolutionChoice() {
           })}
         </div>
         <div className="evo-hint">Choose an evolution — branches change your attribute &amp; element synergies.</div>
+        <button className="evo-hide" onClick={() => useEvoPeek.setState({ peek: true })}>
+          <Icon d={ICON.eye} size={16} width={2.4} /> Look at the board first
+        </button>
       </div>
     </div>
   );

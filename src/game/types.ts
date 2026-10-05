@@ -114,8 +114,9 @@ export interface Fighter {
   burnPulse?: number;
   /** a Mega's star level (stats baked in by makeFighter; the pips show it) */
   star?: number;
-  /** a final boss's second phase: when this one falls, that form rises in its place */
-  rebirth?: { formId: string; maxHp: number; attack: number };
+  /** a final boss's second phase: when this one falls, that form rises in its place — or, in
+   *  the Primary Village mode (`hatch`), its line's baby hatches there */
+  rebirth?: { formId: string; maxHp: number; attack: number; hatch?: boolean };
   /** a boss's own mechanic (battle.ts): the Eater devours the weakest of the other side, the
    *  Mother Eater broods Eater Bits that shield her */
   mech?: "devour" | "brood";

@@ -550,8 +550,8 @@ const boardCount = (units: Unit[]) => units.filter((u) => u.placement.kind === "
 const COL_ORDER = Array.from({ length: COLS }, (_, i) => i).sort((a, b) => Math.abs(a - (COLS - 1) / 2) - Math.abs(b - (COLS - 1) / 2) || a - b);
 
 /** Teamfight Tactics: a fight starts with every board slot filled — empty slots take bench
- *  units, first slot first: tanks and bruisers to the front, assassins a row behind, ranged
- *  and casters at the back, the middle columns first. */
+ *  units, first slot first, into the back row first (the middle columns first): the front
+ *  stays the line the player set up. */
 function autoFill(units: Unit[], level: number): Unit[] {
   let out = units;
   const taken = new Set(
@@ -565,16 +565,9 @@ function autoFill(units: Unit[], level: number): Unit[] {
     .sort((a, b) => (a.placement as { slot: number }).slot - (b.placement as { slot: number }).slot);
   for (const u of bench) {
     if (boardCount(out) >= boardCap(out, level)) break;
-    const role = FORMS[u.formId].role;
-    const front = PLAYER_ROWS.length - 1;
-    const rows =
-      role === "tank" || role === "bruiser"
-        ? [front, front - 1, front - 2, front - 3]
-        : role === "assassin"
-          ? [front - 1, front, front - 2, front - 3]
-          : [0, 1, 2, 3];
+    // into the back rows: the front is the line the player set up themselves
     let cell: { col: number; row: number } | null = null;
-    for (const row of rows) {
+    for (const row of PLAYER_ROWS) {
       for (const col of COL_ORDER) if (!cell && !taken.has(`${col},${row}`)) cell = { col, row };
       if (cell) break;
     }
@@ -788,12 +781,22 @@ export const useGame = create<GameState>((set, get) => ({
       // Primary Village: when it falls, its line's baby hatches where it stood
       if (get().village) {
         const baby = makeFighter(babyOf(u.formId), `${u.uid}~`, "player", p.col, p.row);
-        f.rebirth = { formId: baby.formId, maxHp: baby.maxHp, attack: baby.attack };
+        f.rebirth = { formId: baby.formId, maxHp: baby.maxHp, attack: baby.attack, hatch: true };
       }
       return f;
     });
 
     applySynergies(playerFighters, onBoard);
+    const enemies = makeEnemyWave(round, runSeed, difficulty);
+    // Primary Village takes in the wild ones too — a boss keeps its own second phase, and the
+    // data-eaters (no line to hatch from) stay gone
+    if (get().village)
+      for (const e of enemies) {
+        const root = babyOf(e.formId);
+        if (e.rebirth || (FORMS[e.formId].bossOnly && root === e.formId)) continue;
+        const baby = makeFighter(root, `${e.uid}~`, "enemy", e.col, e.row);
+        e.rebirth = { formId: baby.formId, maxHp: baby.maxHp, attack: baby.attack, hatch: true };
+      }
     if (isBossRound(round)) sfx.bossIntro();
     else sfx.battleStart();
 
@@ -805,7 +808,7 @@ export const useGame = create<GameState>((set, get) => ({
       viewFlip: false,
       units,
       boardSnapshot: units,
-      fighters: [...playerFighters, ...makeEnemyWave(round, runSeed, difficulty)],
+      fighters: [...playerFighters, ...enemies],
       corpses: [],
       fx: [],
       battleTime: 0,
@@ -1000,7 +1003,9 @@ export const useGame = create<GameState>((set, get) => ({
       round: state.round + 1,
       level: leveled.level,
       xp: leveled.xp,
+      // a lock keeps the shop for one round, then lets go (lock it again to keep it longer)
       shop: state.shopLocked ? state.shop : rollShop(leveled.level, state.discovered, shopPool(state)),
+      shopLocked: false,
       viewFlip: false,
       loot: null,
       freeRerolls: has("freeroll") ? 1 : 0,

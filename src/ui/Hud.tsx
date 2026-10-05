@@ -1,10 +1,11 @@
 import { BlackGear, Coin, ICON, Icon } from "./kit";
 import { lazy, Suspense, useEffect, useState } from "react";
-import { useGame, pvpMe, pvpName } from "../game/store";
+import { useGame, pvpMe, pvpName, boardCap } from "../game/store";
 import { isCarouselRound, isBossRound, vsRoundKind } from "../game/tuning";
 import { carouselPick, opponentOf, ratingDelta } from "../game/lobby";
 import { isAugmentRound } from "../game/augments";
 import { ITEMS } from "../game/items";
+import { FORMS } from "../game/creatures";
 import { PlanTimer } from "./PlanTimer";
 import { XP_TO_NEXT as XP_VIEW } from "../game/xpView";
 import { isMuted, setMuted, isMusicOn, setMusicOn, sfx } from "../audio/sfx";
@@ -14,6 +15,7 @@ import { runXp, useRun } from "../profile/run";
 import { RunReport, type RunEnd } from "./RunReport";
 import { Avatar } from "./Portrait";
 import { beginBattle } from "./Moments";
+import { useEvoPeek } from "./EvolutionChoice";
 import { fightGhost, leagueOf, useLadder } from "../net/ladder";
 // panels opened on demand load on demand (the Guide carries every Digimon's card)
 const LobbyModal = lazy(() => import("./LobbyModal").then((m) => ({ default: m.LobbyModal })));
@@ -38,6 +40,8 @@ function bestRound(): number {
 
 export function Hud() {
   const phase = useGame((s) => s.phase);
+  const pendingEvo = useGame((s) => s.pendingEvolution);
+  const evoPeek = useEvoPeek((s) => s.peek);
   // only the "battle started?" bit, so the HUD doesn't re-render every sim tick
   const battleTime = useGame((s) => (s.battleTime > 0 ? 1 : 0));
   const gold = useGame((s) => s.gold);
@@ -55,6 +59,8 @@ export function Hud() {
   const loot = useGame((s) => s.loot);
   const setSimSpeed = useGame((s) => s.setSimSpeed);
   const boardUnits = useGame((s) => s.units.filter((u) => u.placement.kind === "board").length);
+  // room on the board: the level's slots plus a Digivice's
+  const cap = useGame((s) => boardCap(s.units, s.level));
   const [muted, setMutedUi] = useState(isMuted());
   const [musicOn, setMusicOnUi] = useState(isMusicOn());
   const [showHelp, setShowHelp] = useState(false);
@@ -235,31 +241,43 @@ export function Hud() {
           <div className="stat gold">
             <Coin size={18} /> {gold}
           </div>
-          <div className="stat level">
+          <div className="stat level" title={xpNeed ? `${xpNeed - xp} XP to level ${level + 1}` : "Top level"}>
             <span className="lv">
               <small>Lv.</small>
               {level}
             </span>
-            <span className="xp-track">
-              <span className="xp-fill" style={{ width: `${xpPct * 100}%` }} />
+            <span className="xp-row">
+              <span className="xp-track">
+                <span className="xp-fill" style={{ width: `${xpPct * 100}%` }} />
+              </span>
+              <small className="xp-num">{xpNeed ? `${xp}/${xpNeed}` : "MAX"}</small>
             </span>
           </div>
         </div>
       </div>
 
       <div className="actionbar">
-        {phase === "prep" && !vs && (
-          <button className="action" disabled={boardUnits === 0} onClick={beginBattle}>
-            <Icon d={ICON.swords} size={20} width={2.6} /> Start Battle
+        {/* a digivolution choice tucked away to look at the board: back to it */}
+        {phase === "prep" && pendingEvo && evoPeek && (
+          <button className="action evo-back" onClick={() => useEvoPeek.setState({ peek: false })}>
+            <Icon d={ICON.sparkle} size={20} width={2.6} />
+            <span className="action-label">Digivolve {FORMS[pendingEvo.fromFormId]?.name}</span>
           </button>
         )}
-        {phase === "prep" && vs && stage === "match" && alive && pvp && (
+        {phase === "prep" && !vs && !(pendingEvo && evoPeek) && (
+          <button className="action" disabled={boardUnits === 0} onClick={beginBattle}>
+            <Icon d={ICON.swords} size={20} width={2.6} /> Start Battle
+            <BoardCount n={boardUnits} cap={cap} />
+          </button>
+        )}
+        {phase === "prep" && vs && stage === "match" && alive && pvp && !(pendingEvo && evoPeek) && (
           <div className="battle-bar">
             <button
               className="action"
               disabled={boardUnits === 0 || pvp.myReady || drafting || !!augmentOffer}
               onClick={() => pvpReadyUp()}
             >
+              <span className="action-label">
               {pvp.myReady
                 ? carousel
                   ? "Waiting for the carousel…"
@@ -277,6 +295,8 @@ export function Hud() {
                         : nextOpp?.ghost
                           ? `👻 Ready · ${pvpName(pvp, nextOpp.seat)}'s ghost`
                           : `⚔ Ready · vs ${pvpName(pvp, nextOpp?.seat)}`}
+              </span>
+              {!pvp.myReady && <BoardCount n={boardUnits} cap={cap} />}
             </button>
             <PlanTimer />
           </div>
@@ -475,5 +495,14 @@ export function Hud() {
       {showHelp && <Guide onClose={() => setShowHelp(false)} />}
       </Suspense>
     </>
+  );
+}
+
+/** How many Digimon stand on the board out of how many it has room for (TFT's 6/7). */
+function BoardCount({ n, cap }: { n: number; cap: number }) {
+  return (
+    <span className={`board-count${n < cap ? " short" : ""}`} title={`${n} of ${cap} Digimon on the board`}>
+      {n}/{cap}
+    </span>
   );
 }

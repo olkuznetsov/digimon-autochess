@@ -433,17 +433,18 @@ function reborn(f: Fighter, fighters: Fighter[], events?: CombatEvent[]) {
   next.maxHp = r.maxHp;
   next.hp = r.maxHp;
   next.attack = r.attack;
-  next.boss = !!f.boss;
-  fighters.push(next);
   // a boss awakens; a fallen Digimon of the Primary Village mode hatches again as its baby
+  const awaken = !!f.boss && !r.hatch;
+  next.boss = awaken;
+  fighters.push(next);
   events?.push({
     kind: "cast",
     col: f.col,
     row: f.row,
     attr: next.attribute,
-    ult: f.boss ? "blast" : "heal",
-    name: f.boss ? "Awakening" : "Reborn",
-    stage: f.boss ? 5 : 1,
+    ult: awaken ? "blast" : "heal",
+    name: awaken ? "Awakening" : "Reborn",
+    stage: awaken ? 5 : 1,
     form: r.formId,
     team: f.team,
     toCol: f.col,
