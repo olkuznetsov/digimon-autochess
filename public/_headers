@@ -8,3 +8,11 @@
   Cache-Control: public, max-age=31536000, immutable
 /portraits/*
   Cache-Control: public, max-age=31536000, immutable
+# the soundtrack, the painted backgrounds and the Japanese font subsets keep their names
+# when they change: cached a while, then revalidated
+/music/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/art/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/fonts/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=86400
