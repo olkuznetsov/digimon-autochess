@@ -4295,10 +4295,19 @@ html, body {
       transform: translateY(-10px);
     }
   }
+  /* the partner card stands right on top of the mode buttons, however tall they are (a new
+     tamer's carry the difficulty row too) */
+  .menu {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 0 12px 14px;
+  }
   .partner-card {
-    left: 12px;
-    right: 12px;
-    bottom: 196px;
+    position: relative;
+    right: auto;
+    bottom: auto;
     width: auto;
     padding: 10px 0 12px;
   }
@@ -4324,9 +4333,10 @@ html, body {
     display: none;
   }
   .menu-modes {
-    left: 14px;
-    right: 14px;
-    bottom: 14px;
+    position: relative;
+    left: auto;
+    bottom: auto;
+    margin: 0 2px;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
