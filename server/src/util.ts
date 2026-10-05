@@ -1,5 +1,5 @@
 import { formOf, isPlayable, isTerminal } from "../../src/game/creatures";
-import { ITEMS } from "../../src/game/items";
+import { ITEMS, MAX_ITEMS } from "../../src/game/items";
 import { CLOSE_OUTDATED } from "../../src/game/lobby";
 import { COLS, FRONT_ROW } from "../../src/game/board";
 
@@ -53,7 +53,7 @@ export function cleanUnits(raw: unknown): BoardUnit[] | null {
     const items = Array.isArray(u?.items) ? (u.items as unknown[]).map(String) : [];
     if (!isPlayable(formOf(formId))) return null;
     if (!Number.isInteger(col) || col < 0 || col >= COLS || !Number.isInteger(row) || row < 0 || row > FRONT_ROW) return null;
-    if (items.length > 2 || items.some((i) => !ITEMS[i])) return null;
+    if (items.length > MAX_ITEMS || items.some((i) => !ITEMS[i])) return null;
     // stars only on a Mega (three copies of one), ★★ or ★★★
     const star = u?.star === undefined ? 1 : Number(u.star);
     if (![1, 2, 3].includes(star) || (star > 1 && !isTerminal(formId))) return null;

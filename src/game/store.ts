@@ -3,7 +3,7 @@ import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types"
 import { FORMS, PLAYABLE_IDS, ROOKIE_IDS, babyOf, costOf, isTerminal, mergeParts, sellValue } from "./creatures";
 import { makeFighter, stepCombat, SIM_DT, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
-import { BASE_ITEM_IDS, DIGIVICE, FUSED_ITEM_IDS, RARE_ITEM_IDS, fuseResult } from "./items";
+import { BASE_ITEM_IDS, DIGIVICE, FUSED_ITEM_IDS, MAX_ITEMS, RARE_ITEM_IDS, fuseResult } from "./items";
 import { DIFFICULTY, ECONOMY, SHOP_ODDS, VS, isBossRound, isDifficulty, makeEnemyWave, vsRoundKind, type Difficulty } from "./tuning";
 import {
   carouselEnd,
@@ -188,11 +188,11 @@ function resolveEvolutions(units: Unit[]): {
       if (form.evolvesTo!.length === 1) {
         const consumed = new Set(others.map((u) => u.uid));
         const items = [...(keep.items ?? []), ...others.flatMap((u) => u.items ?? [])];
-        spill.push(...items.slice(2));
+        spill.push(...items.slice(MAX_ITEMS));
         const parts = mergeParts([keep, ...others]);
         current = current
           .filter((u) => !consumed.has(u.uid))
-          .map((u) => (u.uid === keep.uid ? { ...u, formId: form.evolvesTo![0], items: items.slice(0, 2), parts } : u));
+          .map((u) => (u.uid === keep.uid ? { ...u, formId: form.evolvesTo![0], items: items.slice(0, MAX_ITEMS), parts } : u));
         evolved.push({ from: formId, to: form.evolvesTo![0], uid: keep.uid });
         acted = true;
         break; // re-scan from the top
@@ -225,12 +225,12 @@ function resolveEvolutions(units: Unit[]): {
         const others = arr.filter((u) => u.uid !== keep.uid).slice(0, 2);
         const consumed = new Set(others.map((u) => u.uid));
         const items = [...(keep.items ?? []), ...others.flatMap((u) => u.items ?? [])];
-        spill.push(...items.slice(2));
+        spill.push(...items.slice(MAX_ITEMS));
         const star = ((keep.star ?? 1) + 1) as 2 | 3;
         const parts = mergeParts([keep, ...others]);
         current = current
           .filter((u) => !consumed.has(u.uid))
-          .map((u) => (u.uid === keep.uid ? { ...u, star, items: items.slice(0, 2), parts } : u));
+          .map((u) => (u.uid === keep.uid ? { ...u, star, items: items.slice(0, MAX_ITEMS), parts } : u));
         evolved.push({ from: keep.formId, to: keep.formId, uid: keep.uid, star });
         acted = true;
         break;
@@ -671,7 +671,7 @@ export const useGame = create<GameState>((set, get) => ({
     const remaining = units.filter((u) => !consumed.has(u.uid));
     const evolvedUid = nextUid();
     const parts = mergeParts(units.filter((u) => consumed.has(u.uid)));
-    remaining.push({ uid: evolvedUid, formId, placement: pendingEvolution.placement, items: pooled.slice(0, 2), parts });
+    remaining.push({ uid: evolvedUid, formId, placement: pendingEvolution.placement, items: pooled.slice(0, MAX_ITEMS), parts });
     const resolved = resolveEvolutions(remaining);
     sfx.evolve();
     const last = resolved.evolved[resolved.evolved.length - 1];
@@ -680,7 +680,7 @@ export const useGame = create<GameState>((set, get) => ({
       units: resolved.units,
       ...discovery(get().discovered, resolved.units),
       pendingEvolution: resolved.pending,
-      inventory: [...inventory, ...pooled.slice(2), ...resolved.spill],
+      inventory: [...inventory, ...pooled.slice(MAX_ITEMS), ...resolved.spill],
       evoFlash: { ...flash, key: Date.now() },
     });
   },
@@ -726,7 +726,7 @@ export const useGame = create<GameState>((set, get) => ({
     const held = unit.items ?? [];
     // a base item onto a Digimon holding a base item fuses on the spot (TFT-style)
     const partner = held.findIndex((it) => fuseResult(it, selectedItem) !== null);
-    if (partner < 0 && held.length >= 2) return;
+    if (partner < 0 && held.length >= MAX_ITEMS) return;
     const idx = inventory.indexOf(selectedItem);
     if (idx < 0) return;
     const nextInv = [...inventory];

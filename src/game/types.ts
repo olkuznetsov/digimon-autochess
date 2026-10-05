@@ -40,7 +40,7 @@ export interface Unit {
   uid: string;
   formId: string;
   placement: Placement;
-  /** equipped item ids (max 2), persist through digivolution */
+  /** equipped item ids (max 3 — MAX_ITEMS), persist through digivolution */
   items: string[];
   /** the shop copies merged into it (unset: one of its own form, as bought) — what it
    *  holds of the VS pool and what selling it returns */

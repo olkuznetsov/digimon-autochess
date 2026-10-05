@@ -17,6 +17,7 @@
  */
 import { writeFileSync } from "node:fs";
 import { boardCap, useGame, wireBoard, type PvpBoardUnit } from "../src/game/store";
+import { MAX_ITEMS } from "../src/game/items";
 import { pveFighters, simulate } from "../src/game/vsFights";
 import { FORMS, costOf } from "../src/game/creatures";
 import { SIM_DT } from "../src/game/battle";
@@ -240,7 +241,7 @@ function equipItems() {
     const { inventory } = S();
     if (inventory.length === 0) return;
     const carries = onBoard()
-      .filter((u) => (u.items?.length ?? 0) < 2)
+      .filter((u) => (u.items?.length ?? 0) < MAX_ITEMS)
       .sort((a, b) => power(b) - power(a));
     if (carries.length === 0) return;
     S().selectItem(inventory[0]);

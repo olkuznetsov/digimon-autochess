@@ -93,7 +93,7 @@ function Basics() {
           <li>🍼 <b>Babies</b> (Fresh, In-Training) are <b>Free</b>: neutral to every attribute. Fresh have no element yet; In-Training already carry one, as in Cyber Sleuth. Raise them into Rookies.</li>
           <li>⭐ A <b>Mega</b> has nowhere to digivolve: three copies star it up — <b>★★</b> (×1.8 HP and attack), and three ★★ make <b>★★★</b> (×3.2, its ultimate +50%).</li>
           <li>🪑 When a fight starts, empty board slots fill from your bench, first slot first — tanks to the front, ranged to the back.</li>
-          <li>🎒 Items carry over: two stay on the new form, the rest go back to your tray.</li>
+          <li>🎒 Items carry over: three stay on the new form, the rest go back to your tray.</li>
           <li>✨ The shop highlights what you're collecting: <b>×1 owned</b>, <b>⬆ Digivolve</b> (third copy), <b>→ Greymon</b> (it digivolves into one you have).</li>
         </ul>
       </section>
@@ -515,7 +515,7 @@ function Items() {
       <section className="guide-sec">
         <h3>Base items</h3>
         <p>
-          Won in battles, bosses and VS loot. Click an item, then a Digimon, to equip it — two per unit. 🥚 Digitama is
+          Won in battles, bosses and VS loot. Click an item, then a Digimon, to equip it — three per unit. 🥚 Digitama is
           rarer: bosses and the VS carousel.
         </p>
         <div className="item-grid">

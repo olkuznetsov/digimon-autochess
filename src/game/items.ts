@@ -2,7 +2,7 @@ import type { Element, Fighter } from "./types";
 
 /** Equippable items: base items drop after battle wins; any two base items fuse into one
  *  stronger item (a recipe) — in the item tray, or on a Digimon that already holds the
- *  first one. Click-to-equip in prep (max 2/unit). Some fused items carry a mechanic of
+ *  first one. Click-to-equip in prep (max 3/unit). Some fused items carry a mechanic of
  *  their own (the Crests, Lightning Coil …): battle.ts runs those via Fighter.procs. */
 export interface ItemDef {
   id: string;
@@ -86,6 +86,9 @@ export const EMBLEM_ELEMENT: Record<string, Element> = {
   reliamental: "Water",
   kindmental: "Dark",
 };
+/** How many items a Digimon holds. */
+export const MAX_ITEMS = 3;
+
 /** Each Digivice owned adds a board slot — in the tray or held by a Digimon (boardCap in store.ts). */
 export const DIGIVICE = "digivice";
 

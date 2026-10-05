@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useGame } from "../game/store";
 import { DIGIVICE, ITEMS, fuseResult } from "../game/items";
 
-/** Inventory of dropped items. Click an item, then a unit to equip (max 2) — or a
+/** Inventory of dropped items. Click an item, then a unit to equip (max 3) — or a
  *  glowing item to fuse the pair into a stronger one. */
 export function ItemTray() {
   const phase = useGame((s) => s.phase);
@@ -63,7 +63,12 @@ export function ItemTray() {
           );
         })}
       </div>
-      {selected && <div className="tray-hint">Click a Digimon to equip — or a glowing item to fuse</div>}
+      {selected && ITEMS[selected] && (
+        <div className="tray-hint">
+          <b>{ITEMS[selected].name}</b> — {ITEMS[selected].desc}
+          <span>Tap a Digimon to equip — or a glowing item to fuse</span>
+        </div>
+      )}
     </div>
   );
 }

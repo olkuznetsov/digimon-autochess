@@ -1587,9 +1587,20 @@ body,
   color: #8893b5;
 }
 .tray-hint {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   font-size: 11px;
-  color: var(--gold);
+  color: #dfe7ff;
   text-align: center;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+.tray-hint b {
+  color: var(--gold);
+}
+.tray-hint span {
+  color: var(--gold);
+  font-size: 0.9em;
 }
 
 /* ---------- mana bar + item pips on units ---------- */
@@ -7306,5 +7317,45 @@ span.lb-face:not(.portrait) {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+}
+
+/* phones: the item tray is a column of icon tiles, two to a row, between the HUD and the shop —
+   it scrolls when there are many (the names come up in the hint when one is picked) */
+@media (max-width: 640px) {
+  .right-rail {
+    bottom: 160px;
+    width: 96px;
+  }
+  .item-tray {
+    flex: 1;
+    min-height: 0;
+  }
+  .tray-chips {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    pointer-events: auto;
+    scrollbar-width: none;
+  }
+  .item-chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    padding: 0;
+  }
+  .item-chip .item-name,
+  .item-chip .item-desc {
+    display: none;
+  }
+  .item-chip .item-emoji {
+    font-size: 20px;
+  }
+  .tray-hint {
+    font-size: 9.5px;
   }
 }
