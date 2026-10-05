@@ -1,4 +1,4 @@
-import type { Attribute, Element } from "../game/types";
+import type { Attribute, Element, Role } from "../game/types";
 
 /**
  * The anime UI kit (after Digimon Adventure): stroke icons instead of emoji, emblems for
@@ -66,6 +66,16 @@ export const ATTR_PATH: Record<Attribute, string> = {
     "M12 7a5 5 0 1 0 0 10 5 5 0 1 0 0-10z M12 2.5V7 M12 17v4.5 M2.5 12H7 M17 12h4.5 M5.3 5.3l3.2 3.2 M15.5 15.5l3.2 3.2 M5.3 18.7l3.2-3.2 M15.5 8.5l3.2-3.2",
   Free: "M12 3l9 9-9 9-9-9z",
 };
+
+/** How each role fights, as icons: a shield, a hammer, a dagger, a crosshair, an orb. */
+export const ROLE_PATH: Record<Role, string> = {
+  tank: "M12 3l7 2.6v5.6c0 4.6-3 8-7 9.8-4-1.8-7-5.2-7-9.8V5.6z",
+  bruiser: "M13.5 3.5l7 7-3.5 3.5-7-7z M10 10l-6.5 6.5 4 4L14 14",
+  assassin: "M20 4l-9.5 9.5 M20 4l-1.6 5.6-6.6 6.6-3.4-3.4 6.6-6.6z M7.4 12.6l4 4 M4 20l3.2-3.2",
+  ranged: "M12 5a7 7 0 1 0 0 14 7 7 0 1 0 0-14z M12 2v6 M12 16v6 M2 12h6 M16 12h6",
+  caster: "M12 9a4.5 4.5 0 1 0 0 9 4.5 4.5 0 1 0 0-9z M12 2.5v3 M5.6 5.6l2.1 2.1 M18.4 5.6l-2.1 2.1 M3 12h2.5 M18.5 12H21",
+};
+export const ROLE_NAME: Record<Role, string> = { tank: "Tank", bruiser: "Bruiser", assassin: "Assassin", ranged: "Ranged", caster: "Caster" };
 
 /** The stages as the Japanese show names them. */
 export const STAGE_JP = ["", "幼年期I", "幼年期II", "成長期", "成熟期", "究極体"] as const;

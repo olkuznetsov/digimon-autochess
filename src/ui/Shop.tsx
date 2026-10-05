@@ -1,11 +1,11 @@
 import { useState, type CSSProperties } from "react";
 import { useGame, pvpMe } from "../game/store";
-import { FORMS, ATTR_COLOR, DESCENDANTS, PLAYABLE_IDS, STAGE_NAME, TIER_COLOR, costOf, isTerminal, sellValue } from "../game/creatures";
+import { FORMS, ATTR_COLOR, DESCENDANTS, ELEMENT_COLOR, PLAYABLE_IDS, STAGE_NAME, TIER_COLOR, costOf, isTerminal, sellValue } from "../game/creatures";
 import { ECONOMY, SHOP_ODDS } from "../game/tuning";
 import { Portrait } from "./Portrait";
 import { FormTooltip } from "./FormTooltip";
 import { MAX_LEVEL } from "../game/xpView";
-import { Coin, ICON, Icon, STAGE_JP } from "./kit";
+import { Coin, ELEMENT_PATH, ICON, Icon, ROLE_NAME, ROLE_PATH, STAGE_JP } from "./kit";
 
 export function Shop() {
   const phase = useGame((s) => s.phase);
@@ -119,6 +119,17 @@ export function Shop() {
                 <span className="card-cost" title={STAGE_NAME[form.stage]}>
                   <Coin size={13} />
                   {cost}
+                </span>
+                {/* how it fights: its element (a baby has none until a Digimental) and its role */}
+                {form.element !== "Neutral" && (
+                  <span className="card-tag el" style={{ "--el": ELEMENT_COLOR[form.element] } as CSSProperties} title={`${form.element} element`}>
+                    <Icon d={ELEMENT_PATH[form.element]} size={11} width={2.6} />
+                    <span className="card-tag-text">{form.element}</span>
+                  </span>
+                )}
+                <span className="card-tag role" title={ROLE_NAME[form.role]}>
+                  <Icon d={ROLE_PATH[form.role]} size={11} width={2.6} />
+                  <span className="card-tag-text">{ROLE_NAME[form.role]}</span>
                 </span>
               </span>
             </button>
