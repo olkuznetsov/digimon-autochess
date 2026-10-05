@@ -44,6 +44,15 @@
  *     carry at least half the body — J_center in most rigs, Aquilamon's "mass", Reppamon's
  *     "spine" — the one moving most first, up to three) is scaled down until it stays near:
  *     the same moves, a shorter way.
+ * 11. telescoping limbs: a joint that shoots out from its parent — Machinedramon's hand
+ *     flying five heights off on a forearm stretched into a black spike, Digitamamon's special
+ *     MetalGreymon's claw flung on its cable across the field — stretches the skin across the
+ *     gap into long faces. Where a joint pulls away from its parent by more than TELESCOPE
+ *     idle heights beyond its rest distance and skin spans the gap (a vertex weighted to both
+ *     sides), its travel is scaled down to that: Machinedramon's punch still reaches out, the
+ *     claw still flies a square. Left alone: a part that flies off whole (no shared skin: a
+ *     thrown weapon), a soft body's stretch (Kuramon's bounce is short) and a part hidden by
+ *     sending it a thousand times away (Cherrymon's weapon).
  *
  * Geometry, textures and animation stay visually lossless (meshopt "medium" quantizes
  * vertices; gltf-transform re-derives the skins' inverse bind matrices for that — verified
@@ -66,6 +75,8 @@ const OUT = "public/models";
 const MANIFEST = "src/three/model-manifest.ts";
 /** how far a clip may carry the body from its spot, in idle heights (step 10) */
 const ROOT_REACH = 1.2;
+/** how far a joint may pull away from its parent beyond its rest distance, in idle heights (step 11) */
+const TELESCOPE = 1;
 const KEEP_CLIPS = new Set([
   "idle", "move", "attack01", "attack02", "special01", "special02", "win", "damage", "down", "guard",
 ]);
@@ -109,6 +120,7 @@ for (const file of files) {
   const chains = compensateChains(doc);
   const zeroRot = fixZeroRotations(doc);
   const rooted = tameRootMotion(doc);
+  const telescopes = tameTelescopes(doc);
   normalizeMaterials(doc);
 
   await doc.transform(
@@ -134,7 +146,8 @@ for (const file of files) {
       (fixed.length ? `   scale added: ${fixed.join(", ")}` : "") +
       (chains.length ? `   chains: ${chains.join(", ")}` : "") +
       (zeroRot.length ? `   zero rotations fixed: ${zeroRot.join(", ")}` : "") +
-      (rooted.length ? `   root motion: ${rooted.join(", ")}` : ""),
+      (rooted.length ? `   root motion: ${rooted.join(", ")}` : "") +
+      (telescopes.length ? `   telescopes: ${telescopes.join(", ")}` : ""),
   );
 }
 
@@ -326,6 +339,87 @@ function tameRootMotion(doc) {
       drift = driftOf(anim);
     }
     done.push(`${anim.getName()} ${before.toFixed(1)}h→${drift.toFixed(1)}h${scaled.length ? ` (${scaled.join(", ")})` : " (no joint carries it)"}`);
+  }
+  return done;
+}
+
+/** Telescoping limbs (step 11): a joint's travel from its parent capped where skin spans the gap. */
+function tameTelescopes(doc) {
+  const root = doc.getRoot();
+  const buffer = root.listBuffers()[0];
+  const skin = root.listSkins()[0];
+  if (!skin) return [];
+  const joints = skin.listJoints();
+  // the joints each vertex really hangs on (weight ≥ 0.15)
+  const hangs = [];
+  for (const mesh of root.listMeshes())
+    for (const prim of mesh.listPrimitives()) {
+      const ja = prim.getAttribute("JOINTS_0");
+      const wa = prim.getAttribute("WEIGHTS_0");
+      if (!ja || !wa) continue;
+      const jv = [];
+      const wv = [];
+      for (let v = 0; v < ja.getCount(); v++) {
+        ja.getElement(v, jv);
+        wa.getElement(v, wv);
+        const total = wv.reduce((x, y) => x + y, 0) || 1;
+        const on = [...new Set(jv.filter((_, k) => wv[k] / total >= 0.15).map((j) => joints[j]))];
+        if (on.length > 1) hangs.push(on);
+      }
+    }
+  const below = new Map();
+  const subtree = (node) => {
+    if (below.has(node)) return below.get(node);
+    const set = new Set([node]);
+    for (const c of node.listChildren()) for (const n of subtree(c)) set.add(n);
+    below.set(node, set);
+    return set;
+  };
+  // skin across the joint: a vertex hanging on both its side and the rest
+  const spans = (node) => {
+    const sub = subtree(node);
+    return hangs.some((on) => on.some((j) => sub.has(j)) && on.some((j) => !sub.has(j)));
+  };
+  const body = joints.filter(isBodyJoint);
+  const anims = root.listAnimations();
+  const idle = anims.find((a) => a.getName() === "idle");
+  if (!idle || !body.length) return [];
+  const ys = posesOf(idle, body, 10)[0].map((p) => p[1]);
+  const h = Math.max(1e-6, Math.max(...ys) - Math.min(...ys));
+  const apart = (ps) => Math.hypot(ps[0][0] - ps[1][0], ps[0][1] - ps[1][1], ps[0][2] - ps[1][2]);
+  const done = [];
+  for (const anim of anims) {
+    for (const ch of anim.listChannels()) {
+      const node = ch.getTargetNode();
+      const parent = node.getParentNode();
+      if (ch.getTargetPath() !== "translation" || !joints.includes(node) || !parent) continue;
+      // a joint carrying the body moves it as root motion (step 10), not as a limb
+      if ([...subtree(node)].filter((j) => body.includes(j)).length >= body.length / 2) continue;
+      const rest = node.getTranslation();
+      const reach = Math.hypot(...rest);
+      const smp = ch.getSampler();
+      const a = smp.getOutput().getArray();
+      let far = 0;
+      let dev = 0;
+      for (let i = 0; i < a.length; i += 3) {
+        far = Math.max(far, Math.hypot(a[i], a[i + 1], a[i + 2]));
+        dev = Math.max(dev, Math.hypot(a[i] - rest[0], a[i + 1] - rest[1], a[i + 2] - rest[2]));
+      }
+      // hidden by sending it a thousand times away: not a limb
+      if (dev < 1e-6 || (reach > 1e-6 && far > reach * 1000)) continue;
+      // how far it pulls from its parent, in model space, past the idle distance
+      const rest0 = apart(posesOf(idle, [node, parent], 1)[0]);
+      const pulls = Math.max(...posesOf(anim, [node, parent], 20).map(apart)) - rest0;
+      if (pulls <= TELESCOPE * h || !spans(node)) continue;
+      const f = (TELESCOPE * h) / pulls;
+      const out = Float32Array.from(a);
+      for (let i = 0; i < out.length; i += 3) for (let k = 0; k < 3; k++) out[i + k] = rest[k] + (out[i + k] - rest[k]) * f;
+      const moved = doc.createAnimationSampler().setInput(smp.getInput()).setInterpolation(smp.getInterpolation())
+        .setOutput(doc.createAccessor().setType("VEC3").setArray(out).setBuffer(buffer));
+      anim.addSampler(moved);
+      ch.setSampler(moved);
+      done.push(`${anim.getName()}:${node.getName()} ${(pulls / h).toFixed(1)}h→${TELESCOPE}h`);
+    }
   }
   return done;
 }
