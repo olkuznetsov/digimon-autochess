@@ -35,8 +35,16 @@ let dragStart: { x: number; z: number } | null = null;
  *  battles, and trauma-based shake. Also ticks the shared juice clock first thing
  *  every frame. */
 /** dev: a camera for recorded clips — `__cam.k` (0…1) pulls the board camera in toward
- *  where it looks, `__cam.x` / `__cam.z` pan it (world units) */
+ *  where it looks, `__cam.x` / `__cam.z` pan it (world units); it stands in for the
+ *  portrait fight camera below */
 const devCam = { k: 0, x: 0, z: 0 };
+/** Portrait: the board is width-bound, so a fight is small on a phone — once it starts the
+ *  camera drifts after the fight's centre and pulls in toward where it looks, up to this
+ *  far, as long as every living fighter stays in the frame. */
+const FIGHT_PULL = 0.32;
+/** room kept between a fighter and the frame's edge (world units) */
+const FIGHT_MARGIN = 0.7;
+const UP = new THREE.Vector3(0, 1, 0);
 if (import.meta.env.DEV) Object.assign(window, { __cam: devCam });
 
 function CameraRig() {
@@ -48,6 +56,11 @@ function CameraRig() {
   const look = useMemo(() => new THREE.Vector3(), []);
   const pos = useMemo(() => new THREE.Vector3(), []);
   const battleLook = useMemo(() => new THREE.Vector3(), []);
+  const follow = useMemo(() => new THREE.Vector2(), []);
+  const pull = useRef(0);
+  const fwd = useMemo(() => new THREE.Vector3(), []);
+  const side = useMemo(() => new THREE.Vector3(), []);
+  const rel = useMemo(() => new THREE.Vector3(), []);
 
   useEffect(() => {
     if (import.meta.env.DEV) Object.assign(window, { __scene: scene, __gl: gl });
@@ -63,7 +76,7 @@ function CameraRig() {
       cam.updateProjectionMatrix();
     }
     // prep frames board + bench above the shop panel; battle tilts up onto the board
-    // and eases in a little (portrait already fills the width — pushing in would crop)
+    // and eases in a little (portrait pulls in further on the fight — FIGHT_PULL)
     // framed for the 7 × 4 board and its 9-slot bench (portrait is width-bound: the bench
     // spans the board's 7.7 units)
     if (useProfile.getState().screen === "menu") {
@@ -105,6 +118,41 @@ function CameraRig() {
       look.x += devCam.x;
       pos.z += devCam.z;
       look.z += devCam.z;
+    } else if (portrait) {
+      const living = phase === "prep" ? [] : useGame.getState().fighters.filter((f) => f.hp > 0);
+      // the fight's centre: where the living stand, followed halfway and not far
+      let cx = 0;
+      let cz = 0;
+      for (const f of living) {
+        const [x, z] = cellToWorld(f.col, f.row);
+        cx += x;
+        cz += z;
+      }
+      const n = living.length;
+      const tx = n ? THREE.MathUtils.clamp((cx / n) * 0.5, -1, 1) : 0;
+      const tz = n ? THREE.MathUtils.clamp((cz / n - 1) * 0.4, -1, 1) : 0;
+      const ease = 1 - Math.exp(-dt * 2.2);
+      follow.x += (tx - follow.x) * ease;
+      follow.y += (tz - follow.y) * ease;
+      pos.x += follow.x * push.current;
+      look.x += follow.x * push.current;
+      pos.z += follow.y * push.current;
+      look.z += follow.y * push.current;
+      // how far in: pulling toward the look point keeps each fighter's sideways offset and
+      // shortens its depth, so the widest one sets the limit
+      fwd.subVectors(look, pos);
+      const reach = fwd.length();
+      fwd.divideScalar(reach);
+      side.crossVectors(fwd, UP).normalize();
+      const tanHalf = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * (size.width / size.height);
+      let k = FIGHT_PULL;
+      for (const f of living) {
+        const [x, z] = cellToWorld(f.col, f.row);
+        rel.set(x, 0.6, z).sub(pos);
+        k = Math.min(k, (rel.dot(fwd) - (Math.abs(rel.dot(side)) + FIGHT_MARGIN) / tanHalf) / reach);
+      }
+      pull.current += (Math.max(0, k) * push.current - pull.current) * ease;
+      pos.lerp(look, pull.current);
     }
 
     // trauma^2 shake: small positional jitter + a touch of roll
