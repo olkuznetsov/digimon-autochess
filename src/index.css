@@ -6260,3 +6260,16 @@ button.dv-slot:hover {
 .help-modal .lb-season {
   margin: -4px 0 0;
 }
+@media (min-width: 641px) {
+  /* wider screens open the Digivice from the avatar and the partner card */
+  .tf-digivice {
+    display: none;
+  }
+  /* the tamer file stops above the mode buttons (a short window scrolls it) */
+  .tamer-file {
+    max-height: calc(100dvh - 152px - 340px);
+    min-height: 120px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+}

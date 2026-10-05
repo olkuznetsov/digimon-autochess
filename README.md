@@ -2,14 +2,22 @@
 
 A browser auto battler in the Teamfight Tactics mould, themed on Digimon: raise your partners from babies —
 Botamon → Koromon → Agumon, Guilmon or Dracomon → … — merging three copies into the next stage and choosing the
-branch at each step, then watch your team fight in a neon Digital World. Plays on desktop and phones.
+branch at each step, then watch your team fight on File Island's beach. The whole game is dressed as Digimon
+Adventure (1999): an anime UI with Japanese call-outs, a V-Pet partner of your own and a soundtrack in the
+series' mood. Plays on desktop and phones.
 **Live: <https://digimon-autochess.pages.dev>** — mirror for networks that block `pages.dev` (Vodafone Ukraine's
 DNS does): <https://digimon-autochess.askuznetsov6996.workers.dev>
 
-![Five Mega Digimon on the holographic board](public/og.jpg)
+![The main menu: a tamer's partner, WarGreymon, on File Island](docs/menu.jpg)
+
+<p align="center">
+  <img src="docs/board.jpg" width="32%" alt="Planning a round on the beach board: synergies, the shop and the next wave" />
+  <img src="docs/boss.jpg" width="32%" alt="A boss round's cut-in: BOSS BATTLE, VS Devimon" />
+  <img src="docs/report.jpg" width="32%" alt="The run report: the run's records, its MVP and the tamer XP it paid" />
+</p>
 
 *Non-commercial fan project. Digimon and all related names belong to their owners; see [CREDITS.md](CREDITS.md)
-for model sources.*
+for where the models, the art and the music come from.*
 
 ## What's in it
 
@@ -44,17 +52,29 @@ for model sources.*
   Reconnects survive a phone switching apps; play again in the same room. Copy the code or share an invite link
   (`?join=CODE` opens the game with it filled in). Ticks resolve simultaneously, so neither side ever acts first —
   a board against its own mirror is a draw.
-- **A main menu with your partner Digimon**: pick one of five Fresh and raise it — it stands on a holographic
-  pedestal, reacts when you pet it, and digivolves as your tamer level grows (XP from battles, bosses, runs and VS),
-  into the branch you choose among those your play style points to. A tamer card keeps your records and
-  Adventure's crests as achievements. Cosmetic and progression only: a partner never changes a fight.
+- **A V-Pet partner on top of the auto chess**: hatch one of five Fresh in Primary Village and raise it on File
+  Island — it greets you, reacts when you pet it and digivolves as it levels up with the XP you earn, into the
+  branch you choose among those your play style points to (with Adventure's 「アグモン進化ー！」 call-out). The
+  partner at your side is your avatar; the **Digivice** holds up to six, so you can hatch another egg and call a
+  resting one back. A tamer card keeps your records and Adventure's crests as achievements. Purely cosmetic: a
+  partner never touches a fight.
+- **Tamer XP paid at the end of a run**: a solo run counts its XP as you play — battles won and lost, bosses, the
+  win — and pays it at game over or once round 15's final boss is fought (endless rounds earn none), on a **run
+  report** over the island: rounds, battles, bosses, damage, digivolutions, items, time, the MVP, the final team,
+  the Digimon raised for the first time, and the XP line by line with the level bar filling up.
+- **Google accounts**: sign in on the title screen (or play as a guest) and your tamer, partners and run follow
+  you to every device.
 - **Leaderboard and ghost battles** against other players' saved boards — season 2 since the tier rules.
 - **Game feel**: hit-stop, camera shake, sparks, pooled damage numbers, a cinematic beat for Mega ultimates,
-  "data deletion" deaths, a materialize-in at the start of every fight.
-- **Sound with no audio files**: weighty hits, ultimate stingers and a procedural synthwave soundtrack that
-  shifts between prep, battle and boss rounds.
-- **Tamer's Guide** (❓): the rules, the baby trees and every line with stats and ultimates, synergies, item
-  recipes and VS — generated from the game data, so it can't drift from the code.
+  "data deletion" deaths, a materialize-in at the start of every fight, and anime cut-ins — a boss walks in over
+  a Black Gear dusk, the final battle opens under an eclipse.
+- **A soundtrack made for the game**: ten instrumentals made with Suno in Digimon Adventure's mood (two takes each
+  of *File Island*, *Digivolve!*, *Black Gears*, *Fallen Angel* and *Crest of Light*) crossfade with the mood of
+  the moment; the sound effects are synthesized on the fly. A boss round's board turns to dusk, with Black Gears
+  over the sea.
+- **Tamer's Guide** (📖): the rules, the baby trees and every line with stats and ultimates (the Digimon tab is
+  Izzy's Digimon Analyzer), synergies, item recipes and VS — generated from the game data, so it can't drift from
+  the code.
 - Quality-of-life: 2× battle speed, shop lock, hotkeys, drag-to-sell, damage meter, next-wave preview, tooltips,
   "→ Greymon" hints on shop cards that lead to a Digimon you have, a first-run tutorial, volume / graphics /
   reduced-motion settings.
@@ -65,7 +85,8 @@ for model sources.*
 |---|---|
 | UI and state | React 19, TypeScript, zustand |
 | 3D | React Three Fiber (three.js 0.185), drei, postprocessing (HDR bloom, Neutral tone mapping) |
-| Multiplayer, leaderboard | Cloudflare Worker with Durable Objects (`Lobby`, `Matchmaker`, `Leaderboard`) |
+| Multiplayer, leaderboard, accounts | Cloudflare Worker with Durable Objects (`Lobby`, `Matchmaker`, `Leaderboard`, `Account`) |
+| Sign-in | Google Identity Services; the worker checks the ID token (RS256 against Google's keys) and issues its own HMAC session |
 | Hosting | Cloudflare Pages, long-lived immutable caching for hashed models and assets |
 
 Design choices worth a look:
@@ -92,9 +113,21 @@ Design choices worth a look:
   against the bind pose. `npm run optimize-models` turns the 476 MB of sources into 130 MB of meshopt-compressed,
   WebP-textured glTF with pruned clips, harmonized scale tracks and content-hashed URLs; `npm run check-models`
   validates all 294.
-- **Models on demand.** 294 models are 130 MB — too much to fetch for everyone. The rookies load up front; after that
+- **Models on demand.** 294 models are 130 MB — too much to fetch for everyone. The babies a run starts with load up front; after that
   the background only fetches what a player is about to see: what their units can digivolve into, the shop, the next
   wave and their VS opponents' boards (`src/three/models.ts`).
+- **Bounded memory on phones.** A long endless run used to keep every model it had shown until iOS dropped the
+  WebGL context (the screen blinked black). Models that aren't on screen or about to be are now released oldest
+  first past a cap — 36 on touch devices — and fetched again from the HTTP cache if they come back.
+- **Accounts that sync without clobbering.** The account carries what the game already keeps in localStorage.
+  Every save names the version it was based on, so a device that missed a newer save gets a 409 and takes the
+  newer copy, and the worker refuses saves from an older game than the last one to save, so a stale tab can't
+  drop data it doesn't know about.
+- **Music that plays on an iPhone.** Neither host answers byte-range requests, which Safari's media loader needs,
+  so each track is fetched whole and played from a blob through Web Audio, with a `playback` audio session so the
+  silent switch doesn't mute it.
+- **Japanese without the weight.** `scripts/jp-fonts.mjs` subsets the two Japanese fonts to the characters the UI
+  actually uses at build time: 27 KB for both instead of about a megabyte per weight.
 - **Rendered assets from the real scene.** Dev-only "studios" (`/?studio`, `/?studio=og`, `/?studio=icon`) render
   the 294 portraits, the link-preview image and the app icons with the game's own lighting.
 - **Balance from data.** `npm run balance` runs thousands of scrims per form on all five stages (every form wins
