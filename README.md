@@ -88,7 +88,8 @@ for where the models, the art and the music come from.*
   the code.
 - Quality-of-life: 2× battle speed, shop lock, hotkeys, drag-to-sell, damage meter, next-wave preview, tooltips,
   "→ Greymon" hints on shop cards that lead to a Digimon you have, a first-run tutorial, volume / graphics /
-  reduced-motion settings.
+  reduced-motion and damage-number settings (by default only an ultimate's hits print big numbers; every hit,
+  small and summed per unit, is a click away).
 
 ## How it's built
 

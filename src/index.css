@@ -7156,3 +7156,7 @@ span.lb-face:not(.portrait) {
 .dex-card.az.hit {
   box-shadow: 0 0 0 2px #7dffb0, 0 0 16px rgba(61, 220, 132, 0.55);
 }
+/* chatter: an ordinary hit's number, small and see-through (the big hits stay big) */
+.dmgn.small {
+  filter: saturate(0.7) brightness(0.95);
+}

@@ -6,6 +6,7 @@ import { ATTR_COLOR, FORMS } from "../game/creatures";
 import type { Element } from "../game/types";
 import { cellToWorld } from "../game/board";
 import { juice, addTrauma, hitStop, slowMo, screenFlash } from "./juice";
+import { useSettings } from "../settings";
 
 /** Effects run on the juice clock: they freeze in hit-stop, slow in slow-mo and
  *  keep playing after the battle ends (the final blow). */
@@ -485,6 +486,10 @@ interface Num {
   z: number;
   drift: number;
   size: number;
+  /** a small number (chatter) — the next hit on its unit adds to it */
+  small: boolean;
+  target: string;
+  total: number;
 }
 
 function DamageNumbers({ host }: { host: HTMLDivElement }) {
@@ -500,7 +505,7 @@ function DamageNumbers({ host }: { host: HTMLDivElement }) {
       el.className = "dmgn";
       el.style.opacity = "0";
       host.appendChild(el);
-      return { el, alive: false, born: 0, x: 0, y: 0, z: 0, drift: 0, size: 1 };
+      return { el, alive: false, born: 0, x: 0, y: 0, z: 0, drift: 0, size: 1, small: false, target: "", total: 0 };
     });
     return () => pool.current.forEach((n) => n.el.remove());
   }, [host]);
@@ -508,15 +513,33 @@ function DamageNumbers({ host }: { host: HTMLDivElement }) {
   useFrame(() => {
     // spawn numbers for hits we haven't shown yet
     const fx = useGame.getState().fx;
+    const mode = useSettings.getState().damageNumbers;
     for (const f of fx) {
       if (f.kind !== "hit" || seen.current.has(f.id)) continue;
       seen.current.add(f.id);
-      const slot = pool.current.find((n) => !n.alive) ?? pool.current.reduce((a, b) => (a.born < b.born ? a : b));
-      if (!slot) continue;
+      if (mode === "off") continue;
       const [x, z] = cellToWorld(f.col, f.row);
       const amount = Math.round(f.amount ?? 0);
       const mult = f.mult ?? 1;
       const variant = f.tag ?? (f.ability ? "abil" : mult >= 1.1 ? "se" : mult <= 0.9 ? "res" : "");
+      // the big ones: an ultimate's hits (and a dodge); every other hit — super-effective and
+      // heavy swings included — is chatter: small, and summed per unit
+      const big = !!f.ability || f.tag === "miss";
+      if (mode === "big" && !big) continue;
+      // chatter on one unit adds up in one small number instead of a new one per hit
+      if (!big) {
+        const near = pool.current.find(
+          (n) => n.alive && n.small && n.target === `${f.col},${f.row}` && juice.now - n.born < 0.45,
+        );
+        if (near) {
+          near.total += amount;
+          near.el.textContent = String(near.total);
+          near.born = juice.now - 0.05;
+          continue;
+        }
+      }
+      const slot = pool.current.find((n) => !n.alive) ?? pool.current.reduce((a, b) => (a.born < b.born ? a : b));
+      if (!slot) continue;
       // simultaneous hits on one unit stack upward instead of printing over each other
       const bx = x + f.jx;
       const bz = z + f.jz;
@@ -532,8 +555,13 @@ function DamageNumbers({ host }: { host: HTMLDivElement }) {
       slot.drift = (Math.random() - 0.5) * 26;
       slot.size = f.tag
         ? 0.85
-        : Math.min(2.1, (0.85 + Math.log10(Math.max(10, amount)) * 0.28) * (f.ability ? 1.3 : 1) * (f.heavy ? 1.12 : 1) * (variant === "res" ? 0.85 : 1));
-      slot.el.className = `dmgn ${variant}${f.heavy ? " heavy" : ""}`;
+        : big
+          ? Math.min(1.9, (0.85 + Math.log10(Math.max(10, amount)) * 0.28) * (f.ability ? 1.15 : 1) * (f.heavy ? 1.08 : 1))
+          : 0.62 * (variant === "res" ? 0.9 : 1);
+      slot.small = !big;
+      slot.target = `${f.col},${f.row}`;
+      slot.total = amount;
+      slot.el.className = `dmgn ${variant}${f.heavy ? " heavy" : ""}${big ? "" : " small"}`;
       slot.el.textContent = f.tag === "miss" ? "miss" : variant === "se" ? `${amount}!` : `${amount}`;
     }
     if (seen.current.size > 400) seen.current = new Set(fx.map((f) => f.id));

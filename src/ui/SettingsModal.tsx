@@ -43,6 +43,16 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             ))}
           </span>
         </div>
+        <div className="set-row">
+          <span>Damage numbers</span>
+          <span className="set-seg">
+            {(["all", "big", "off"] as const).map((d) => (
+              <button key={d} className={s.damageNumbers === d ? "on" : ""} onClick={() => s.set({ damageNumbers: d })}>
+                {d === "all" ? "All" : d === "big" ? "Ultimates" : "Off"}
+              </button>
+            ))}
+          </span>
+        </div>
         <label className="set-row check">
           <span>Reduced motion</span>
           <input type="checkbox" checked={s.reducedMotion} onChange={(e) => s.set({ reducedMotion: e.target.checked })} />

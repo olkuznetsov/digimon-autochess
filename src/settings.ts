@@ -11,6 +11,9 @@ export interface Settings {
   quality: "high" | "low";
   /** no camera shake or screen flashes */
   reducedMotion: boolean;
+  /** damage numbers: every hit (ordinary ones small, summed per unit), only an ultimate's,
+   *  or none */
+  damageNumbers: "all" | "big" | "off";
 }
 
 const KEY = "dac-settings";
@@ -18,7 +21,7 @@ const KEY = "dac-settings";
 function load(): Settings {
   const prefersReduced =
     typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const defaults: Settings = { musicVolume: 0.7, sfxVolume: 0.9, quality: "high", reducedMotion: prefersReduced };
+  const defaults: Settings = { musicVolume: 0.7, sfxVolume: 0.9, quality: "high", reducedMotion: prefersReduced, damageNumbers: "big" };
   try {
     const raw = localStorage.getItem(KEY);
     return raw ? { ...defaults, ...JSON.parse(raw) } : defaults;
@@ -42,8 +45,8 @@ apply(useSettings.getState());
 useSettings.subscribe((s) => {
   apply(s);
   try {
-    const { musicVolume, sfxVolume, quality, reducedMotion } = s;
-    localStorage.setItem(KEY, JSON.stringify({ musicVolume, sfxVolume, quality, reducedMotion }));
+    const { musicVolume, sfxVolume, quality, reducedMotion, damageNumbers } = s;
+    localStorage.setItem(KEY, JSON.stringify({ musicVolume, sfxVolume, quality, reducedMotion, damageNumbers }));
   } catch {
     /* private mode */
   }
