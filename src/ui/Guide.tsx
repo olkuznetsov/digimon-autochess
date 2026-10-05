@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import {
   FORMS,
   ALL_FORM_IDS,
@@ -23,6 +23,7 @@ import { MAX_LEVEL } from "../game/xpView";
 import { POOL_COPIES, ratingDelta } from "../game/lobby";
 import type { Element, Role } from "../game/types";
 import { Portrait } from "./Portrait";
+import { STAGE_JP } from "./kit";
 
 /**
  * The Tamer's Guide: how to play, every Digimon line, synergies, item recipes and
@@ -192,32 +193,57 @@ function Basics() {
 /** Does a form's name match the search (lower-cased)? */
 const hits = (q: string, id: string) => !!q && FORMS[id].name.toLowerCase().includes(q);
 
+/** One form's card as Izzy's Digimon Analyzer shows it: a window with the name, the picture,
+ *  the data fields and the special move (and, for the babies, what they digivolve into). */
 function FormCard({ id, next = false, hit = false }: { id: string; next?: boolean; hit?: boolean }) {
   const form = FORMS[id];
   const s = statsFor(form);
   const ult = ultimateFor(id, form.role);
   return (
-    <div className={`dex-card${hit ? " hit" : ""}`} style={{ borderColor: ATTR_COLOR[form.attribute] }}>
-      <Portrait formId={id} className="dex-portrait" />
-      <div className="dex-info">
-        <span className="dex-name">{form.name}</span>
-        <span className="dex-meta">
-          <span style={{ color: ATTR_COLOR[form.attribute] }}>{form.attribute}</span> ·{" "}
-          <span style={{ color: ELEMENT_COLOR[form.element] }}>
-            {ELEMENT_ICON[form.element]} {form.element}
-          </span>{" "}
-          · {ROLE_ICON[form.role]} {form.role}
+    <div className={`dex-card az${hit ? " hit" : ""}`} style={{ "--attr": ATTR_COLOR[form.attribute] } as CSSProperties}>
+      <div className="az-head">
+        <span className="az-dots">
+          <i />
+          <i />
+          <i />
         </span>
-        <span className="dex-stats">
-          ❤️{Math.round(s.hp * HP_SCALE)} ⚔️{s.attack} ⚡{s.attackSpeed.toFixed(2)} 🎯{s.range}
-        </span>
-        <span className="dex-ult" title={ult.desc}>
-          {ult.icon} <b>{ult.name}</b> — {ult.desc}
-        </span>
-        {next && form.evolvesTo && (
-          <span className="dex-next">→ {form.evolvesTo.map((n) => FORMS[n].name).join(" · ")}</span>
-        )}
+        <b className="dex-name">{form.name.toUpperCase()}</b>
+        <span className="az-jp">{STAGE_JP[form.stage]}</span>
       </div>
+      <div className="az-body">
+        <Portrait formId={id} className="dex-portrait az-pic" />
+        <dl className="az-data">
+          <dt>LEVEL</dt>
+          <dd>{STAGE_NAME[form.stage]}</dd>
+          <dt>TYPE</dt>
+          <dd>
+            <span style={{ color: ELEMENT_COLOR[form.element] }}>
+              {ELEMENT_ICON[form.element]} {form.element}
+            </span>{" "}
+            · <span style={{ color: ATTR_COLOR[form.attribute] }}>{form.attribute}</span>
+          </dd>
+          <dt>ROLE</dt>
+          <dd>
+            {ROLE_ICON[form.role]} {form.role}
+          </dd>
+          <dt>DATA</dt>
+          <dd className="az-nums">
+            HP {Math.round(s.hp * HP_SCALE)} · ATK {s.attack} · SPD {s.attackSpeed.toFixed(2)} · RNG {s.range}
+          </dd>
+        </dl>
+      </div>
+      <div className="az-move" title={ult.desc}>
+        <span>SPECIAL MOVE</span>
+        <b>
+          {ult.icon} {ult.name}
+        </b>
+        <small>{ult.desc}</small>
+      </div>
+      {next && form.evolvesTo && (
+        <div className="az-next">
+          <span>DIGIVOLVES</span> {form.evolvesTo.map((n) => FORMS[n].name).join(" · ")}
+        </div>
+      )}
     </div>
   );
 }
