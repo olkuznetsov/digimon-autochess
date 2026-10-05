@@ -46,7 +46,9 @@ export function Guide({ onClose, initial = "basics" }: { onClose: () => void; in
     <div className="help-overlay" onClick={onClose}>
       <div className="guide" onClick={(e) => e.stopPropagation()}>
         <div className="guide-head">
-          <span className="guide-title">📖 Tamer's Guide</span>
+          <span className="guide-title">
+            TAMER'S GUIDE <span className="jp">図鑑</span>
+          </span>
           <button className="guide-close" onClick={onClose} title="Close">
             ✕
           </button>
@@ -334,6 +336,12 @@ function Digimon() {
   );
   return (
     <>
+      {/* Izzy's laptop */}
+      <div className="analyzer-bar">
+        <span className="az-dot" />
+        DIGIMON ANALYZER <span className="jp">デジモンアナライザー</span>
+        <span className="az-count">{PLAYABLE_IDS.length} DATA</span>
+      </div>
       <p className="guide-intro">
         {lines.length} lines from {BABY_IDS.length} babies, {PLAYABLE_IDS.length} forms to collect — plus {WILD_IDS.length}{" "}
         wild Digimon and {BOSS_IDS.length} bosses you can only fight. Stats are per role and stage; what sets a Digimon

@@ -87,7 +87,9 @@ export function LobbyModal({ onClose, initialCode = "" }: { onClose: () => void;
     return (
       <div className="help-overlay">
         <div className="help-modal pvp">
-          <div className="help-title">🌐 Finding a match…</div>
+          <div className="help-title">
+            FINDING A MATCH <span className="jp">さがしています</span>
+          </div>
           <div className="queue-count">
             <b>{search.waiting}</b> tamer{search.waiting === 1 ? "" : "s"} searching
           </div>
@@ -117,7 +119,9 @@ export function LobbyModal({ onClose, initialCode = "" }: { onClose: () => void;
     return (
       <div className="help-overlay" onClick={onClose}>
         <div className="help-modal pvp" onClick={(e) => e.stopPropagation()}>
-          <div className="help-title">⚔ VS — 2 to {MAX_PLAYERS} tamers</div>
+          <div className="help-title">
+            VS · 2–{MAX_PLAYERS} TAMERS <span className="jp">たいせん</span>
+          </div>
           <input
             className="pvp-input"
             maxLength={16}
@@ -164,7 +168,9 @@ export function LobbyModal({ onClose, initialCode = "" }: { onClose: () => void;
     return (
       <div className="help-overlay">
         <div className="help-modal pvp">
-          <div className="help-title">🔄 Game updated</div>
+          <div className="help-title">
+            GAME UPDATED <span className="jp">アップデート</span>
+          </div>
           <div className="pvp-waiting">{OUTDATED_MESSAGE}</div>
           <button className="action" onClick={() => location.reload()}>
             ↻ Reload
@@ -191,7 +197,9 @@ export function LobbyModal({ onClose, initialCode = "" }: { onClose: () => void;
   return (
     <div className="help-overlay">
       <div className="help-modal pvp">
-        <div className="help-title">{isPublic ? "🌐 Public match" : "⚔ VS lobby"}</div>
+        <div className="help-title">
+          {isPublic ? "PUBLIC MATCH" : "VS LOBBY"} <span className="jp">たいせん</span>
+        </div>
         {!isPublic && (
           <>
             <div className="pvp-code-label">Room code — send it to your friends:</div>

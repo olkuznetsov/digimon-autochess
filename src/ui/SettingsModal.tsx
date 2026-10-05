@@ -6,7 +6,9 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="help-overlay" onClick={onClose}>
       <div className="help-modal settings" onClick={(e) => e.stopPropagation()}>
-        <div className="help-title">⚙ Settings</div>
+        <div className="help-title">
+          SETTINGS <span className="jp">設定</span>
+        </div>
         <label className="set-row">
           <span>Music</span>
           <input
