@@ -13,6 +13,7 @@ import { XP } from "../profile/profile";
 import { runXp, useRun } from "../profile/run";
 import { RunReport, type RunEnd } from "./RunReport";
 import { beginBattle } from "./Moments";
+import { fightGhost, leagueOf, useLadder } from "../net/ladder";
 // panels opened on demand load on demand (the Guide carries every Digimon's card)
 const LobbyModal = lazy(() => import("./LobbyModal").then((m) => ({ default: m.LobbyModal })));
 const LeaderboardModal = lazy(() => import("./LeaderboardModal").then((m) => ({ default: m.LeaderboardModal })));
@@ -78,6 +79,10 @@ export function Hud() {
   }, [openOnGame]);
   const [showLb, setShowLb] = useState(false);
   const ghost = useGame((s) => s.ghost);
+  const difficulty = useGame((s) => s.difficulty);
+  // a ghost-ladder fight's rating (just now)
+  const ladderLast = useLadder((s) => s.last);
+  const ladderNow = !!ladderLast && Date.now() - ladderLast.key < 120_000;
   const ghostReturn = useGame((s) => s.ghostReturn);
   const pvp = useGame((s) => s.pvp);
   const pvpReadyUp = useGame((s) => s.pvpReadyUp);
@@ -185,6 +190,7 @@ export function Hud() {
         <div className="stats">
           <div className={`stat round${!vs && isBossRound(round) ? " boss" : ""}`}>
             <small>ROUND</small> {round}
+            {!vs && !ghost && difficulty !== "normal" && <span className={`diff-chip ${difficulty}`}>{difficulty.toUpperCase()}</span>}
             {!vs && isBossRound(round) && (
               <span className="boss-chip">
                 <BlackGear size={16} hole="#ff8a1f" /> BOSS
@@ -292,9 +298,29 @@ export function Hud() {
               {result === "win" ? "GHOST VICTORY" : "GHOST DEFEAT"}
             </span>
             <span className="runwon-sub">vs {ghost.name} — your run is untouched</span>
-            <button className="action" onClick={ghostReturn}>
+            {ladderNow && ladderLast && (
+              <span className="xp-pill">
+                {ladderLast.delta === null
+                  ? "rating…"
+                  : ladderLast.delta === 0
+                    ? "unrated"
+                    : `${ladderLast.delta > 0 ? "+" : ""}${ladderLast.delta} LP · ${leagueOf(ladderLast.lp).name}`}
+              </span>
+            )}
+            <button className={ladderNow ? "action ghost" : "action"} onClick={ghostReturn}>
               Return ▸
             </button>
+            {ladderNow && (
+              <button
+                className="action"
+                onClick={() => {
+                  ghostReturn();
+                  void fightGhost();
+                }}
+              >
+                Next ghost ▸
+              </button>
+            )}
           </div>
         )}
         {phase === "result" && !ghost && !gameOver && !runEnd && (

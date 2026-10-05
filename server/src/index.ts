@@ -6,6 +6,7 @@ import { Account } from "./account";
 import { Social } from "./social";
 import { accountIdFor, issueSession, readSession, verifyGoogleIdToken } from "./auth";
 import { formOf } from "../../src/game/creatures";
+import LADDER_SEED from "./ladder-seed.json";
 
 /**
  * Multiplayer server for Digimon Auto Chess (Cloudflare Worker + Durable Objects):
@@ -45,6 +46,8 @@ interface ReadyPayload {
 }
 
 const ROOM_TTL_MS = 3 * 60 * 60 * 1000; // idle rooms are wiped after 3h
+/** every tamer's starting ladder rating (and the seed ghosts') */
+const LADDER_START = 1000;
 /** once one player is ready, the other gets this long (clients auto-ready at 40–50 s;
  *  this covers AFK players and background tabs whose timers are throttled) */
 const READY_DEADLINE_MS = 75 * 1000;
@@ -261,6 +264,39 @@ export class Leaderboard extends DurableObject<Env> {
       if (!cols.some((c) => c.name === "partner")) {
         this.ctx.storage.sql.exec("ALTER TABLE lb ADD COLUMN partner TEXT");
       }
+      // the ghost ladder: ratings, and the boards that fight as ghosts (seeded with the bot's)
+      this.ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS ladder (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        partner TEXT,
+        lp INTEGER NOT NULL DEFAULT 1000,
+        wins INTEGER NOT NULL DEFAULT 0,
+        losses INTEGER NOT NULL DEFAULT 0,
+        peak INTEGER NOT NULL DEFAULT 1000,
+        updated INTEGER NOT NULL
+      )`);
+      this.ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS ghosts (
+        gid INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        partner TEXT,
+        round INTEGER NOT NULL,
+        lp INTEGER NOT NULL,
+        board TEXT NOT NULL,
+        at INTEGER NOT NULL
+      )`);
+      this.ctx.storage.sql.exec("CREATE INDEX IF NOT EXISTS ghosts_round ON ghosts (round)");
+      const seeded = this.ctx.storage.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM ghosts WHERE id LIKE 'seed:%'").toArray()[0]?.n ?? 0;
+      if (!seeded) {
+        (LADDER_SEED as { round: number; board: { formId: string }[] }[]).forEach((g, i) => {
+          // the strongest Digimon on the board is the wandering tamer's avatar
+          const top = [...g.board].sort((a, b) => (formOf(b.formId)?.stage ?? 0) - (formOf(a.formId)?.stage ?? 0))[0];
+          this.ctx.storage.sql.exec(
+            "INSERT INTO ghosts (id, name, partner, round, lp, board, at) VALUES (?,?,?,?,?,?,?)",
+            `seed:${i}`, "Wandering Tamer", top?.formId ?? null, g.round, 1000, JSON.stringify(g.board), 0,
+          );
+        });
+      }
     });
   }
 
@@ -334,6 +370,97 @@ export class Leaderboard extends DurableObject<Env> {
     return this.ctx.storage.sql
       .exec<{ id: string; name: string; best: number; wins: number; rating: number; hasBoard: number; partner: string | null }>(
         `SELECT id, name, best, wins, rating, (board IS NOT NULL) AS hasBoard, partner FROM lb ${by === "rating" ? "WHERE rating > 0 OR wins > 0" : ""} ORDER BY ${order} LIMIT 50`,
+      )
+      .toArray();
+  }
+
+  // ---------- the ghost ladder ----------
+  /** results a tamer may report (one a few seconds at most: a fight takes longer) */
+  private lastResult = new Map<string, number>();
+
+  private ladderRow(id: string) {
+    return (
+      this.ctx.storage.sql
+        .exec<{ lp: number; wins: number; losses: number; peak: number }>("SELECT lp, wins, losses, peak FROM ladder WHERE id = ?", id)
+        .toArray()[0] ?? { lp: LADDER_START, wins: 0, losses: 0, peak: LADDER_START }
+    );
+  }
+
+  async ladderMe(id: string) {
+    return this.ladderRow(String(id).slice(0, 40));
+  }
+
+  /** A ghost for a board of this round: the nearest rounds first, then the nearest rating. */
+  async ladderFind(id: string, round: number) {
+    const me = String(id).slice(0, 40);
+    const r = Math.max(1, Math.min(999, Math.floor(Number(round) || 1)));
+    const { lp } = this.ladderRow(me);
+    for (const w of [0, 1, 2, 4, 8, 999]) {
+      const rows = this.ctx.storage.sql
+        .exec<{ gid: number; name: string; partner: string | null; round: number; lp: number; board: string }>(
+          `SELECT gid, name, partner, round, lp, board FROM ghosts WHERE id != ? AND round BETWEEN ? AND ?
+           ORDER BY ABS(lp - ?) ASC, gid DESC LIMIT 6`,
+          me, r - w, r + w, lp,
+        )
+        .toArray();
+      if (rows.length) {
+        const g = rows[Math.floor(Math.random() * rows.length)];
+        return { gid: g.gid, name: g.name, partner: g.partner, round: g.round, lp: g.lp, board: JSON.parse(g.board) };
+      }
+    }
+    return null;
+  }
+
+  /** A ladder fight's outcome: the rating moves by Elo against the ghost's, and the tamer's
+   *  board joins the ghosts at its round. */
+  async ladderResult(e: { id: string; name: string; partner?: unknown; gid: number; win: boolean; round: number; board?: unknown }) {
+    const id = String(e.id).slice(0, 40);
+    const now = Date.now();
+    if (now - (this.lastResult.get(id) ?? 0) < 5000) return { error: "too fast" };
+    this.lastResult.set(id, now);
+    const name = cleanName(e.name);
+    const partner = typeof e.partner === "string" && formOf(e.partner) ? e.partner : null;
+    const me = this.ladderRow(id);
+    const ghost = this.ctx.storage.sql.exec<{ lp: number }>("SELECT lp FROM ghosts WHERE gid = ?", Math.floor(Number(e.gid) || 0)).toArray()[0];
+    const expected = 1 / (1 + 10 ** (((ghost?.lp ?? LADDER_START) - me.lp) / 400));
+    // the first ten fights place a tamer faster
+    const k = me.wins + me.losses < 10 ? 40 : 24;
+    const raw = Math.round(k * ((e.win ? 1 : 0) - expected));
+    const delta = e.win ? Math.max(1, raw) : Math.min(-1, raw);
+    const lp = Math.max(0, me.lp + delta);
+    const wins = me.wins + (e.win ? 1 : 0);
+    const losses = me.losses + (e.win ? 0 : 1);
+    const peak = Math.max(me.peak, lp);
+    this.ctx.storage.sql.exec(
+      `INSERT INTO ladder (id, name, partner, lp, wins, losses, peak, updated) VALUES (?,?,?,?,?,?,?,?)
+       ON CONFLICT(id) DO UPDATE SET name=excluded.name, partner=excluded.partner, lp=excluded.lp,
+       wins=excluded.wins, losses=excluded.losses, peak=excluded.peak, updated=excluded.updated`,
+      id, name, partner, lp, wins, losses, peak, now,
+    );
+    const board = cleanBoard(e.board);
+    const round = Math.max(1, Math.min(999, Math.floor(Number(e.round) || 1)));
+    if (board) {
+      this.ctx.storage.sql.exec(
+        "INSERT INTO ghosts (id, name, partner, round, lp, board, at) VALUES (?,?,?,?,?,?,?)",
+        id, name, partner, round, lp, board, now,
+      );
+      // a tamer's latest dozen boards; the pool's newest few thousand (the seed stays)
+      this.ctx.storage.sql.exec(
+        "DELETE FROM ghosts WHERE id = ? AND gid NOT IN (SELECT gid FROM ghosts WHERE id = ? ORDER BY gid DESC LIMIT 12)",
+        id, id,
+      );
+      this.ctx.storage.sql.exec(
+        `DELETE FROM ghosts WHERE id NOT LIKE 'seed:%' AND gid NOT IN
+         (SELECT gid FROM ghosts WHERE id NOT LIKE 'seed:%' ORDER BY gid DESC LIMIT 4000)`,
+      );
+    }
+    return { lp, delta, wins, losses, peak };
+  }
+
+  async ladderTop() {
+    return this.ctx.storage.sql
+      .exec<{ id: string; name: string; partner: string | null; lp: number; wins: number; losses: number }>(
+        "SELECT id, name, partner, lp, wins, losses FROM ladder WHERE wins + losses > 0 ORDER BY lp DESC, wins DESC LIMIT 50",
       )
       .toArray();
   }
@@ -510,6 +637,24 @@ export default {
       }
       const ids = Array.isArray(body?.ids) ? body.ids.map(String) : [];
       return json({ deleted: await lb.remove(ids) });
+    }
+    // the ghost ladder (keyed like the leaderboard: the device, or the account)
+    if (url.pathname === "/lb/ladder/top" && request.method === "GET") return json(await lb.ladderTop());
+    if (url.pathname === "/lb/ladder/me" && request.method === "GET") return json(await lb.ladderMe(url.searchParams.get("id") ?? ""));
+    if ((url.pathname === "/lb/ladder/find" || url.pathname === "/lb/ladder/result") && request.method === "POST") {
+      let body: Record<string, unknown>;
+      try {
+        body = await request.json();
+      } catch {
+        return json({ error: "bad json" }, 400);
+      }
+      if (!body?.id) return json({ error: "id required" }, 400);
+      if (url.pathname === "/lb/ladder/find") {
+        const g = await lb.ladderFind(String(body.id), Number(body.round));
+        return g ? json(g) : json({ error: "no ghosts yet" }, 404);
+      }
+      const r = await lb.ladderResult(body as Parameters<Leaderboard["ladderResult"]>[0]);
+      return json(r, "error" in r ? 429 : 200);
     }
     const bm = url.pathname.match(/^\/lb\/board\/([\w-]{1,40})$/);
     if (bm && request.method === "GET") {

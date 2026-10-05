@@ -33,7 +33,7 @@ function followRun(seed: number, round: number) {
   const l = useRun.getState().ledger;
   if (l && l.seed === seed) return;
   if (l && !l.paid && runXp(l) > 0) payRun("Run ended early", false);
-  useRun.setState({ ledger: newLedger(seed, round) });
+  useRun.setState({ ledger: newLedger(seed, round, useGame.getState().difficulty) });
 }
 
 let started = false;

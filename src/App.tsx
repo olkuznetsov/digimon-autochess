@@ -23,11 +23,13 @@ import { useProfile } from "./profile/store";
 import { startProfileTracker } from "./profile/tracker";
 import { startAccountSync } from "./net/account";
 import { startSocial } from "./net/social";
+import { startLadder } from "./net/ladder";
 import { InviteToast } from "./ui/InviteToast";
 
 startProfileTracker();
 startAccountSync();
 startSocial();
+startLadder();
 
 export default function App() {
   const screen = useProfile((s) => s.screen);

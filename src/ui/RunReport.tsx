@@ -2,7 +2,8 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { ELEMENT_COLOR, FORMS } from "../game/creatures";
 import type { Element } from "../game/types";
 import { levelFor } from "../profile/profile";
-import { RUN_ROUNDS, runXp, useRun, xpLines } from "../profile/run";
+import { RUN_ROUNDS, rawRunXp, runXp, useRun, xpLines } from "../profile/run";
+import { DIFFICULTY } from "../game/tuning";
 import { useProfile } from "../profile/store";
 import { sfx } from "../audio/sfx";
 import { ELEMENT_PATH, ICON, Icon, Meat } from "./kit";
@@ -84,6 +85,9 @@ export function RunReport({
   const mvp = Object.values(l.units).sort((a, b) => b.dealt - a.dealt)[0];
   const topEl = (Object.entries(l.elements) as [Element, number][]).sort((a, b) => b[1] - a[1])[0]?.[0];
   const lines = xpLines(l).filter((x) => x.count > 0);
+  // the difficulty: easy pays less, hard more
+  const diff = l.difficulty ?? "normal";
+  const diffXp = runXp(l) - rawRunXp(l);
   // the partner's bonus: a happy partner, a best friend (each a share of the base XP)
   const base = l.paid?.base ?? xp;
   const bonusEach = Math.round(base * CARE.bonus);
@@ -178,6 +182,16 @@ export function RunReport({
                 </div>
               ))}
               {!lines.length && <div className="rr-line dim">No battles fought this run</div>}
+              {diff !== "normal" && (
+                <div className={`rr-line diff ${diff}`}>
+                  <span>{diff === "hard" ? "Hard mode" : "Easy mode"}</span>
+                  <i>×{DIFFICULTY[diff].xp}</i>
+                  <b>
+                    {diffXp >= 0 ? "+" : "−"}
+                    {Math.abs(diffXp)}
+                  </b>
+                </div>
+              )}
               {bonuses.map((b) => (
                 <div key={b} className="rr-line bonus">
                   <span>{b}</span>

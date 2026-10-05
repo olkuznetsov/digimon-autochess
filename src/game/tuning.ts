@@ -190,8 +190,34 @@ function buildWave(round: number, hpScale: number, boss: BossSpec | null, mix: M
   });
 }
 
-/** A solo round's enemies. `seed` is the run's: it picks the bosses (0 = the classic ones). */
-export function makeEnemyWave(round: number, seed = 0): Fighter[] {
+/** A solo run's difficulty, chosen when it starts: how strong the enemies are, what a lost
+ *  round costs the tamer, and the tamer XP the run pays (an easy run stays off the
+ *  leaderboard). */
+export type Difficulty = "easy" | "normal" | "hard";
+export const DIFFICULTY: Record<Difficulty, { hp: number; atk: number; damage: number; xp: number }> = {
+  easy: { hp: 0.8, atk: 0.85, damage: 0.75, xp: 0.75 },
+  normal: { hp: 1, atk: 1, damage: 1, xp: 1 },
+  hard: { hp: 1.15, atk: 1.08, damage: 1.25, xp: 1.5 },
+};
+export const isDifficulty = (d: unknown): d is Difficulty => d === "easy" || d === "normal" || d === "hard";
+
+/** A solo round's enemies at a difficulty. `seed` is the run's: it picks the bosses (0 = the
+ *  classic ones); the difficulty only scales their health and attack (a boss's second phase
+ *  too), never who comes. */
+export function makeEnemyWave(round: number, seed = 0, difficulty: Difficulty = "normal"): Fighter[] {
+  const wave = baseWave(round, seed);
+  const d = DIFFICULTY[difficulty];
+  if (d.hp === 1 && d.atk === 1) return wave;
+  for (const f of wave) {
+    f.maxHp = Math.round(f.maxHp * d.hp);
+    f.hp = f.maxHp;
+    f.attack = Math.round(f.attack * d.atk);
+    if (f.rebirth) f.rebirth = { ...f.rebirth, maxHp: Math.round(f.rebirth.maxHp * d.hp), attack: Math.round(f.rebirth.attack * d.atk) };
+  }
+  return wave;
+}
+
+function baseWave(round: number, seed: number): Fighter[] {
   const hpScale = 1 + (round - 1) * WAVES.hpRamp + (round > 15 ? (round - 15) * WAVES.endlessRamp : 0);
   if (isBossRound(round)) {
     const boss =

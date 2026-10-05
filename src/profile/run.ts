@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Element } from "../game/types";
+import { DIFFICULTY, type Difficulty } from "../game/tuning";
 import { XP } from "./profile";
 
 /**
@@ -15,6 +16,8 @@ export interface RunLedger {
   v: 1;
   /** the run it belongs to (the game's runSeed) */
   seed: number;
+  /** its difficulty (a ledger from before difficulties: normal) */
+  difficulty?: Difficulty;
   startedAt: number;
   /** the furthest round fought */
   round: number;
@@ -47,10 +50,11 @@ export interface RunLedger {
   endedAt: number | null;
 }
 
-export function newLedger(seed: number, round: number): RunLedger {
+export function newLedger(seed: number, round: number, difficulty: Difficulty = "normal"): RunLedger {
   return {
     v: 1,
     seed,
+    difficulty,
     startedAt: Date.now(),
     round: Math.max(0, round - 1),
     won: 0,
@@ -82,7 +86,10 @@ export function xpLines(l: RunLedger): { label: string; count: number; each: num
     { label: "Run won", count: l.scored.runWon ? 1 : 0, each: XP.runWon, once: true },
   ];
 }
-export const runXp = (l: RunLedger) => xpLines(l).reduce((a, x) => a + x.count * x.each, 0);
+/** The lines' sum, before the difficulty. */
+export const rawRunXp = (l: RunLedger) => xpLines(l).reduce((a, x) => a + x.count * x.each, 0);
+/** What the run earned: the lines at its difficulty (easy ×0.75, hard ×1.5). */
+export const runXp = (l: RunLedger) => Math.round(rawRunXp(l) * DIFFICULTY[l.difficulty ?? "normal"].xp);
 
 function load(): RunLedger | null {
   try {

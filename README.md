@@ -69,7 +69,11 @@ for where the models, the art and the music come from.*
 - **Friends**: a tamer code to share (adding one makes you friends both ways), who's online and doing what, one-tap
   JOIN into a friend's VS lobby or an INVITE to yours that pops up wherever they are; partners as avatars there and
   on the leaderboard.
-- **Leaderboard and ghost battles** against other players' saved boards — season 2 since the tier rules.
+- **Leaderboard and ghost battles** against other players' saved boards — season 2 since the tier rules — and a
+  **ghost ladder**: your run's board fights a ghost from the same round (other tamers' boards, seeded with the
+  bot's), an Elo rating and leagues from In-Training to Mega.
+- **Difficulty**: Easy, Normal or Hard for a new run — the enemies' strength, what a lost round costs and the tamer
+  XP it pays (the bot wins about 80%, 42% and 15% of its runs).
 - **Game feel**: hit-stop, camera shake, sparks, pooled damage numbers, a cinematic beat for Mega ultimates,
   "data deletion" deaths, a materialize-in at the start of every fight, and anime cut-ins — a boss walks in over
   a Black Gear dusk, the final battle opens under an eclipse.

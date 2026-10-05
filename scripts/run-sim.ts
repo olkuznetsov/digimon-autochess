@@ -9,7 +9,9 @@
  *
  * Run: npm run runsim [-- runs=300 seed=1 maxRound=25]
  *      npm run runsim -- dumpBoards=boards.json   (bots never die; writes every run's board on
- *      VS wild/boss rounds for tuning the VS waves offline — the solo report is then meaningless)
+ *      VS wild/boss rounds for tuning the VS waves offline — the solo report is then meaningless;
+ *      allRounds=1 writes every round's board: the ghost ladder's seed)
+ *      npm run runsim -- difficulty=hard           (easy | normal | hard)
  * (scripts/run-ts.mjs bundles this with the network + audio modules stubbed out,
  * so bots never post to the live leaderboard.)
  */
@@ -28,6 +30,8 @@ const RUNS = Number(args.runs ?? 300);
 const SEED = Number(args.seed ?? 1);
 const MAX_ROUND = Number(args.maxRound ?? 25);
 const DUMP = args.dumpBoards as string | undefined;
+const ALL_ROUNDS = args.allRounds === "1";
+const DIFF = args.difficulty as "easy" | "normal" | "hard" | undefined;
 
 // ---------- tuning experiments: `variant=name` applies one of these before the runs ----------
 // boss knobs for quick sweeps: `r5=hp,atk,adds` etc. override one round's (first) candidate
@@ -282,6 +286,7 @@ function bossProbe(board: PvpBoardUnit[], round: number): Record<string, boolean
 
 function playRun(): RoundLog[] {
   S().reset();
+  if (DIFF) useGame.setState({ difficulty: DIFF });
   const log: RoundLog[] = [];
   while (S().round <= MAX_ROUND) {
     resolvePending();
@@ -294,8 +299,9 @@ function playRun(): RoundLog[] {
     const board = onBoard();
     const goldLeft = S().gold;
     // VS probe: how would this board fare against the VS wave of the same round?
-    const wired = vsRoundKind(S().round) === "pvp" ? undefined : wireBoard(board);
-    const vs = wired && simulate(pveFighters(wired, S().round, 0)).win;
+    const pve = vsRoundKind(S().round) !== "pvp";
+    const wired = pve || (DUMP && ALL_ROUNDS) ? wireBoard(board) : undefined;
+    const vs = pve && wired && simulate(pveFighters(wired, S().round, 0)).win;
     const bosses = bossProbe(wireBoard(board), S().round);
     const stages = [0, 0, 0, 0, 0];
     for (const u of board) stages[FORMS[u.formId].stage - 1]++;

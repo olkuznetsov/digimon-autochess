@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useState, type CSSProperties } from "react";
 import { FORMS, ELEMENT_COLOR, STAGE_NAME, ATTR_COLOR } from "../game/creatures";
-import { useGame } from "../game/store";
+import { preferredDifficulty, setPreferredDifficulty, useGame } from "../game/store";
+import type { Difficulty } from "../game/tuning";
+import { updateRun } from "../profile/run";
 import { useProfile } from "../profile/store";
 import {
   CRESTS,
@@ -22,6 +24,7 @@ import { AccountBox } from "./AccountBox";
 import { EvoCutIn } from "./Moments";
 import { Digivice } from "./Digivice";
 import { Friends } from "./Friends";
+import { Ladder } from "./Ladder";
 import { useSocial } from "../net/social";
 import { Portrait } from "./Portrait";
 import { ATTR_PATH, CREST_ICON, ELEMENT_PATH, ICON, Icon, Meat, STAGE_JP, orList } from "./kit";
@@ -378,6 +381,39 @@ function PartnerCard({ onEvolve, onDigivice }: { onEvolve: () => void; onDigivic
 }
 
 /** Bottom left: the ways to play. */
+const DIFF: Record<Difficulty, [string, string, string]> = {
+  easy: ["EASY", "やさしい", "Weaker enemies and gentler losses — ×0.75 tamer XP, and the run stays off the leaderboard"],
+  normal: ["NORMAL", "ふつう", "The run as it's meant to be played"],
+  hard: ["HARD", "むずかしい", "Tougher enemies and harsher losses — ×1.5 tamer XP"],
+};
+
+/** The next new run's difficulty (a run that hasn't begun takes it at once). */
+function DifficultyPick({ ongoing }: { ongoing: boolean }) {
+  const [d, setD] = useState<Difficulty>(preferredDifficulty);
+  const pick = (x: Difficulty) => {
+    sfx.click();
+    setD(x);
+    setPreferredDifficulty(x);
+    if (!ongoing) {
+      useGame.setState({ difficulty: x });
+      updateRun((r) => {
+        r.difficulty = x;
+      });
+    }
+  };
+  return (
+    <div className="diff-pick" role="radiogroup" aria-label="Difficulty of a new run">
+      <span className="diff-label">{ongoing ? "NEW RUN" : "DIFFICULTY"}</span>
+      {(["easy", "normal", "hard"] as const).map((x) => (
+        <button key={x} role="radio" aria-checked={d === x} className={`diff ${x}${d === x ? " on" : ""}`} onClick={() => pick(x)} title={DIFF[x][2]}>
+          <b>{DIFF[x][0]}</b>
+          <span className="jp">{DIFF[x][1]}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** a shared friend link (?friend=CODE) opens the friends panel with the code filled in */
 const FRIEND_LINK = (() => {
   try {
@@ -390,14 +426,14 @@ const FRIEND_LINK = (() => {
   }
 })();
 
-function ModeButtons({ onFriends }: { onFriends: () => void }) {
+function ModeButtons({ onFriends, onLadder }: { onFriends: () => void; onLadder: () => void }) {
   const online = useSocial((s) => s.friends.filter((f) => f.online).length);
   const setScreen = useProfile((s) => s.setScreen);
   const round = useGame((s) => s.round);
   const units = useGame((s) => s.units);
   const pvp = useGame((s) => s.pvp);
+  const difficulty = useGame((s) => s.difficulty);
   const ongoing = !pvp && (round > 1 || units.length > 0);
-  const [soon, setSoon] = useState<string | null>(null);
   const go = (vs = false) => {
     sfx.click();
     useProfile.setState({ openOnGame: vs ? "vs" : null });
@@ -405,12 +441,17 @@ function ModeButtons({ onFriends }: { onFriends: () => void }) {
   };
   return (
     <nav className={`menu-modes${ongoing ? "" : " fresh"}`} aria-label="Game modes">
+      <DifficultyPick ongoing={ongoing} />
       <button className="sbtn mode-main" onClick={() => go()}>
         <span className="sheen" />
         <span className="in">
           <span className="mm-text">
             <b>{ongoing ? "CONTINUE" : "SOLO RUN"}</b>
-            <small>{ongoing ? `つづきから · round ${round}` : "はじめから · 15 rounds and a final boss"}</small>
+            <small>
+              {ongoing
+                ? `つづきから · round ${round}${difficulty !== "normal" ? ` · ${difficulty.toUpperCase()}` : ""}`
+                : "はじめから · 15 rounds and a final boss"}
+            </small>
           </span>
           <Icon d={ICON.play} size={30} fill="#ffffff" />
         </span>
@@ -436,9 +477,9 @@ function ModeButtons({ onFriends }: { onFriends: () => void }) {
         </span>
       </button>
       <div className="mode-soon-row">
-        <button className="sbtn mode-soon" onClick={() => setSoon("The ghost ladder")}>
+        <button className="sbtn mode-ghost" onClick={onLadder}>
           <span className="in">
-            <b>GHOST</b> <span className="soon-tag">SOON</span>
+            <b>GHOST</b> <span className="jp">ゴースト</span>
           </span>
         </button>
         <button className="sbtn mode-friends" onClick={onFriends}>
@@ -447,7 +488,6 @@ function ModeButtons({ onFriends }: { onFriends: () => void }) {
           </span>
         </button>
       </div>
-      {soon && <div className="mode-soon-note">{soon} is on its way</div>}
     </nav>
   );
 }
@@ -695,6 +735,7 @@ export function MainMenu() {
   const [digivice, setDigivice] = useState(false);
   const [hatching, setHatching] = useState(false);
   const [friends, setFriends] = useState(!!FRIEND_LINK);
+  const [ladder, setLadder] = useState(false);
   const openDigivice = () => {
     sfx.click();
     setCard(false);
@@ -722,6 +763,10 @@ export function MainMenu() {
           sfx.click();
           setFriends(true);
         }}
+        onLadder={() => {
+          sfx.click();
+          setLadder(true);
+        }}
       />
       {!partner && <PartnerChoice />}
       {digivice && (
@@ -735,6 +780,7 @@ export function MainMenu() {
       )}
       {hatching && <PartnerChoice extra onDone={() => setHatching(false)} />}
       {friends && <Friends initialCode={FRIEND_LINK} onClose={() => setFriends(false)} />}
+      {ladder && <Ladder onClose={() => setLadder(false)} />}
       {evolving && <PartnerEvolution onClose={() => setEvolving(false)} />}
       <GrowthBanner />
       <Suspense fallback={null}>

@@ -6267,7 +6267,7 @@ button.dv-slot:hover {
   }
   /* the tamer file stops above the mode buttons (a short window scrolls it) */
   .tamer-file {
-    max-height: calc(100dvh - 152px - 340px);
+    max-height: calc(100dvh - 152px - 390px);
     min-height: 120px;
     overflow-y: auto;
     scrollbar-width: thin;
@@ -6725,4 +6725,268 @@ button.dv-slot:hover {
 }
 span.lb-face:not(.portrait) {
   background: rgba(255, 255, 255, 0.08);
+}
+.rr-line.diff.hard {
+  color: #d0303c;
+}
+.rr-line.diff.easy {
+  color: #128a43;
+}
+
+/* ---------- difficulty: the menu's pick and the HUD's chip ---------- */
+.diff-pick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+}
+.diff-label {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #ffffff;
+  text-shadow: 0 1px 6px rgba(20, 40, 90, 0.8);
+  margin-right: 4px;
+}
+.diff {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 72px;
+  padding: 5px 10px 4px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--font-display);
+  line-height: 1;
+}
+.diff b {
+  font-weight: 400;
+  font-size: 13px;
+}
+.diff .jp {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 9px;
+  color: #6a7396;
+}
+.diff.on.easy {
+  border-color: #1fae57;
+  background: #e6fbef;
+}
+.diff.on.normal {
+  border-color: var(--blue);
+  background: #e8f1ff;
+}
+.diff.on.hard {
+  border-color: #e0303c;
+  background: #ffe9ea;
+}
+.diff-chip {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  color: #ffffff;
+}
+.diff-chip.easy {
+  background: #1fae57;
+}
+.diff-chip.hard {
+  background: #e0303c;
+}
+@media (max-width: 640px) {
+  .diff-pick {
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
+  .diff {
+    min-width: 0;
+    flex: 1;
+    padding: 4px 6px;
+  }
+  .diff-label {
+    display: none;
+  }
+  /* a phone has room for it only before a run starts (NEW RUN brings it back) */
+  .menu-modes:not(.fresh) .diff-pick {
+    display: none;
+  }
+}
+
+/* ---------- the ghost ladder (ゴースト) ---------- */
+.mode-ghost {
+  width: 150px;
+  height: 48px;
+  font-size: 14px;
+  background: linear-gradient(100deg, #3a1530, #7a2a5a);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(58, 21, 48, 0.4);
+}
+.mode-ghost .in {
+  padding: 0 14px;
+  gap: 8px;
+}
+.mode-ghost .jp {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 10px;
+  color: #ffd2e8;
+}
+.ld-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 16px;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--lg) 22%, #ffffff), #ffffff);
+  border: 2px solid color-mix(in srgb, var(--lg) 60%, #ffffff);
+}
+.ld-emblem {
+  flex: none;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 35% 30%, #ffffff, var(--lg) 70%);
+  box-shadow:
+    0 0 0 3px #ffffff,
+    0 0 0 5px var(--lg),
+    0 6px 16px rgba(20, 40, 90, 0.25);
+}
+.ld-emblem b {
+  font-family: var(--font-body);
+  font-weight: 900;
+  font-size: 15px;
+  color: #1b2350;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.ld-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ld-league {
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #4a5378;
+}
+.ld-lp {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 28px;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.ld-lp small {
+  font-size: 13px;
+}
+.ld-rec {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #6a7396;
+}
+.ld-bar {
+  display: block;
+  height: 7px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: rgba(27, 35, 80, 0.1);
+  overflow: hidden;
+}
+.ld-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--lg);
+}
+.ld-go {
+  width: 100%;
+  height: 50px;
+  font-size: 16px;
+  background: linear-gradient(100deg, #3a1530, #b0306a);
+  box-shadow: 0 8px 18px rgba(120, 30, 80, 0.35);
+}
+.ld-go .in {
+  justify-content: center;
+  gap: 10px;
+}
+.ld-go b {
+  font-weight: 400;
+}
+.ld-top {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 34vh;
+  overflow-y: auto;
+}
+.ld-top li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1.5px solid rgba(27, 35, 80, 0.08);
+}
+.ld-top li.me {
+  border-color: var(--orange);
+}
+.ld-top .fr-face {
+  width: 34px;
+  height: 34px;
+}
+.ld-rank {
+  width: 20px;
+  text-align: center;
+  font-family: var(--font-display);
+  color: #8a91ad;
+}
+.ld-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--ink);
+}
+.ld-chip {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lg) 25%, #ffffff);
+  color: #1b2350;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+.ld-top li b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  color: var(--ink);
+  min-width: 42px;
+  text-align: right;
+}
+@media (max-width: 640px) {
+  .mode-ghost {
+    width: auto;
+    height: 40px;
+    font-size: 12px;
+  }
+  .mode-ghost .in {
+    justify-content: center;
+  }
 }

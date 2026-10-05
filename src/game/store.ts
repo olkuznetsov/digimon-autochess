@@ -4,7 +4,7 @@ import { FORMS, PLAYABLE_IDS, ROOKIE_IDS, costOf, isTerminal, mergeParts, sellVa
 import { makeFighter, stepCombat, SIM_DT, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
 import { BASE_ITEM_IDS, DIGIVICE, FUSED_ITEM_IDS, RARE_ITEM_IDS, fuseResult } from "./items";
-import { ECONOMY, SHOP_ODDS, VS, isBossRound, makeEnemyWave, vsRoundKind } from "./tuning";
+import { DIFFICULTY, ECONOMY, SHOP_ODDS, VS, isBossRound, isDifficulty, makeEnemyWave, vsRoundKind, type Difficulty } from "./tuning";
 import {
   carouselEnd,
   carouselPick,
@@ -249,6 +249,8 @@ interface GameState {
   round: number;
   /** the solo run's seed: picks which boss each boss round brings (0 = the classic ones) */
   runSeed: number;
+  /** the solo run's difficulty (chosen when it starts) */
+  difficulty: Difficulty;
   streak: number;
   gameOver: boolean;
 
@@ -451,6 +453,23 @@ function readSpeed(): number {
 
 const newRunSeed = () => 1 + Math.floor(Math.random() * (2 ** 31 - 2));
 
+/** The difficulty the next new run starts at (the menu sets it; remembered). */
+export function preferredDifficulty(): Difficulty {
+  try {
+    const d = localStorage.getItem("dac-difficulty");
+    return isDifficulty(d) ? d : "normal";
+  } catch {
+    return "normal";
+  }
+}
+export function setPreferredDifficulty(d: Difficulty) {
+  try {
+    localStorage.setItem("dac-difficulty", d);
+  } catch {
+    /* not remembered: still used for this visit's next run */
+  }
+}
+
 function initialState() {
   return {
     gold: ECONOMY.startGold,
@@ -459,6 +478,7 @@ function initialState() {
     health: START_HEALTH,
     round: 1,
     runSeed: newRunSeed(),
+    difficulty: preferredDifficulty(),
     streak: 0,
     gameOver: false,
     shop: rollShop(START_LEVEL, []),
@@ -735,7 +755,7 @@ export const useGame = create<GameState>((set, get) => ({
   setDrag: (uid, pos) => set({ dragId: uid, dragPos: pos }),
 
   startBattle: () => {
-    const { round, runSeed, pendingEvolution } = get();
+    const { round, runSeed, difficulty, pendingEvolution } = get();
     if (pendingEvolution) return;
     // empty board slots take bench units, as in Teamfight Tactics
     const units = autoFill(get().units, get().level);
@@ -759,7 +779,7 @@ export const useGame = create<GameState>((set, get) => ({
       viewFlip: false,
       units,
       boardSnapshot: units,
-      fighters: [...playerFighters, ...makeEnemyWave(round, runSeed)],
+      fighters: [...playerFighters, ...makeEnemyWave(round, runSeed, difficulty)],
       corpses: [],
       fx: [],
       battleTime: 0,
@@ -873,7 +893,7 @@ export const useGame = create<GameState>((set, get) => ({
         return;
       }
       const survivingEnemies = alive.filter((fr) => fr.team === "enemy").length;
-      const damage = win ? 0 : 4 + survivingEnemies * 2;
+      const damage = win ? 0 : Math.round((4 + survivingEnemies * 2) * DIFFICULTY[state.difficulty].damage);
       const health = Math.max(0, state.health - damage);
       const streak = win
         ? state.streak >= 0
@@ -898,9 +918,9 @@ export const useGame = create<GameState>((set, get) => ({
           if (state.round > best) localStorage.setItem("dac-best-round", String(state.round));
           localStorage.removeItem(SAVE_KEY);
         } catch { /* ignore */ }
-        submitScore({ best: state.round, board: wireBoard(state.boardSnapshot ?? state.units) });
-      } else if (win && state.round >= 15) {
-        // run complete (and endless milestones) — post the winning board
+        if (state.difficulty !== "easy") submitScore({ best: state.round, board: wireBoard(state.boardSnapshot ?? state.units) });
+      } else if (win && state.round >= 15 && state.difficulty !== "easy") {
+        // run complete (and endless milestones) — post the winning board (an easy run stays off the board)
         submitScore({ best: state.round, board: wireBoard(state.boardSnapshot ?? state.units) });
       }
       set({
@@ -1301,7 +1321,7 @@ function saveRun() {
     localStorage.setItem(
       SAVE_KEY,
       JSON.stringify({
-        gold: s.gold, level: s.level, xp: s.xp, health: s.health, round: s.round, runSeed: s.runSeed,
+        gold: s.gold, level: s.level, xp: s.xp, health: s.health, round: s.round, runSeed: s.runSeed, difficulty: s.difficulty,
         streak: s.streak, units: s.units, inventory: s.inventory, shop: s.shop,
         discovered: s.discovered, shopLocked: s.shopLocked, uidCounter,
       }),
@@ -1328,6 +1348,8 @@ function savedRun(): Partial<GameState> {
       gold: d.gold, level: d.level, xp: d.xp, health: d.health, round: d.round,
       // a run saved before bosses varied keeps the classic ones
       runSeed: Number(d.runSeed) || 0,
+      // a run saved before difficulties was a normal one
+      difficulty: isDifficulty(d.difficulty) ? d.difficulty : "normal",
       streak: d.streak, units: d.units, inventory: d.inventory ?? [], shop: d.shop,
       // a run saved before discovery: what it holds counts as discovered
       discovered: Array.isArray(d.discovered) ? d.discovered : discover([], d.units),
