@@ -3,16 +3,23 @@ import { CLOSE_OUTDATED, heldCopies, type LobbyFight, type LobbySnapshot } from 
 import { RULES_VERSION } from "../game/rules-version";
 import { net } from "./bus";
 import { playerId } from "./leaderboard";
-import { WORKER_HOST } from "../channel";
+import { WORKER_WS } from "../channel";
 
 /** WebSocket client for VS lobbies (2–8 players, the Lobby Durable Object).
  *  Survives drops: phones kill sockets when the player switches apps (e.g. to
  *  send the room code), so we reconnect to the same seat with its secret and
  *  catch up with the room instead of leaving the match. */
 
-const WS_BASE = `wss://${WORKER_HOST}/lobby/`;
+const WS_BASE = `${WORKER_WS}/lobby/`;
 /** What a tab is told when the server runs other rules than it (an update went out). */
 export const OUTDATED_MESSAGE = "The game was updated — reload the page to play VS.";
+
+const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no ambiguous 0/O/1/I/L
+
+/** A new room's code. */
+export function randomCode() {
+  return Array.from({ length: 4 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join("");
+}
 /** how long we keep trying to get back in */
 const SELF_RETRY_MS = 120_000;
 

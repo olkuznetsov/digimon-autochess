@@ -1,10 +1,10 @@
 import type { PvpBoardUnit } from "../game/store";
-import { WORKER_HOST } from "../channel";
+import { WORKER_HTTP } from "../channel";
 import { session } from "./account";
 
 /** Leaderboard client: the chosen name, keyed by the device — or by the account, once signed in. */
 
-const BASE = `https://${WORKER_HOST}`;
+const BASE = WORKER_HTTP;
 
 export interface LbEntry {
   id: string;
@@ -14,6 +14,8 @@ export interface LbEntry {
   /** VS lobby rating (moves with every final place) */
   rating: number;
   hasBoard: number;
+  /** their partner, shown as their avatar */
+  partner?: string | null;
 }
 
 export function playerId(): string {
@@ -28,6 +30,15 @@ export function playerId(): string {
     return id;
   } catch {
     return "anon";
+  }
+}
+
+/** The partner at the tamer's side (their avatar), straight from the saved profile. */
+export function partnerForm(): string | null {
+  try {
+    return (JSON.parse(localStorage.getItem("dac-profile-v1") ?? "null")?.partner?.formId as string | undefined) ?? null;
+  } catch {
+    return null;
   }
 }
 
@@ -48,7 +59,7 @@ export function submitScore(data: { best?: number; winsDelta?: 1; board?: PvpBoa
     void fetch(`${BASE}/lb/submit`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id: playerId(), name: playerName(), ...data }),
+      body: JSON.stringify({ id: playerId(), name: playerName(), partner: partnerForm(), ...data }),
     }).catch(() => {});
   } catch {
     /* offline — ignore */

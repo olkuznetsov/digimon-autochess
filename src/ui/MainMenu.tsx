@@ -21,6 +21,8 @@ import { useAccount } from "../net/account";
 import { AccountBox } from "./AccountBox";
 import { EvoCutIn } from "./Moments";
 import { Digivice } from "./Digivice";
+import { Friends } from "./Friends";
+import { useSocial } from "../net/social";
 import { Portrait } from "./Portrait";
 import { ATTR_PATH, CREST_ICON, ELEMENT_PATH, ICON, Icon, Meat, STAGE_JP, orList } from "./kit";
 import { CARE, careBonus, careNow, hearts, isHungry } from "../profile/care";
@@ -376,7 +378,20 @@ function PartnerCard({ onEvolve, onDigivice }: { onEvolve: () => void; onDigivic
 }
 
 /** Bottom left: the ways to play. */
-function ModeButtons() {
+/** a shared friend link (?friend=CODE) opens the friends panel with the code filled in */
+const FRIEND_LINK = (() => {
+  try {
+    const code = new URLSearchParams(location.search).get("friend")?.toUpperCase() ?? "";
+    if (!/^[A-Z0-9]{4,8}$/.test(code)) return "";
+    history.replaceState(null, "", location.pathname);
+    return code;
+  } catch {
+    return "";
+  }
+})();
+
+function ModeButtons({ onFriends }: { onFriends: () => void }) {
+  const online = useSocial((s) => s.friends.filter((f) => f.online).length);
   const setScreen = useProfile((s) => s.setScreen);
   const round = useGame((s) => s.round);
   const units = useGame((s) => s.units);
@@ -426,9 +441,9 @@ function ModeButtons() {
             <b>GHOST</b> <span className="soon-tag">SOON</span>
           </span>
         </button>
-        <button className="sbtn mode-soon" onClick={() => setSoon("Friends")}>
+        <button className="sbtn mode-friends" onClick={onFriends}>
           <span className="in">
-            <b>FRIENDS</b> <span className="soon-tag">SOON</span>
+            <b>FRIENDS</b> {online > 0 ? <span className="online-tag" title={`${online} online`}>● {online}</span> : <span className="jp">なかま</span>}
           </span>
         </button>
       </div>
@@ -679,6 +694,7 @@ export function MainMenu() {
   const [card, setCard] = useState(false);
   const [digivice, setDigivice] = useState(false);
   const [hatching, setHatching] = useState(false);
+  const [friends, setFriends] = useState(!!FRIEND_LINK);
   const openDigivice = () => {
     sfx.click();
     setCard(false);
@@ -701,7 +717,12 @@ export function MainMenu() {
       </div>
       <MenuCorner onPanel={setPanel} />
       <PartnerCard onEvolve={() => setEvolving(true)} onDigivice={openDigivice} />
-      <ModeButtons />
+      <ModeButtons
+        onFriends={() => {
+          sfx.click();
+          setFriends(true);
+        }}
+      />
       {!partner && <PartnerChoice />}
       {digivice && (
         <Digivice
@@ -713,6 +734,7 @@ export function MainMenu() {
         />
       )}
       {hatching && <PartnerChoice extra onDone={() => setHatching(false)} />}
+      {friends && <Friends initialCode={FRIEND_LINK} onClose={() => setFriends(false)} />}
       {evolving && <PartnerEvolution onClose={() => setEvolving(false)} />}
       <GrowthBanner />
       <Suspense fallback={null}>

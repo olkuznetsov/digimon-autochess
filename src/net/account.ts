@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { WORKER_HOST } from "../channel";
+import { WORKER_HTTP } from "../channel";
 
 /**
  * Google accounts — optional sign-in that keeps a tamer on every device. Google Identity
@@ -13,7 +13,7 @@ import { WORKER_HOST } from "../channel";
  */
 export const GOOGLE_CLIENT_ID = "629270363914-ud33joi20b3f33iinhh4c9nan03hamig.apps.googleusercontent.com";
 
-const BASE = `https://${WORKER_HOST}`;
+const BASE = WORKER_HTTP;
 const SESSION_KEY = "dac-session";
 /** the account version this device last matched */
 const SYNC_KEY = "dac-sync-at";
@@ -65,7 +65,8 @@ export const useAccount = create<{ status: "guest" | "busy" | "signed"; name: st
   return { status: s ? "signed" : "guest", name: s?.googleName ?? "", error: null };
 });
 
-function api(path: string, init: RequestInit = {}): Promise<Response> {
+/** A request to the worker as the signed-in tamer. */
+export function api(path: string, init: RequestInit = {}): Promise<Response> {
   const s = session();
   return fetch(`${BASE}${path}`, {
     ...init,

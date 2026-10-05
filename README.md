@@ -66,6 +66,9 @@ for where the models, the art and the music come from.*
   the Digimon raised for the first time, and the XP line by line with the level bar filling up.
 - **Google accounts**: sign in on the title screen (or play as a guest) and your tamer, partners and run follow
   you to every device.
+- **Friends**: a tamer code to share (adding one makes you friends both ways), who's online and doing what, one-tap
+  JOIN into a friend's VS lobby or an INVITE to yours that pops up wherever they are; partners as avatars there and
+  on the leaderboard.
 - **Leaderboard and ghost battles** against other players' saved boards — season 2 since the tier rules.
 - **Game feel**: hit-stop, camera shake, sparks, pooled damage numbers, a cinematic beat for Mega ultimates,
   "data deletion" deaths, a materialize-in at the start of every fight, and anime cut-ins — a boss walks in over
@@ -87,7 +90,7 @@ for where the models, the art and the music come from.*
 |---|---|
 | UI and state | React 19, TypeScript, zustand |
 | 3D | React Three Fiber (three.js 0.185), drei, postprocessing (HDR bloom, Neutral tone mapping) |
-| Multiplayer, leaderboard, accounts | Cloudflare Worker with Durable Objects (`Lobby`, `Matchmaker`, `Leaderboard`, `Account`) |
+| Multiplayer, leaderboard, accounts, friends | Cloudflare Worker with Durable Objects (`Lobby`, `Matchmaker`, `Leaderboard`, `Account`, `Social`) |
 | Sign-in | Google Identity Services; the worker checks the ID token (RS256 against Google's keys) and issues its own HMAC session |
 | Hosting | Cloudflare Pages, long-lived immutable caching for hashed models and assets |
 
@@ -125,6 +128,9 @@ Design choices worth a look:
   Every save names the version it was based on, so a device that missed a newer save gets a 409 and takes the
   newer copy, and the worker refuses saves from an older game than the last one to save, so a stale tab can't
   drop data it doesn't know about.
+- **Presence without sockets.** Friends' online status and invites ride on a check-in every half a minute
+  (`src/net/social.ts` → the `Social` object): one small request both says where you are and brings back your
+  friends and invites — no socket per player held open.
 - **Music that plays on an iPhone.** Neither host answers byte-range requests, which Safari's media loader needs,
   so each track is fetched whole and played from a blob through Web Audio, with a `playback` audio session so the
   silent switch doesn't mute it.

@@ -6456,3 +6456,273 @@ button.dv-slot:hover {
   font-size: 10.5px;
   color: #a0846a;
 }
+
+/* ---------- friends (なかま): the code, the list, invites ---------- */
+.mode-friends {
+  width: 150px;
+  height: 48px;
+  font-size: 14px;
+  background: linear-gradient(100deg, #1fae57, #6fe08a);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(31, 174, 87, 0.4);
+}
+.mode-friends .in {
+  padding: 0 14px;
+  gap: 8px;
+}
+.mode-friends .jp {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 10px;
+  color: #eafff0;
+}
+.online-tag {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #128a43;
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+.fr-code {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: linear-gradient(100deg, rgba(255, 122, 26, 0.12), rgba(255, 210, 63, 0.14));
+}
+.fr-code b {
+  flex: 1;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 26px;
+  letter-spacing: 0.14em;
+  color: var(--ink);
+}
+.fr-label {
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #6a7396;
+  writing-mode: horizontal-tb;
+  max-width: 60px;
+  line-height: 1.2;
+}
+.fr-code .care-btn {
+  flex: none;
+  width: 96px;
+}
+.fr-add {
+  display: flex;
+  gap: 8px;
+}
+.fr-add input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 12px;
+  border: 1.5px solid rgba(27, 35, 80, 0.2);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.12em;
+}
+.fr-add input:focus {
+  outline: none;
+  border-color: var(--orange);
+}
+.fr-add .care-btn {
+  flex: none;
+  width: 96px;
+}
+.fr-msg {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #128a43;
+}
+.fr-msg.bad {
+  color: #d0303c;
+}
+.fr-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+.fr-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1.5px solid rgba(27, 35, 80, 0.08);
+}
+.fr-face {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  flex: none;
+}
+.fr-face.empty {
+  display: inline-block;
+  background: rgba(27, 35, 80, 0.08);
+}
+.fr-row:not(.on) .fr-face {
+  filter: grayscale(0.85) opacity(0.7);
+}
+.fr-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.fr-who b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fr-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #8a91ad;
+}
+.fr-row.on .fr-status {
+  color: #128a43;
+}
+.fr-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c3c8d8;
+  flex: none;
+}
+.fr-row.on .fr-dot {
+  background: #27d07a;
+  box-shadow: 0 0 6px #27d07a;
+}
+.fr-act {
+  flex: none;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+.fr-remove {
+  flex: none;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(27, 35, 80, 0.06);
+  color: #8a91ad;
+  font-family: var(--font-display);
+  font-size: 12px;
+  cursor: pointer;
+}
+.invite-toast {
+  position: fixed;
+  left: 50%;
+  top: max(12px, env(safe-area-inset-top));
+  z-index: 60;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(440px, calc(100vw - 24px));
+  padding: 8px 10px 8px 8px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 2px solid #27d07a;
+  box-shadow: 0 12px 30px rgba(10, 30, 60, 0.35);
+  color: var(--ink);
+  animation: rr-card 0.3s ease-out both;
+}
+.it-face {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  flex: none;
+}
+.it-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  font-weight: 800;
+}
+.it-text b {
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+.it-text small {
+  font-size: 11px;
+  color: #6a7396;
+}
+.it-join {
+  flex: none;
+  width: 72px;
+}
+.it-close {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(27, 35, 80, 0.08);
+  color: var(--ink);
+  font-size: 16px;
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .mode-friends {
+    width: auto;
+    height: 40px;
+    font-size: 12px;
+  }
+  .fr-code b {
+    font-size: 22px;
+  }
+  .mode-friends .in {
+    justify-content: center;
+  }
+}
+/* the leaderboard's avatars: each tamer's partner */
+.lb-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.lb-n {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lb-face {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  flex: none;
+}
+span.lb-face:not(.portrait) {
+  background: rgba(255, 255, 255, 0.08);
+}

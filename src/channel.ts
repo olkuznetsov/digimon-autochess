@@ -10,3 +10,9 @@ export const TEST_CHANNEL = CHANNEL !== "live";
 export const WORKER_HOST = TEST_CHANNEL
   ? `digimon-autochess-mp-${CHANNEL}.askuznetsov6996.workers.dev`
   : "digimon-autochess-mp.askuznetsov6996.workers.dev";
+
+/** The dev server can talk to a local worker instead (`wrangler dev` on, say, port 8799,
+ *  and VITE_WORKER=localhost:8799 for Vite) — plain http and ws there. */
+const LOCAL_WORKER = import.meta.env.DEV ? (import.meta.env.VITE_WORKER as string | undefined) : undefined;
+export const WORKER_HTTP = LOCAL_WORKER ? `http://${LOCAL_WORKER}` : `https://${WORKER_HOST}`;
+export const WORKER_WS = LOCAL_WORKER ? `ws://${LOCAL_WORKER}` : `wss://${WORKER_HOST}`;

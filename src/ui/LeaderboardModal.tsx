@@ -1,6 +1,18 @@
 import { useEffect, useState } from "react";
 import { useGame } from "../game/store";
 import { fetchTop, fetchBoard, playerId, type LbEntry } from "../net/leaderboard";
+import { FORMS } from "../game/creatures";
+import { Portrait } from "./Portrait";
+
+/** the tamer's partner as their avatar, then their name */
+function Who({ e }: { e: LbEntry }) {
+  return (
+    <span className="lb-name">
+      {e.partner && FORMS[e.partner] ? <Portrait formId={e.partner} className="lb-face" /> : <span className="lb-face" />}
+      <span className="lb-n">{e.name}</span>
+    </span>
+  );
+}
 
 /** Global top-50: best solo runs (with ghost battles against their saved boards)
  *  and the VS lobby rating. */
@@ -68,7 +80,7 @@ export function LeaderboardModal({ onClose }: { onClose: () => void }) {
             {rows.map((e, i) => (
               <div key={e.id} className={`lb-row rating${e.id === me ? " me" : ""}`}>
                 <span className="lb-rank">{i + 1}</span>
-                <span className="lb-name">{e.name}</span>
+                <Who e={e} />
                 <span className="lb-best" title="VS lobby rating">★{e.rating ?? 0}</span>
                 <span className="lb-wins" title="VS matches won">⚔{e.wins}</span>
               </div>
@@ -80,7 +92,7 @@ export function LeaderboardModal({ onClose }: { onClose: () => void }) {
             {rows.map((e, i) => (
               <div key={e.id} className={`lb-row${e.id === me ? " me" : ""}`}>
                 <span className="lb-rank">{i + 1}</span>
-                <span className="lb-name">{e.name}</span>
+                <Who e={e} />
                 <span className="lb-best" title="Best round reached">R{e.best}</span>
                 <span className="lb-wins" title="VS match wins">⚔{e.wins}</span>
                 {e.hasBoard ? (

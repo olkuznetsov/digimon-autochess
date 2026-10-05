@@ -3,7 +3,9 @@ import { cleanBoard, cleanName, LB_SEASON } from "./util";
 import { Lobby } from "./lobby";
 import { Matchmaker } from "./queue";
 import { Account } from "./account";
+import { Social } from "./social";
 import { accountIdFor, issueSession, readSession, verifyGoogleIdToken } from "./auth";
+import { formOf } from "../../src/game/creatures";
 
 /**
  * Multiplayer server for Digimon Auto Chess (Cloudflare Worker + Durable Objects):
@@ -11,10 +13,11 @@ import { accountIdFor, issueSession, readSession, verifyGoogleIdToken } from "./
  * - Matchmaker (src/queue.ts): the public queue that forms lobbies;
  * - MatchRoom: the original 1v1 relay, kept for clients still running an older build;
  * - Leaderboard: best runs, VS wins, lobby rating and saved boards for ghost battles;
- * - Account (src/account.ts): a Google-signed-in tamer's synced game data.
+ * - Account (src/account.ts): a Google-signed-in tamer's synced game data;
+ * - Social (src/social.ts): tamer codes, friends, who's online, invites to a room.
  */
 
-export { Lobby, Matchmaker, Account };
+export { Lobby, Matchmaker, Account, Social };
 
 export interface Env {
   ROOM: DurableObjectNamespace<MatchRoom>;
@@ -24,6 +27,7 @@ export interface Env {
   /** worker secret guarding /lb/admin/* (wrangler secret put ADMIN_KEY) */
   ADMIN_KEY?: string;
   ACCOUNT: DurableObjectNamespace<Account>;
+  SOCIAL: DurableObjectNamespace<Social>;
   /** the game's Google OAuth client (not secret; wrangler.jsonc vars) */
   GOOGLE_CLIENT_ID?: string;
   /** signs session tokens (wrangler secret put SESSION_SECRET) */
@@ -253,6 +257,10 @@ export class Leaderboard extends DurableObject<Env> {
       if (!cols.some((c) => c.name === "rating")) {
         this.ctx.storage.sql.exec("ALTER TABLE lb ADD COLUMN rating INTEGER NOT NULL DEFAULT 0");
       }
+      // the tamer's partner, shown as their avatar (added with the Digivice)
+      if (!cols.some((c) => c.name === "partner")) {
+        this.ctx.storage.sql.exec("ALTER TABLE lb ADD COLUMN partner TEXT");
+      }
     });
   }
 
@@ -277,9 +285,10 @@ export class Leaderboard extends DurableObject<Env> {
     }
   }
 
-  async submit(e: { id: string; name: string; best?: number; winsDelta?: number; board?: unknown }) {
+  async submit(e: { id: string; name: string; best?: number; winsDelta?: number; board?: unknown; partner?: unknown }) {
     const id = String(e.id).slice(0, 40);
     const name = cleanName(e.name);
+    const partner = typeof e.partner === "string" && formOf(e.partner) ? e.partner : null;
     const best = Math.max(0, Math.min(999, Math.floor(Number(e.best) || 0)));
     const winsDelta = e.winsDelta === 1 ? 1 : 0;
     const board = e.board === undefined ? null : cleanBoard(e.board);
@@ -290,6 +299,7 @@ export class Leaderboard extends DurableObject<Env> {
     const newWins = (row?.wins ?? 0) + winsDelta;
     // keep the board of the strongest run (or the latest at equal best)
     const keepBoard = board !== null && best >= (row?.best ?? 0);
+    if (row && partner) this.ctx.storage.sql.exec("UPDATE lb SET partner=? WHERE id=?", partner, id);
     if (row) {
       if (keepBoard) {
         this.ctx.storage.sql.exec(
@@ -304,8 +314,8 @@ export class Leaderboard extends DurableObject<Env> {
       }
     } else {
       this.ctx.storage.sql.exec(
-        "INSERT INTO lb (id, name, best, wins, board, updated) VALUES (?,?,?,?,?,?)",
-        id, name, newBest, newWins, board, Date.now(),
+        "INSERT INTO lb (id, name, best, wins, board, partner, updated) VALUES (?,?,?,?,?,?,?)",
+        id, name, newBest, newWins, board, partner, Date.now(),
       );
     }
     return { best: newBest, wins: newWins };
@@ -322,8 +332,8 @@ export class Leaderboard extends DurableObject<Env> {
   async top(by: "best" | "rating" = "best"): Promise<unknown[]> {
     const order = by === "rating" ? "rating DESC, wins DESC, updated ASC" : "best DESC, wins DESC, updated ASC";
     return this.ctx.storage.sql
-      .exec<{ id: string; name: string; best: number; wins: number; rating: number; hasBoard: number }>(
-        `SELECT id, name, best, wins, rating, (board IS NOT NULL) AS hasBoard FROM lb ${by === "rating" ? "WHERE rating > 0 OR wins > 0" : ""} ORDER BY ${order} LIMIT 50`,
+      .exec<{ id: string; name: string; best: number; wins: number; rating: number; hasBoard: number; partner: string | null }>(
+        `SELECT id, name, best, wins, rating, (board IS NOT NULL) AS hasBoard, partner FROM lb ${by === "rating" ? "WHERE rating > 0 OR wins > 0" : ""} ORDER BY ${order} LIMIT 50`,
       )
       .toArray();
   }
@@ -407,7 +417,50 @@ async function accountRoute(request: Request, env: Env, url: URL): Promise<Respo
   }
   if (url.pathname === "/account" && request.method === "DELETE") {
     await stub.erase();
+    await env.SOCIAL.getByName("social").forget(id);
     return json({ deleted: true });
+  }
+  return json({ error: "not found" }, 404);
+}
+
+/**
+ * Friends — signed-in tamers only (the session is who you are):
+ * - POST /social/beat {name, partner, status}: a check-in every half a minute; back come your
+ *   tamer code, your friends (online or when last seen, and what they're doing) and invites;
+ * - POST /social/friends {code}: befriend a tamer by their code (both ways);
+ * - DELETE /social/friends/CODE: part ways;
+ * - POST /social/invite {code, room}: invite a friend to a VS room;
+ * - POST /social/dismiss {id}: an invite answered or waved away.
+ */
+async function socialRoute(request: Request, env: Env, url: URL): Promise<Response> {
+  if (!env.SESSION_SECRET) return json({ error: "accounts are off" }, 503);
+  const auth = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  const id = await readSession(env.SESSION_SECRET, auth);
+  if (!id) return json({ error: "signed out" }, 401);
+  const social = env.SOCIAL.getByName("social");
+  const body = async (): Promise<Record<string, unknown>> => {
+    try {
+      const b = await request.json();
+      return b && typeof b === "object" ? (b as Record<string, unknown>) : {};
+    } catch {
+      return {};
+    }
+  };
+  if (url.pathname === "/social/beat" && request.method === "POST") return json(await social.beat(id, await body()));
+  if (url.pathname === "/social/friends" && request.method === "POST") {
+    const r = await social.add(id, String((await body()).code ?? ""));
+    return json(r, r.ok ? 200 : 400);
+  }
+  const fm = url.pathname.match(/^\/social\/friends\/([A-Za-z0-9]{4,8})$/);
+  if (fm && request.method === "DELETE") return json(await social.remove(id, fm[1]));
+  if (url.pathname === "/social/invite" && request.method === "POST") {
+    const b = await body();
+    const r = await social.invite(id, String(b.code ?? ""), String(b.room ?? ""));
+    return json(r, r.ok ? 200 : 400);
+  }
+  if (url.pathname === "/social/dismiss" && request.method === "POST") {
+    await social.dismiss(id, Number((await body()).id));
+    return json({ ok: true });
   }
   return json({ error: "not found" }, 404);
 }
@@ -428,6 +481,7 @@ export default {
     }
 
     if (url.pathname.startsWith("/account")) return accountRoute(request, env, url);
+    if (url.pathname.startsWith("/social")) return socialRoute(request, env, url);
 
     const lb = env.LB.getByName(LB_SEASON);
     if (url.pathname === "/lb/top" && request.method === "GET") {

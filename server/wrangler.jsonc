@@ -11,7 +11,8 @@
       { "name": "LOBBY", "class_name": "Lobby" },
       { "name": "QUEUE", "class_name": "Matchmaker" },
       { "name": "LB", "class_name": "Leaderboard" },
-      { "name": "ACCOUNT", "class_name": "Account" }
+      { "name": "ACCOUNT", "class_name": "Account" },
+      { "name": "SOCIAL", "class_name": "Social" }
     ]
   },
   // Google sign-in (the OAuth client's id isn't secret; SESSION_SECRET is a worker secret)
@@ -21,7 +22,8 @@
     { "tag": "v2", "new_sqlite_classes": ["Leaderboard"] },
     { "tag": "v3", "new_sqlite_classes": ["Lobby"] },
     { "tag": "v4", "new_sqlite_classes": ["Matchmaker"] },
-    { "tag": "v5", "new_sqlite_classes": ["Account"] }
+    { "tag": "v5", "new_sqlite_classes": ["Account"] },
+    { "tag": "v6", "new_sqlite_classes": ["Social"] }
   ],
   "observability": { "enabled": true },
   // the test channel's own worker (`npm run deploy:worker:v3`): the next rules (branch v3)
@@ -35,7 +37,8 @@
           { "name": "LOBBY", "class_name": "Lobby" },
           { "name": "QUEUE", "class_name": "Matchmaker" },
           { "name": "LB", "class_name": "Leaderboard" },
-          { "name": "ACCOUNT", "class_name": "Account" }
+          { "name": "ACCOUNT", "class_name": "Account" },
+          { "name": "SOCIAL", "class_name": "Social" }
         ]
       },
       "vars": { "GOOGLE_CLIENT_ID": "629270363914-ud33joi20b3f33iinhh4c9nan03hamig.apps.googleusercontent.com" }

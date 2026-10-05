@@ -160,6 +160,7 @@ function Basics() {
           <li>✨ When it's ready, you choose who it becomes — the branches on offer follow the elements and attributes you field most.</li>
           <li>🎖 Tamer XP comes from solo runs and VS matches. A run counts its XP as you play — 10 for a battle won, 5 for one lost, 25 for a boss, 100 for winning the run — and pays it when the run ends, with a <b>run report</b>: game over, or once round 15's final boss is fought. Endless rounds earn no XP. Adventure's <b>crests</b> mark your milestones. Your partner is yours alone — it never changes a fight.</li>
           <li>🔑 <b>Sign in with Google</b> on the title screen (or later, in your tamer file) to keep your tamer, partner and run on every device: your progress syncs by itself. Signing in on a second device takes whichever tamer has more XP.</li>
+          <li>🤝 <b>Friends</b> (menu, signed in): share your tamer code — when a friend enters it, you're friends on both sides. See who's online and what they're up to, <b>JOIN</b> the VS lobby a friend is in, or <b>INVITE</b> one to yours (a room opens if you aren't in one); their invite pops up wherever you are. Your partner is your avatar there and on the leaderboard.</li>
         </ul>
       </section>
       <section className="guide-sec">

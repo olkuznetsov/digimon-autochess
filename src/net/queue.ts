@@ -3,9 +3,9 @@
 import { CLOSE_OUTDATED } from "../game/lobby";
 import { RULES_VERSION } from "../game/rules-version";
 import { OUTDATED_MESSAGE } from "./lobby";
-import { WORKER_HOST } from "../channel";
+import { WORKER_WS } from "../channel";
 
-const QUEUE_URL = `wss://${WORKER_HOST}/queue`;
+const QUEUE_URL = `${WORKER_WS}/queue`;
 
 export interface QueueStatus {
   /** tamers searching right now, us included */

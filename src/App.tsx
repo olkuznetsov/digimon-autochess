@@ -22,9 +22,12 @@ import { ProfileToast } from "./ui/ProfileToast";
 import { useProfile } from "./profile/store";
 import { startProfileTracker } from "./profile/tracker";
 import { startAccountSync } from "./net/account";
+import { startSocial } from "./net/social";
+import { InviteToast } from "./ui/InviteToast";
 
 startProfileTracker();
 startAccountSync();
+startSocial();
 
 export default function App() {
   const screen = useProfile((s) => s.screen);
@@ -58,6 +61,7 @@ export default function App() {
         </>
       )}
       <ProfileToast />
+      <InviteToast />
       <LoadingScreen />
       <AudioDirector />
     </div>

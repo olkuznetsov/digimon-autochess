@@ -1,14 +1,8 @@
 import { useEffect, useState } from "react";
 import { useGame, pvpName } from "../game/store";
 import { MAX_PLAYERS } from "../game/lobby";
-import { lobbyConnect, lobbyLeave, OUTDATED_MESSAGE } from "../net/lobby";
+import { lobbyConnect, lobbyLeave, OUTDATED_MESSAGE, randomCode } from "../net/lobby";
 import { queueJoin, queueLeave, type QueueStatus } from "../net/queue";
-
-const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no ambiguous 0/O/1/I/L
-
-function randomCode() {
-  return Array.from({ length: 4 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join("");
-}
 
 function savedName() {
   try {
