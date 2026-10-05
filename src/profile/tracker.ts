@@ -1,22 +1,53 @@
 import { FORMS } from "../game/creatures";
-import { pvpMe, useGame } from "../game/store";
+import { meterRows, pvpMe, useGame } from "../game/store";
 import { isBossRound, vsRoundKind } from "../game/tuning";
 import { XP } from "./profile";
+import { RUN_ROUNDS, newLedger, runXp, updateRun, useRun } from "./run";
 import { useProfile } from "./store";
 
 /**
  * Turns what happens in a game into tamer XP and stats, by watching the game store: the
- * game itself knows nothing about profiles (and src/game stays the VS rules).
+ * game itself knows nothing about profiles (and src/game stays the VS rules). A solo run's
+ * battles go to its ledger (./run.ts), which pays the run's XP when the run ends; VS matches
+ * and ghost battles pay as they finish.
  */
+
+/** Hand a run's XP to the tamer (once). `quiet` when the run report shows it. */
+function payRun(reason: string, quiet: boolean) {
+  const l = useRun.getState().ledger;
+  if (!l || l.paid) return;
+  const xp = runXp(l);
+  const before = useProfile.getState().xp;
+  updateRun((r) => {
+    r.paid = { xp, before, at: Date.now() };
+  });
+  useProfile.getState().gainXp(xp, reason, quiet);
+}
+
+/** The ledger follows the solo run: a new run (a reset, or one another device started) pays
+ *  what the old one earned and opens a fresh page. */
+function followRun(seed: number, round: number) {
+  const l = useRun.getState().ledger;
+  if (l && l.seed === seed) return;
+  if (l && !l.paid && runXp(l) > 0) payRun("Run ended early", false);
+  useRun.setState({ ledger: newLedger(seed, round) });
+}
+
 let started = false;
 export function startProfileTracker() {
   if (started) return;
   started = true;
+  {
+    const s = useGame.getState();
+    if (!s.pvp && !s.ghost) followRun(s.runSeed, s.round);
+  }
   useGame.subscribe((s, prev) => {
     const profile = useProfile.getState();
+    const solo = !s.pvp && !s.ghost;
+    if (solo && s.runSeed !== prev.runSeed) followRun(s.runSeed, s.round);
 
     // a solo run begins with its first battle
-    if (prev.phase === "prep" && s.phase === "battle" && !s.pvp && !s.ghost && s.round === 1)
+    if (prev.phase === "prep" && s.phase === "battle" && solo && s.round === 1)
       profile.record((st) => {
         st.runs++;
       });
@@ -35,8 +66,6 @@ export function startProfileTracker() {
       }
       const board = (s.boardSnapshot ?? s.units).filter((u) => u.placement.kind === "board");
       const boss = s.pvp ? vsRoundKind(s.round) === "boss" : isBossRound(s.round);
-      let xp = win ? XP.battleWon : XP.battleLost;
-      let reason = win ? "Battle won" : "Battle";
       profile.record((st) => {
         st.battles++;
         if (win) st.battlesWon++;
@@ -50,18 +79,49 @@ export function startProfileTracker() {
         if (win && boss) st.bosses++;
         if (!s.pvp) {
           st.bestRound = Math.max(st.bestRound, s.round);
-          if (win && s.round === 15) st.runsWon++;
+          if (win && s.round === RUN_ROUNDS) st.runsWon++;
         }
       });
-      if (win && boss) {
-        xp += XP.boss;
-        reason = "Boss beaten";
-      }
-      if (!s.pvp && win && s.round === 15) {
-        xp += XP.runWon;
-        reason = "Run won";
-      }
-      profile.gainXp(xp, reason);
+      if (s.pvp) return; // a VS match pays when it's over
+
+      // the solo run's ledger
+      if (useRun.getState().ledger?.seed !== s.runSeed) followRun(s.runSeed, s.round);
+      const rows = meterRows(s);
+      updateRun((r) => {
+        r.round = Math.max(r.round, s.round);
+        if (win) r.won++;
+        else r.lost++;
+        if (win && boss) r.bosses++;
+        r.hpLost += s.lastDamage;
+        r.streak = win ? r.streak + 1 : 0;
+        r.bestStreak = Math.max(r.bestStreak, r.streak);
+        r.items += Math.max(0, s.inventory.length - prev.inventory.length);
+        for (const row of rows) {
+          r.dealt += row.dealt;
+          const u = (r.units[row.uid] ??= { formId: row.formId, dealt: 0 });
+          u.formId = row.formId;
+          u.dealt += row.dealt;
+        }
+        // the MVP race only needs the leaders
+        const top = Object.entries(r.units)
+          .sort((a, b) => b[1].dealt - a[1].dealt)
+          .slice(0, 12);
+        r.units = Object.fromEntries(top);
+        for (const u of board) {
+          const f = FORMS[u.formId];
+          if (f) r.elements[f.element] = (r.elements[f.element] ?? 0) + 1;
+        }
+        r.board = board.map((u) => u.formId);
+        if (s.round <= RUN_ROUNDS) {
+          if (win) r.scored.won++;
+          else r.scored.lost++;
+          if (win && boss) r.scored.bosses++;
+          if (win && s.round === RUN_ROUNDS) r.scored.runWon = true;
+        }
+        if (s.gameOver) r.endedAt = Date.now();
+      });
+      // the run pays out when it ends, or once the final boss has been fought
+      if (s.gameOver || s.round === RUN_ROUNDS) payRun(s.gameOver ? "Run over" : "Run complete", true);
     }
 
     // a VS match is over
@@ -77,9 +137,15 @@ export function startProfileTracker() {
     // a merge digivolved something: the tamer has raised it
     if (s.evoFlash && s.evoFlash !== prev.evoFlash) {
       const to = s.evoFlash.to;
-      if (!profile.stats.raised.includes(to))
+      const first = !profile.stats.raised.includes(to);
+      if (first)
         profile.record((st) => {
           st.raised.push(to);
+        });
+      if (solo && !s.evoFlash.star)
+        updateRun((r) => {
+          r.digivolutions++;
+          if (first) r.firsts.push(to);
         });
     }
   });

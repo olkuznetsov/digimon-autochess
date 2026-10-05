@@ -9,6 +9,9 @@ import { PlanTimer } from "./PlanTimer";
 import { XP_TO_NEXT as XP_VIEW } from "../game/xpView";
 import { isMuted, setMuted, isMusicOn, setMusicOn, sfx } from "../audio/sfx";
 import { useProfile } from "../profile/store";
+import { XP } from "../profile/profile";
+import { runXp, useRun } from "../profile/run";
+import { RunReport, type RunEnd } from "./RunReport";
 // panels opened on demand load on demand (the Guide carries every Digimon's card)
 const LobbyModal = lazy(() => import("./LobbyModal").then((m) => ({ default: m.LobbyModal })));
 const LeaderboardModal = lazy(() => import("./LeaderboardModal").then((m) => ({ default: m.LeaderboardModal })));
@@ -93,7 +96,11 @@ export function Hud() {
   const me = pvpMe(pvp);
   const alive = !!me?.alive;
   const players = pvp?.snap.seats.filter((s) => s.inMatch) ?? [];
-  const beatTheRun = !pvp && !ghost && result === "win" && round === VICTORY_ROUND;
+  // the solo run's end: game over, or round 15 fought (the run report)
+  const runEnd: RunEnd | null =
+    pvp || ghost ? null : gameOver ? "over" : phase === "result" && round === VICTORY_ROUND ? (result === "win" ? "complete" : "fell") : null;
+  const runTotal = useRun((s) => (s.ledger && !s.ledger.paid ? runXp(s.ledger) : 0));
+  const battleXp = (result === "win" ? XP.battleWon : XP.battleLost) + (result === "win" && isBossRound(round) ? XP.boss : 0);
   const roundKind = vsRoundKind(round);
   const nextOpp = pvp && phase === "prep" ? opponentOf(pvp.snap.plan, pvp.seat) : null;
   const waitingOn = pvp ? pvp.snap.seats.filter((s) => s.alive && s.inMatch && s.online && !s.ready && s.seat !== pvp.seat).length : 0;
@@ -290,7 +297,7 @@ export function Hud() {
             </button>
           </div>
         )}
-        {phase === "result" && !ghost && !gameOver && !beatTheRun && (
+        {phase === "result" && !ghost && !gameOver && !runEnd && (
           <div className={`result ${result}`}>
             <span className="result-text">{result === "win" ? "VICTORY" : "DEFEAT"}</span>
             {vs && pvp && (
@@ -311,20 +318,19 @@ export function Hud() {
             )}
             {result === "win" && !vs && isBossRound(round) && <span className="boss-reward">👑 Boss bonus: +item +3⛂</span>}
             {result === "lose" && lastDamage > 0 && <span className="dmg">-{lastDamage} ♥</span>}
+            {!vs && (
+              <span className="xp-pill" title="Tamer XP is paid when the run ends">
+                {round <= VICTORY_ROUND ? (
+                  <>
+                    +{battleXp} XP <small>· {runTotal} this run</small>
+                  </>
+                ) : (
+                  <>Endless · no XP</>
+                )}
+              </span>
+            )}
             <button className="action" onClick={toPrep}>
               Continue ▸
-            </button>
-          </div>
-        )}
-        {phase === "result" && !gameOver && beatTheRun && (
-          <div className="result win runwon">
-            <span className="result-text">🏆 RUN COMPLETE!</span>
-            <span className="runwon-sub">You survived all {VICTORY_ROUND} rounds</span>
-            <button className="action" onClick={toPrep}>
-              Endless ▸
-            </button>
-            <button className="action ghost" onClick={reset}>
-              New Run
             </button>
           </div>
         )}
@@ -412,17 +418,17 @@ export function Hud() {
         </div>
       )}
 
-      {gameOver && !pvp && (
-        <div className="gameover">
-          <div className="go-title">GAME OVER</div>
-          <div className="go-sub">
-            You reached round {round}
-            {bestRound() > 0 && ` · Best: round ${Math.max(bestRound(), round)}`}
-          </div>
-          <button className="action" onClick={reset}>
-            ↻ New Run
-          </button>
-        </div>
+      {runEnd && (
+        <RunReport
+          end={runEnd}
+          best={Math.max(bestRound(), round)}
+          onEndless={runEnd === "over" ? undefined : toPrep}
+          onNewRun={reset}
+          onMenu={() => {
+            if (runEnd === "over") reset();
+            useProfile.getState().setScreen("menu");
+          }}
+        />
       )}
 
       <Suspense fallback={null}>

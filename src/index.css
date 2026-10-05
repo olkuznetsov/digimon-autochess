@@ -5123,3 +5123,381 @@ html, body {
     height: 42px;
   }
 }
+
+/* ---------- the run report: a solo run's end (game over, or round 15 fought) ---------- */
+.run-report {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  overflow: hidden;
+  background: #11122e center / cover no-repeat;
+  animation: rr-in 0.5s ease-out both;
+}
+.run-report.day {
+  background-image: linear-gradient(180deg, rgba(20, 40, 110, 0.05) 0%, rgba(14, 22, 64, 0.55) 100%), url(/art/sea-day.webp);
+  /* a phone shows a slice of it: File Island's mountain */
+  background-position: 74% center;
+}
+.run-report.dusk {
+  background-image: linear-gradient(180deg, rgba(20, 6, 30, 0.1) 0%, rgba(14, 6, 26, 0.7) 100%), url(/art/sea-dusk.webp);
+}
+@keyframes rr-in {
+  from {
+    opacity: 0;
+  }
+}
+.rr-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.rr-head {
+  text-align: center;
+  color: #ffffff;
+  animation: rr-pop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) 0.1s both;
+}
+@keyframes rr-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6) skewX(-14deg);
+  }
+}
+.rr-jp {
+  display: block;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.3em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+.rr-title {
+  margin: 2px 0 4px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(30px, 7vw, 58px);
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  transform: skewX(-8deg);
+  background: linear-gradient(180deg, #ffffff 30%, #ffe27a 75%, #ff9b3d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(27, 35, 80, 0.55);
+  filter: drop-shadow(0 4px 0 rgba(27, 35, 80, 0.55)) drop-shadow(0 0 18px rgba(255, 170, 60, 0.45));
+}
+.run-report.dusk .rr-title {
+  background: linear-gradient(180deg, #ffffff 25%, #ffb3c1 70%, #ff4d6d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(0 4px 0 rgba(40, 6, 30, 0.7)) drop-shadow(0 0 18px rgba(255, 77, 109, 0.5));
+}
+.rr-sub {
+  margin: 0;
+  font-weight: 700;
+  font-size: 14px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+.rr-best {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+.rr-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 14px;
+  width: min(860px, 100%);
+}
+.rr-card {
+  padding: 16px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  animation: rr-card 0.5s ease-out both;
+}
+.rr-xp {
+  animation-delay: 0.25s;
+}
+@keyframes rr-card {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+.rr-card > .rib {
+  align-self: flex-start;
+  margin-left: 4px;
+}
+.rr-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.rr-tiles > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 7px 2px 6px;
+  border-radius: 12px;
+  background: rgba(47, 123, 255, 0.08);
+}
+.rr-tiles b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 19px;
+  color: var(--ink);
+}
+.rr-tiles span,
+.rr-label {
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #6a7396;
+}
+.rr-mvp {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: linear-gradient(100deg, rgba(255, 184, 0, 0.18), rgba(255, 226, 122, 0.08));
+}
+.rr-mvp > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.rr-mvp b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rr-mvp-dmg {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #6a7396;
+}
+.rr-mvp-face {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  flex: none;
+  box-shadow: 0 0 0 2.5px #ffb800;
+}
+.rr-team {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.rr-faces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.rr-face {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+}
+.rr-face.new {
+  box-shadow: 0 0 0 2px #27e0a3;
+}
+.rr-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rr-line {
+  display: grid;
+  grid-template-columns: 1fr auto minmax(64px, auto);
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.rr-line i {
+  font-style: normal;
+  font-size: 11.5px;
+  color: #6a7396;
+}
+.rr-line b {
+  text-align: right;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+.rr-line.dim {
+  display: block;
+  color: #6a7396;
+}
+.rr-line.total {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1.5px dashed rgba(27, 35, 80, 0.2);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 15px;
+}
+.rr-line.total b {
+  font-size: 20px;
+  color: #ff7a1a;
+}
+.rr-note {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #6a7396;
+}
+.rr-level {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+.rr-lv {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--ink);
+  transition: transform 0.2s;
+}
+.rr-lv small {
+  font-size: 12px;
+  margin-right: 2px;
+}
+.rr-lv.up {
+  color: #ff7a1a;
+  animation: rr-lvup 0.5s cubic-bezier(0.2, 1.8, 0.4, 1);
+}
+@keyframes rr-lvup {
+  from {
+    transform: scale(1.6);
+  }
+}
+.rr-bar {
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(27, 35, 80, 0.12);
+  overflow: hidden;
+}
+.rr-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffe27a, #ff7a1a);
+  box-shadow: 0 0 12px rgba(255, 122, 26, 0.6);
+}
+.rr-need {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #6a7396;
+  font-variant-numeric: tabular-nums;
+}
+.rr-levelup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--grad-orange);
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 15px;
+  animation: rr-pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+.rr-levelup .jp {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 11px;
+}
+.rr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  padding: 4px 0 8px;
+  animation: rr-card 0.5s ease-out 0.45s both;
+}
+.rr-actions .sbtn {
+  height: 52px;
+  font-size: 18px;
+}
+.rr-alt {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink);
+  box-shadow: 0 6px 16px rgba(10, 20, 60, 0.3);
+}
+.rr-actions .jp {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 11px;
+}
+@media (max-width: 720px) {
+  .rr-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rr-tiles b {
+    font-size: 16px;
+  }
+  .rr-actions .sbtn {
+    height: 46px;
+    font-size: 15px;
+  }
+  .rr-actions .sbtn > .in {
+    padding: 0 16px;
+  }
+}
+
+/* a round's tamer XP, paid when the run ends */
+.xp-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 210, 63, 0.16);
+  border: 1px solid rgba(255, 210, 63, 0.55);
+  color: #ffe27a;
+  font-family: var(--font-display);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.xp-pill small {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 10.5px;
+  color: #ffeeb0;
+}
+@media (max-width: 640px) {
+  /* a round's result never runs off a phone: it wraps instead */
+  .actionbar .result {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 6px;
+    max-width: calc(100vw - 20px);
+  }
+  .xp-pill small {
+    display: none;
+  }
+  /* and the damage meter steps down under it */
+  .app:has(.actionbar .result) .dmg-meter {
+    top: 186px;
+  }
+}

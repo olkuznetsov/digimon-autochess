@@ -45,7 +45,8 @@ interface ProfileState extends Profile {
   evolutionOptions: () => string[];
   evolvePartner: (formId: string) => void;
   starUpPartner: () => void;
-  gainXp: (amount: number, reason: string) => void;
+  /** `quiet`: no toast (the run report shows it) */
+  gainXp: (amount: number, reason: string, quiet?: boolean) => void;
   record: (fn: (s: TamerStats) => void) => void;
   clearToasts: () => void;
 }
@@ -99,12 +100,12 @@ export const useProfile = create<ProfileState>()((set, get) => {
       const star = partner.star + 1;
       set({ partner: { ...partner, star }, grew: { from: partner.formId, to: partner.formId, star, key: Date.now() } });
     },
-    gainXp: (amount, reason) => {
+    gainXp: (amount, reason, quiet = false) => {
       if (amount <= 0) return;
       const before = levelFor(get().xp).level;
       const xp = get().xp + amount;
       const after = levelFor(xp).level;
-      set({ xp, gain: { amount, reason, levelUp: after > before ? after : null, key: Date.now() } });
+      set({ xp, ...(quiet ? {} : { gain: { amount, reason, levelUp: after > before ? after : null, key: Date.now() } }) });
       checkCrests();
     },
     record: (fn) => {

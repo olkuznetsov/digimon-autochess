@@ -18,7 +18,7 @@ const SESSION_KEY = "dac-session";
 /** the account version this device last matched */
 const SYNC_KEY = "dac-sync-at";
 /** what travels with the account (device preferences, like graphics quality, stay put) */
-const SYNCED = ["dac-profile-v1", "dac-save-v3", "dac-name", "dac-best-round", "dac-onboarded"];
+const SYNCED = ["dac-profile-v1", "dac-save-v3", "dac-run-v1", "dac-name", "dac-best-round", "dac-onboarded"];
 
 type Data = Record<string, string>;
 export interface Session {
