@@ -74,7 +74,9 @@ for where the models, the art and the music come from.*
   bot's), an Elo rating and leagues from In-Training to Mega.
 - **Difficulty**: Easy, Normal or Hard for a new run — the enemies' strength, what a lost round costs and the tamer
   XP it pays (the bot wins about 80%, 42% and 15% of its runs).
-- **Game feel**: hit-stop, camera shake, sparks, pooled damage numbers, a cinematic beat for Mega ultimates,
+- **Game feel**: shots and signature moves in their element (fireballs that shed embers, crackling bolts, water,
+  leaves, rocks, wind crescents, light and shadow; an ultimate breathes its element at the target), hit-stop,
+  camera shake, sparks, pooled damage numbers, a cinematic beat for Mega ultimates,
   "data deletion" deaths, a materialize-in at the start of every fight, and anime cut-ins — a boss walks in over
   a Black Gear dusk, the final battle opens under an eclipse.
 - **A soundtrack made for the game**: ten instrumentals made with Suno in Digimon Adventure's mood (two takes each

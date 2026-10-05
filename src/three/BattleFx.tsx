@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useGame, type Fx } from "../game/store";
 import { ATTR_COLOR, FORMS } from "../game/creatures";
+import type { Element } from "../game/types";
 import { cellToWorld } from "../game/board";
 import { juice, addTrauma, hitStop, slowMo, screenFlash } from "./juice";
 
@@ -87,10 +88,43 @@ function SparkField() {
   return <instancedMesh ref={mesh} args={[sparkGeo, material, SPARKS]} frustumCulled={false} />;
 }
 
+// ---------- the elements' look: what a Digimon's shots and signature moves are made of ----------
+
+/** core (white-hot middle), glow (the body) and trail (embers, droplets, leaves…) */
+const ELEMENT_FX: Record<Exclude<Element, "Neutral">, { core: string; glow: string; trail: string }> = {
+  Fire: { core: "#fff1b0", glow: "#ff6a1a", trail: "#ffa03d" },
+  Water: { core: "#e6f6ff", glow: "#2f8cff", trail: "#8fd0ff" },
+  Plant: { core: "#efffd8", glow: "#3fbf4a", trail: "#9be86a" },
+  Electric: { core: "#ffffff", glow: "#ffe14d", trail: "#fff6a8" },
+  Earth: { core: "#ffe2bd", glow: "#b0703a", trail: "#d2a26c" },
+  Wind: { core: "#ffffff", glow: "#8fe8ff", trail: "#dff9ff" },
+  Light: { core: "#ffffff", glow: "#ffd84d", trail: "#fff8d2" },
+  Dark: { core: "#efe2ff", glow: "#8a45ff", trail: "#4a2088" },
+};
+type ElementLook = (typeof ELEMENT_FX)[keyof typeof ELEMENT_FX];
+const lookOf = (formId: string | undefined): { el: Element; look: ElementLook } | null => {
+  const el = formId ? FORMS[formId]?.element : undefined;
+  return el && el !== "Neutral" ? { el, look: ELEMENT_FX[el] } : null;
+};
+/** whoever made a hit (the battle's fighters, alive or fallen) */
+const formOfUid = (uid: string | undefined): string | undefined => {
+  if (!uid) return undefined;
+  const s = useGame.getState();
+  return (s.fighters.find((f) => f.uid === uid) ?? s.corpses.find((f) => f.uid === uid))?.formId;
+};
+
 // ---------- projectile: a glowing streak with a short trail ----------
 
 const SHOT_DUR = 0.2;
 function Shot({ fx }: { fx: Fx }) {
+  const element = useMemo(() => lookOf(formOfUid(fx.src)), [fx.src]);
+  if (element?.el === "Electric") return <Bolt fx={fx} look={element.look} />;
+  if (element) return <ElementShot fx={fx} el={element.el} look={element.look} />;
+  return <PlainShot fx={fx} />;
+}
+
+/** a shot of no element: the attribute's glowing streak */
+function PlainShot({ fx }: { fx: Fx }) {
   const age = useAge();
   const group = useRef<THREE.Group>(null);
   const [x0, z0] = cellToWorld(fx.fromCol ?? fx.col, fx.fromRow ?? fx.row);
@@ -118,6 +152,222 @@ function Shot({ fx }: { fx: Fx }) {
           <sphereGeometry args={[1, 8, 6]} />
           <meshBasicMaterial color={c} transparent opacity={o} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
         </mesh>
+      ))}
+    </group>
+  );
+}
+
+/** An element's shot: a fireball shedding embers, a water orb, spinning leaves, a rock lobbed
+ *  high, a wind crescent, a needle of light, a smoking shadow orb. */
+function ElementShot({ fx, el, look }: { fx: Fx; el: Element; look: ElementLook }) {
+  const age = useAge();
+  const group = useRef<THREE.Group>(null);
+  const [x0, z0] = cellToWorld(fx.fromCol ?? fx.col, fx.fromRow ?? fx.row);
+  const [x1, z1] = cellToWorld(fx.col, fx.row);
+  const yaw = Math.atan2(x1 - x0, z1 - z0);
+  const arc = el === "Earth" ? 0.9 : el === "Light" ? 0 : 0.3;
+  const size = el === "Fire" || el === "Dark" ? 0.24 : el === "Light" ? 0.09 : 0.17;
+  const trail = el === "Fire" || el === "Dark" || el === "Water" || el === "Plant";
+  useFrame(() => {
+    const g = group.current;
+    if (!g) return;
+    const t = Math.min(1, age() / SHOT_DUR);
+    g.visible = t < 1;
+    const x = x0 + (x1 - x0) * t;
+    const y = 0.8 + Math.sin(t * Math.PI) * arc;
+    const z = z0 + (z1 - z0) * t;
+    g.position.set(x, y, z);
+    // tumble: leaves, rocks and crescents spin as they fly
+    g.rotation.set(el === "Wind" ? 0 : t * 9, yaw, el === "Wind" ? t * 18 : 0);
+    if (trail && t < 1) spawnSparks(x, y, z, look.trail, 2, 0.25);
+  });
+  return (
+    <group ref={group}>
+      {el === "Earth" ? (
+        <mesh scale={size * 1.2}>
+          <icosahedronGeometry args={[1, 0]} />
+          <meshStandardMaterial color={look.glow} flatShading roughness={0.9} />
+        </mesh>
+      ) : el === "Wind" ? (
+        <mesh rotation={[Math.PI / 2, 0, 0]} scale={size * 2.2}>
+          <torusGeometry args={[1, 0.14, 6, 20, Math.PI]} />
+          <meshBasicMaterial color={look.trail} transparent opacity={0.9} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+        </mesh>
+      ) : el === "Plant" ? (
+        [0, 1, 2].map((i) => (
+          <mesh key={i} position={[Math.cos(i * 2.1) * 0.08, Math.sin(i * 2.1) * 0.08, 0]} scale={[size * 0.5, size * 0.12, size]} rotation={[0, 0, i * 2.1]}>
+            <sphereGeometry args={[1, 8, 6]} />
+            <meshBasicMaterial color={hot(look.glow, 1.6)} toneMapped={false} />
+          </mesh>
+        ))
+      ) : el === "Light" ? (
+        <mesh rotation={[Math.PI / 2, 0, 0]} scale={[size, 0.5, size]}>
+          <capsuleGeometry args={[1, 1, 4, 8]} />
+          <meshBasicMaterial color={hot(look.glow, 2.4)} toneMapped={false} />
+        </mesh>
+      ) : (
+        <>
+          <mesh scale={size * 0.55}>
+            <sphereGeometry args={[1, 12, 10]} />
+            <meshBasicMaterial color={hot(look.core, 2.2)} toneMapped={false} />
+          </mesh>
+          <mesh scale={size}>
+            <sphereGeometry args={[1, 14, 12]} />
+            <meshBasicMaterial color={look.glow} transparent opacity={0.75} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+          </mesh>
+          <mesh scale={size * 1.9}>
+            <sphereGeometry args={[1, 12, 10]} />
+            <meshBasicMaterial color={look.glow} transparent opacity={0.22} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+          </mesh>
+        </>
+      )}
+    </group>
+  );
+}
+
+/** Electric shots don't fly: a forked bolt cracks between the two, flickering. */
+function Bolt({ fx, look, dur = 0.2, y = 0.8, width = 0.07 }: { fx: Fx; look: ElementLook; dur?: number; y?: number; width?: number }) {
+  const age = useAge();
+  const [x0, z0] = cellToWorld(fx.fromCol ?? fx.col, fx.fromRow ?? fx.row);
+  const [x1, z1] = cellToWorld(fx.col, fx.row);
+  return <BoltLine x0={x0} z0={z0} x1={x1} z1={z1} y={y} color={look.core} glow={look.glow} age={age} dur={dur} width={width} />;
+}
+
+const BOLT_SEGS = 9;
+const BOLT_GEO = new THREE.CylinderGeometry(1, 1, 1, 5, 1, true);
+function BoltLine({ x0, z0, x1, z1, y, color, glow, age, dur, width, lift = 0 }: {
+  x0: number; z0: number; x1: number; z1: number; y: number; color: string; glow: string;
+  age: () => number; dur: number; width: number; lift?: number;
+}) {
+  const refs = useRef<(THREE.Mesh | null)[]>([]);
+  const pts = useMemo(() => Array.from({ length: BOLT_SEGS + 1 }, () => new THREE.Vector3()), []);
+  const tmp = useMemo(() => ({ mid: new THREE.Vector3(), dir: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0) }), []);
+  const lastJag = useRef(-1);
+  const mats = useMemo(
+    () => [new THREE.MeshBasicMaterial({ color: hot(color, 2.4), toneMapped: false }), new THREE.MeshBasicMaterial({ color: glow, toneMapped: false })],
+    [color, glow],
+  );
+  useEffect(() => () => mats.forEach((m) => m.dispose()), [mats]);
+  useFrame(() => {
+    const t = age() / dur;
+    const on = t < 1;
+    // a new jagged path every few frames: the bolt crackles
+    const jag = Math.floor(age() / 0.035);
+    if (on && jag !== lastJag.current) {
+      lastJag.current = jag;
+      for (let i = 0; i <= BOLT_SEGS; i++) {
+        const k = i / BOLT_SEGS;
+        const off = i === 0 || i === BOLT_SEGS ? 0 : 0.22;
+        pts[i].set(
+          x0 + (x1 - x0) * k + (Math.random() - 0.5) * off,
+          y + Math.sin(k * Math.PI) * lift + (Math.random() - 0.5) * off,
+          z0 + (z1 - z0) * k + (Math.random() - 0.5) * off,
+        );
+      }
+    }
+    refs.current.forEach((m, i) => {
+      if (!m) return;
+      m.visible = on;
+      if (!on) return;
+      const a = pts[i];
+      const b = pts[i + 1];
+      tmp.mid.addVectors(a, b).multiplyScalar(0.5);
+      tmp.dir.subVectors(b, a);
+      const len = tmp.dir.length();
+      m.position.copy(tmp.mid);
+      m.quaternion.setFromUnitVectors(tmp.up, tmp.dir.normalize());
+      m.scale.set(width * (i % 2 ? 1 : 1.3), Math.max(0.001, len), width * (i % 2 ? 1 : 1.3));
+    });
+  });
+  return (
+    <group>
+      {Array.from({ length: BOLT_SEGS }, (_, i) => (
+        <mesh key={i} ref={(m) => (refs.current[i] = m)} visible={false} geometry={BOLT_GEO} material={mats[i % 3 === 1 ? 1 : 0]} />
+      ))}
+    </group>
+  );
+}
+
+/** A signature move's breath: the element pouring from the caster to its target — a stream
+ *  of fire, water, leaves, stones, wind, light or shadow (lightning: three bolts). */
+function Breath({ x0, z0, x1, z1, el, look, born, dur = 0.42, scale = 1 }: {
+  x0: number; z0: number; x1: number; z1: number; el: Element; look: ElementLook; born: number; dur?: number; scale?: number;
+}) {
+  const age = () => juice.now - born;
+  if (el === "Electric")
+    return (
+      <group>
+        {[0, 0.12, -0.12].map((lift, i) => (
+          <BoltLine key={i} x0={x0} z0={z0} x1={x1} z1={z1} y={0.9} lift={lift + 0.15} color={look.core} glow={look.glow} age={age} dur={dur} width={0.06 * scale} />
+        ))}
+      </group>
+    );
+  return <Stream x0={x0} z0={z0} x1={x1} z1={z1} el={el} look={look} born={born} dur={dur} scale={scale} />;
+}
+
+const STREAM_N = 26;
+const PUFF_SPHERE = new THREE.SphereGeometry(1, 10, 8);
+const PUFF_LEAF = new THREE.SphereGeometry(1, 6, 4);
+const PUFF_ROCK = new THREE.IcosahedronGeometry(1, 0);
+function Stream({ x0, z0, x1, z1, el, look, born, dur, scale }: {
+  x0: number; z0: number; x1: number; z1: number; el: Element; look: ElementLook; born: number; dur: number; scale: number;
+}) {
+  const refs = useRef<(THREE.Mesh | null)[]>([]);
+  // each puff: when it leaves (0..0.55 of the breath), how far off the line, how big
+  const puffs = useMemo(
+    () => Array.from({ length: STREAM_N }, (_, i) => ({ at: (i / STREAM_N) * 0.55, ox: (Math.random() - 0.5) * 0.5, oy: (Math.random() - 0.5) * 0.35, s: 0.6 + Math.random() * 0.7 })),
+    [],
+  );
+  const flight = 0.45; // a puff's share of the breath to cross the board
+  useFrame(() => {
+    const t = (juice.now - born) / dur;
+    refs.current.forEach((m, i) => {
+      if (!m) return;
+      const p = puffs[i];
+      const k = (t - p.at) / flight;
+      m.visible = k > 0 && k < 1;
+      if (!m.visible) return;
+      // the stream widens as it travels, like a breath
+      const spread = 0.15 + k * 1.1;
+      const px = x0 + (x1 - x0) * k + p.ox * spread * Math.cos(Math.atan2(x1 - x0, z1 - z0));
+      const pz = z0 + (z1 - z0) * k - p.ox * spread * Math.sin(Math.atan2(x1 - x0, z1 - z0));
+      m.position.set(px, 0.85 + p.oy * spread + (el === "Earth" ? Math.sin(k * Math.PI) * 0.5 : 0), pz);
+      m.scale.setScalar(0.19 * p.s * scale * (0.6 + k * 1.2) * (el === "Light" ? 0.6 : 1));
+      if (el === "Plant") m.scale.y *= 0.3; // leaves are flat
+      m.rotation.set(k * 6, k * 4, 0);
+    });
+    if (t < 0.6 && el !== "Light") spawnSparks(x1, 0.8, z1, look.trail, 1, 0.5);
+  });
+  const geo = el === "Earth" ? PUFF_ROCK : el === "Plant" ? PUFF_LEAF : PUFF_SPHERE;
+  // two materials for the whole breath (a white-hot puff every fourth), freed with it
+  const mats = useMemo(() => {
+    if (el === "Earth") {
+      const m = new THREE.MeshStandardMaterial({ color: look.glow, flatShading: true, roughness: 0.9 });
+      return [m, m];
+    }
+    const make = (color: string) =>
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: el === "Dark" ? 0.8 : 0.85,
+        blending: el === "Dark" ? THREE.NormalBlending : THREE.AdditiveBlending,
+        depthWrite: false,
+        toneMapped: false,
+      });
+    return [make(hot(look.core, 2)), make(look.glow)];
+  }, [el, look]);
+  useEffect(() => () => mats.forEach((m) => m.dispose()), [mats]);
+  return (
+    <group>
+      {puffs.map((_, i) => (
+        <mesh
+          key={i}
+          ref={(m) => (refs.current[i] = m)}
+          visible={false}
+          scale-y={el === "Plant" ? 0.3 : 1}
+          geometry={geo}
+          material={mats[i % 4 === 0 ? 0 : 1]}
+        />
       ))}
     </group>
   );
@@ -532,9 +782,15 @@ function CastFxImpl({ fx }: { fx: Fx }) {
   const [tx, tz] = fx.toCol != null && fx.toRow != null ? cellToWorld(fx.toCol, fx.toRow) : [cx, cz];
   // a starred Mega's ultimate: platinum at ★★, prismatic at ★★★
   const star = fx.star ?? 1;
-  const c = star >= 3 ? "#ff7ad9" : star === 2 ? "#d9f6ff" : ATTR_COLOR[fx.attr];
+  const element = lookOf(fx.form);
+  const c = star >= 3 ? "#ff7ad9" : star === 2 ? "#d9f6ff" : element ? element.look.glow : ATTR_COLOR[fx.attr];
   const b = useBorn();
   const mega = (fx.stage ?? 3) >= 5;
+  // offensive moves breathe their element at the target (Greymon's fireball, Garurumon's blue fire…)
+  const breath =
+    element && (fx.ult === "blast" || fx.ult === "strike" || fx.ult === "barrage" || fx.ult === "frost") && (cx !== tx || cz !== tz) ? (
+      <Breath x0={cx} z0={cz} x1={tx} z1={tz} el={element.el} look={element.look} born={b} scale={(mega ? 1.3 : 1) * (1 + 0.15 * (star - 1))} />
+    ) : null;
 
   useEffect(() => {
     // Megas get a cinematic beat: slow-mo + flash + a heavy shake (rationed)
@@ -548,7 +804,18 @@ function CastFxImpl({ fx }: { fx: Fx }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const scale = (mega ? 1.25 : 1) * (1 + 0.22 * (star - 1));
+  return (
+    <group>
+      {breath}
+      <CastBurst fx={fx} c={c} b={b} cx={cx} cz={cz} tx={tx} tz={tz} mega={mega} scale={(mega ? 1.25 : 1) * (1 + 0.22 * (star - 1))} />
+    </group>
+  );
+}
+
+/** The archetype's burst: where the move lands (or, for guards and rallies, the caster). */
+function CastBurst({ fx, c, b, cx, cz, tx, tz, mega, scale }: {
+  fx: Fx; c: string; b: number; cx: number; cz: number; tx: number; tz: number; mega: boolean; scale: number;
+}) {
   switch (fx.ult) {
     case "blast": // AoE nuke on the target — shockwave + light pillar + core flash
       return (

@@ -80,3 +80,6 @@ export function resetJuice() {
   juice.trauma = 0;
   juice.flash = 0;
 }
+
+// dev: slow every effect and the fight with them (`__juice.speed = 0.05`) to look at a frame
+if (import.meta.env.DEV) Object.assign(window, { __juice: juice });
