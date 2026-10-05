@@ -18,6 +18,7 @@ import {
 import { playerName } from "../net/leaderboard";
 import { useAccount } from "../net/account";
 import { AccountBox } from "./AccountBox";
+import { EvoCutIn } from "./Moments";
 import { Portrait } from "./Portrait";
 import { ATTR_PATH, CREST_ICON, ELEMENT_PATH, ICON, Icon, STAGE_JP, orList } from "./kit";
 import { sfx } from "../audio/sfx";
@@ -547,6 +548,7 @@ function GrowthBanner() {
     return () => clearTimeout(t);
   }, [grew]);
   if (!grew || shown !== grew.key) return null;
+  if (grew.from !== grew.to) return <EvoCutIn key={grew.key} from={grew.from} to={grew.to} />;
   const from = FORMS[grew.from];
   const to = FORMS[grew.to];
   return (

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { pvpMe, useGame } from "../game/store";
 import { isBossRound, vsRoundKind } from "../game/tuning";
 import { useProfile } from "../profile/store";
+import { useMoment } from "../ui/Moments";
 import { unlockAudio } from "./engine";
 import { music, type Theme } from "./music";
 import { battleSfx, sfx } from "./sfx";
@@ -40,9 +41,13 @@ export function AudioDirector() {
       const boss = s.pvp ? vsRoundKind(s.round) === "boss" : !s.ghost && isBossRound(s.round);
       const wonRun = !s.pvp && !s.ghost && s.phase === "result" && s.result === "win" && s.round === VICTORY_ROUND;
       const wonVs = !!s.pvp && s.pvp.snap.stage === "over" && pvpMe(s.pvp)?.placement === 1;
+      // a boss's cut-in brings its music in before the fight
+      const intro = useMoment.getState().intro;
       const theme: Theme = menu
         ? "island"
-        : s.phase === "battle"
+        : intro
+          ? intro.kind
+          : s.phase === "battle"
           ? !s.pvp && !s.ghost && s.round === VICTORY_ROUND
             ? "final"
             : boss
@@ -60,9 +65,11 @@ export function AudioDirector() {
     apply();
     const offGame = useGame.subscribe(apply);
     const offProfile = useProfile.subscribe(apply);
+    const offMoment = useMoment.subscribe(apply);
     return () => {
       offGame();
       offProfile();
+      offMoment();
     };
   }, []);
 

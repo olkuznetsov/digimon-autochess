@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useGame, pvpMe } from "../game/store";
+import { beginBattle } from "./Moments";
 
 /**
  * Keyboard shortcuts: D reroll · F buy XP · 1–5 buy · L lock shop · E sell the
@@ -26,7 +27,7 @@ export function Hotkeys() {
         else if (key === " ") {
           e.preventDefault();
           if (s.pvp) s.pvpReadyUp();
-          else s.startBattle();
+          else beginBattle();
         }
       } else if (s.phase === "result" && key === " ") {
         e.preventDefault();

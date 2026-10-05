@@ -3,7 +3,10 @@ import { useGame } from "../game/store";
 import { FORMS, ATTR_COLOR } from "../game/creatures";
 import { Portrait } from "./Portrait";
 
-/** The digivolution moment: a big announcement banner whenever a unit evolves. */
+const reducedMotion = () => typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** A star-up's banner (a digivolution gets the cut-in, Moments.tsx — this banner only
+ *  where motion is reduced). */
 export function EvoBanner() {
   const flash = useGame((s) => s.evoFlash);
   const clear = useGame((s) => s.clearEvoFlash);
@@ -14,7 +17,7 @@ export function EvoBanner() {
     return () => clearTimeout(t);
   }, [flash, clear]);
 
-  if (!flash) return null;
+  if (!flash || (!flash.star && !reducedMotion())) return null;
   const from = FORMS[flash.from];
   const to = FORMS[flash.to];
   if (!from || !to) return null;

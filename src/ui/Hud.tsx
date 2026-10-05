@@ -12,6 +12,7 @@ import { useProfile } from "../profile/store";
 import { XP } from "../profile/profile";
 import { runXp, useRun } from "../profile/run";
 import { RunReport, type RunEnd } from "./RunReport";
+import { beginBattle } from "./Moments";
 // panels opened on demand load on demand (the Guide carries every Digimon's card)
 const LobbyModal = lazy(() => import("./LobbyModal").then((m) => ({ default: m.LobbyModal })));
 const LeaderboardModal = lazy(() => import("./LeaderboardModal").then((m) => ({ default: m.LeaderboardModal })));
@@ -46,7 +47,6 @@ export function Hud() {
   const result = useGame((s) => s.result);
   const lastDamage = useGame((s) => s.lastDamage);
   const gameOver = useGame((s) => s.gameOver);
-  const startBattle = useGame((s) => s.startBattle);
   const toPrep = useGame((s) => s.toPrep);
   const reset = useGame((s) => s.reset);
   const simSpeed = useGame((s) => s.simSpeed);
@@ -236,7 +236,7 @@ export function Hud() {
 
       <div className="actionbar">
         {phase === "prep" && !vs && (
-          <button className="action" disabled={boardUnits === 0} onClick={startBattle}>
+          <button className="action" disabled={boardUnits === 0} onClick={beginBattle}>
             <Icon d={ICON.swords} size={20} width={2.6} /> Start Battle
           </button>
         )}
