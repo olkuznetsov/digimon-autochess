@@ -51,7 +51,7 @@ export const CARE = {
   trainGapMs: 3600e3,
   trainMinFed: 20,
   winMood: 2,
-  maxMeat: 20,
+  maxMeat: 12,
   startMeat: 5,
   /** mood at or above this is "happy" */
   happyAt: 90,

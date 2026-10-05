@@ -44,7 +44,7 @@ export function AudioDirector() {
       // a boss's cut-in brings its music in before the fight
       const intro = useMoment.getState().intro;
       const theme: Theme = menu
-        ? "island"
+        ? "menu"
         : intro
           ? intro.kind
           : s.phase === "battle"

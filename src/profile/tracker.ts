@@ -22,8 +22,11 @@ function payRun(reason: string, quiet: boolean) {
   const { xp: before, partner } = useProfile.getState();
   const { happy, friends } = careBonus(partner?.care);
   const xp = useProfile.getState().gainXp(base, reason, quiet);
+  // a run played to its end brings the partner a piece of meat too
+  if (l.round >= 5) useProfile.getState().earnMeat(1);
   updateRun((r) => {
     r.paid = { xp, before, at: Date.now(), base, happy, friends };
+    if (r.round >= 5) r.meat = (r.meat ?? 0) + 1;
   });
 }
 
@@ -64,7 +67,6 @@ export function startProfileTracker() {
             st.ghostWins++;
           });
           profile.gainXp(XP.ghostWon, "Ghost battle won");
-          profile.earnMeat(1);
         }
         return;
       }
@@ -87,11 +89,9 @@ export function startProfileTracker() {
         }
       });
       if (s.pvp) return; // a VS match pays when it's over
-      // a win lifts the partner's mood and fills its larder
-      if (win) {
-        profile.cheer();
-        profile.earnMeat(1);
-      }
+      // a win lifts the partner's mood; a boss beaten brings it a piece of meat
+      if (win) profile.cheer();
+      if (win && boss) profile.earnMeat(1);
 
       // the solo run's ledger
       if (useRun.getState().ledger?.seed !== s.runSeed) followRun(s.runSeed, s.round);
@@ -121,7 +121,7 @@ export function startProfileTracker() {
           if (f) r.elements[f.element] = (r.elements[f.element] ?? 0) + 1;
         }
         r.board = board.map((u) => u.formId);
-        if (win) r.meat = (r.meat ?? 0) + 1;
+        if (win && boss) r.meat = (r.meat ?? 0) + 1;
         if (s.round <= RUN_ROUNDS) {
           if (win) r.scored.won++;
           else r.scored.lost++;
@@ -142,7 +142,7 @@ export function startProfileTracker() {
         if (place === 1) st.vsWins++;
       });
       profile.gainXp(XP.vsBase + XP.vsPerPlace * Math.max(0, s.pvp.snap.players - place), place === 1 ? "VS won" : `VS #${place}`);
-      profile.earnMeat(2);
+      profile.earnMeat(1);
     }
 
     // a merge digivolved something: the tamer has raised it

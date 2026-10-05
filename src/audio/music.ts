@@ -1,7 +1,7 @@
 /**
  * The soundtrack: instrumentals Sasha made in Suno in the mood of Digimon Adventure, two
  * versions of each theme taking turns, so a long session doesn't loop one track:
- * - island: the main menu and planning (File Island);
+ * - menu and island: the main menu and planning on the board (File Island — a take each);
  * - battle: a fight (Digivolve!);
  * - boss: a boss round (Black Gears);
  * - final: the last boss, Lucemon (Fallen Angel);
@@ -20,17 +20,19 @@
  */
 import { audio, isMusicOn, isMuted, isUnlocked, onAudioChange, setMusicBrightness, silentWavUrl, tone, type Graph } from "./engine";
 
-export type Theme = "island" | "battle" | "boss" | "final" | "victory";
+export type Theme = "menu" | "island" | "battle" | "boss" | "final" | "victory";
 
 const TRACKS: Record<Theme, string[]> = {
-  island: ["/music/file-island-1.mp3", "/music/file-island-2.mp3"],
+  // the two takes of File Island: one for the menu, the other for planning on the board
+  menu: ["/music/file-island-1.mp3"],
+  island: ["/music/file-island-2.mp3"],
   battle: ["/music/digivolve-1.mp3", "/music/digivolve-2.mp3"],
   boss: ["/music/black-gears-1.mp3", "/music/black-gears-2.mp3"],
   final: ["/music/fallen-angel-1.mp3", "/music/fallen-angel-2.mp3"],
   victory: ["/music/crest-of-light-1.mp3", "/music/crest-of-light-2.mp3"],
 };
 /** what to fetch ahead while a theme plays */
-const NEXT: Record<Theme, Theme> = { island: "battle", battle: "island", boss: "island", final: "victory", victory: "island" };
+const NEXT: Record<Theme, Theme> = { menu: "island", island: "battle", battle: "island", boss: "island", final: "victory", victory: "island" };
 /** the tracks are mastered loud; the sound effects should sit on top */
 const LEVEL = 0.55;
 const FADE_IN = 0.8;
