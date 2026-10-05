@@ -47,6 +47,13 @@ const FIGHT_MARGIN = 0.7;
 const UP = new THREE.Vector3(0, 1, 0);
 if (import.meta.env.DEV) Object.assign(window, { __cam: devCam });
 
+/** The player's own view of the board: the mouse wheel (toward the pointer) or a pinch zooms,
+ *  a middle click resets. `zoom` scales the camera's distance (under 1 = closer), `panX` /
+ *  `panZ` shift where it looks (zooming in leans toward the pointer); the camera eases after. */
+const playerView = { zoom: 1, panX: 0, panZ: 0 };
+const VIEW_ZOOM_MIN = 0.4;
+const VIEW_ZOOM_MAX = 1.3;
+
 function CameraRig() {
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
@@ -61,10 +68,99 @@ function CameraRig() {
   const fwd = useMemo(() => new THREE.Vector3(), []);
   const side = useMemo(() => new THREE.Vector3(), []);
   const rel = useMemo(() => new THREE.Vector3(), []);
+  const eased = useRef({ zoom: 1, panX: 0, panZ: 0 });
+  const lastLook = useMemo(() => new THREE.Vector3(0, 0, 0.6), []);
 
   useEffect(() => {
     if (import.meta.env.DEV) Object.assign(window, { __scene: scene, __gl: gl });
   }, [scene, gl]);
+
+  // the player's zoom: wheel and middle click on the board, pinch on a touch screen
+  useEffect(() => {
+    const el = gl.domElement;
+    const ray = new THREE.Raycaster();
+    const ground = new THREE.Plane(UP, 0);
+    const ndc = new THREE.Vector2();
+    const hit = new THREE.Vector3();
+    const onBoard = () => useProfile.getState().screen !== "menu";
+    const zoomAt = (factor: number, clientX: number, clientY: number) => {
+      const v = playerView;
+      const zoom = THREE.MathUtils.clamp(v.zoom * factor, VIEW_ZOOM_MIN, VIEW_ZOOM_MAX);
+      if (zoom < v.zoom) {
+        // in: lean toward the ground under the pointer, so it stays under it
+        const r = el.getBoundingClientRect();
+        ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+        ray.setFromCamera(ndc, camera);
+        if (ray.ray.intersectPlane(ground, hit)) {
+          const k = 1 - zoom / v.zoom;
+          v.panX += (hit.x - lastLook.x) * k;
+          v.panZ += (hit.z - lastLook.z) * k;
+        }
+      } else if (v.zoom < 1) {
+        // out: back toward the whole board — centred again at the default distance
+        const k = zoom >= 1 ? 0 : (1 - zoom) / (1 - v.zoom);
+        v.panX *= k;
+        v.panZ *= k;
+      }
+      v.panX = THREE.MathUtils.clamp(v.panX, -3.5, 3.5);
+      v.panZ = THREE.MathUtils.clamp(v.panZ, -4, 3.5);
+      v.zoom = zoom;
+    };
+    const onWheel = (e: WheelEvent) => {
+      if (!onBoard()) return;
+      e.preventDefault();
+      zoomAt(Math.exp(e.deltaY * 0.0015), e.clientX, e.clientY);
+    };
+    // a middle click anywhere on the board screen resets (a unit's name label sits over the
+    // canvas too) — and, kept from the page, starts no autoscroll
+    const onMiddle = (e: PointerEvent) => {
+      if (e.button !== 1 || !onBoard()) return;
+      e.preventDefault();
+      Object.assign(playerView, { zoom: 1, panX: 0, panZ: 0 });
+    };
+    // pinch: two fingers on the board
+    const touches = new Map<number, { x: number; y: number }>();
+    let spread = 0;
+    const span = () => {
+      const [a, b] = [...touches.values()];
+      return { d: Math.hypot(a.x - b.x, a.y - b.y), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    };
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType !== "touch" || !onBoard()) return;
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.size === 2) {
+        spread = span().d;
+        // the second finger makes it a pinch, not a drag
+        if (useGame.getState().dragId) useGame.getState().setDrag(null, null);
+      }
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      if (!touches.has(e.pointerId)) return;
+      touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touches.size !== 2 || spread <= 0) return;
+      const s = span();
+      if (s.d > 0) zoomAt(spread / s.d, s.x, s.y);
+      spread = s.d;
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      touches.delete(e.pointerId);
+      if (touches.size < 2) spread = 0;
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("pointerdown", onMiddle);
+    el.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+      window.removeEventListener("pointerdown", onMiddle);
+      el.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+    };
+  }, [gl, camera, lastLook]);
 
   useFrame((state, dt) => {
     tickJuice(dt);
@@ -155,6 +251,19 @@ function CameraRig() {
       pos.lerp(look, pull.current);
     }
 
+    // the player's zoom and pan on top
+    const ev = eased.current;
+    const ease = 1 - Math.exp(-dt * 12);
+    ev.zoom += (playerView.zoom - ev.zoom) * ease;
+    ev.panX += (playerView.panX - ev.panX) * ease;
+    ev.panZ += (playerView.panZ - ev.panZ) * ease;
+    look.x += ev.panX;
+    look.z += ev.panZ;
+    pos.x += ev.panX;
+    pos.z += ev.panZ;
+    pos.sub(look).multiplyScalar(ev.zoom).add(look);
+    lastLook.copy(look);
+
     // trauma^2 shake: small positional jitter + a touch of roll
     const t = juice.trauma * juice.trauma;
     if (t > 0.0001) {
@@ -206,6 +315,8 @@ function PrepUnits() {
             dragging={u.uid === dragId}
             itemEmojis={(u.items ?? []).map((id) => ITEMS[id]?.emoji ?? "")}
             onPointerDown={(e: ThreeEvent<PointerEvent>) => {
+              // the middle button resets the view, the right one isn't ours
+              if (e.nativeEvent.button !== 0) return;
               e.stopPropagation();
               if (useGame.getState().selectedItem) {
                 useGame.getState().equipItem(u.uid);
@@ -358,6 +469,7 @@ function BattleUnit({ uid }: { uid: string }) {
       itemEmojis={(f0.items ?? []).map((id) => ITEMS[id]?.emoji ?? "")}
       maxHp={f0.maxHp}
       onPointerDown={(e: ThreeEvent<PointerEvent>) => {
+        if (e.nativeEvent.button !== 0) return;
         e.stopPropagation();
         useGame.getState().setInspected(uid);
       }}

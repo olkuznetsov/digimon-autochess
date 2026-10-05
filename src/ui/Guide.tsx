@@ -182,7 +182,8 @@ function Basics() {
         <h3>Keys</h3>
         <p className="guide-keys">
           <kbd>D</kbd> reroll · <kbd>F</kbd> buy XP · <kbd>1</kbd>–<kbd>5</kbd> buy · <kbd>L</kbd> lock shop · <kbd>E</kbd> sell
-          selected · <kbd>Space</kbd> start / ready / continue · <kbd>S</kbd> battle speed · drag a unit onto the shop to sell
+          selected · <kbd>Space</kbd> start / ready / continue · <kbd>S</kbd> battle speed · drag a unit onto the shop to sell ·
+          mouse wheel zooms toward the pointer (a pinch on a phone), a middle click resets the view
         </p>
       </section>
     </>
