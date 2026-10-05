@@ -21,6 +21,7 @@ import { AccountBox } from "./AccountBox";
 import { Portrait } from "./Portrait";
 import { ATTR_PATH, CREST_ICON, ELEMENT_PATH, ICON, Icon, STAGE_JP, orList } from "./kit";
 import { sfx } from "../audio/sfx";
+import { isMuted, onAudioChange, setMuted } from "../audio/engine";
 
 const Guide = lazy(() => import("./Guide").then((m) => ({ default: m.Guide })));
 const LeaderboardModal = lazy(() => import("./LeaderboardModal").then((m) => ({ default: m.LeaderboardModal })));
@@ -349,7 +350,38 @@ function ModeButtons() {
   );
 }
 
-/** Top right: the title, and the guide, ranking and settings under it. */
+/** Sound on/off where the music plays — the game plays through a phone's silent switch, so
+ *  this is the switch that counts (the same one as the board's, and remembered). */
+function SoundButton() {
+  const [muted, setMutedUi] = useState(isMuted());
+  useEffect(() => {
+    const off = onAudioChange(() => setMutedUi(isMuted()));
+    return () => {
+      off();
+    };
+  }, []);
+  return (
+    <button
+      className={`round-btn${muted ? " off" : ""}`}
+      aria-pressed={!muted}
+      title={muted ? "Turn the sound on" : "Turn the sound off"}
+      onClick={() => {
+        const m = !muted;
+        setMuted(m);
+        setMutedUi(m);
+        if (!m) sfx.click();
+      }}
+    >
+      <span className="glass">
+        <Icon d={muted ? ICON.mute : ICON.speaker} size={25} />
+      </span>
+      <b>{muted ? "SOUND OFF" : "SOUND"}</b>
+      <span className="jp">{muted ? "ミュート" : "サウンド"}</span>
+    </button>
+  );
+}
+
+/** Top right: the title, and sound, ranking, the guide and settings under it. */
 function MenuCorner({ onPanel }: { onPanel: (p: Panel) => void }) {
   const items: [Panel, string, string, string][] = [
     ["lb", "RANKING", "ランキング", ICON.trophy],
@@ -364,6 +396,7 @@ function MenuCorner({ onPanel }: { onPanel: (p: Panel) => void }) {
         <b className="gl-main">AUTO CHESS</b>
       </div>
       <div className="menu-icons">
+        <SoundButton />
         {items.map(([p, label, jp, icon]) => (
           <button key={p} className="round-btn" onClick={() => onPanel(p)}>
             <span className="glass">

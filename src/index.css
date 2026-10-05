@@ -5108,3 +5108,18 @@ html, body {
   gap: 10px;
   font-size: 16px;
 }
+.round-btn.off .glass {
+  background: rgba(27, 35, 80, 0.55);
+  color: #ffffff;
+}
+@media (max-width: 760px) {
+  /* four round buttons don't fit beside the tamer's name: a column down the right edge */
+  .menu-icons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .round-btn .glass {
+    width: 42px;
+    height: 42px;
+  }
+}
