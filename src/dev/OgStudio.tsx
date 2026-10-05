@@ -5,13 +5,14 @@ import { ATTR_COLOR, FORMS } from "../game/creatures";
 import { cellToWorld } from "../game/board";
 import { Board } from "../three/Board";
 import { Creature } from "../three/Creature";
-import { DigitalEnvironment, HORIZON } from "../three/Environment";
+import { IslandEnvironment } from "../three/Island";
 import { SceneLighting, ScenePost } from "../three/Scene";
 
 /**
  * Dev tool (dev server, /?studio=og): renders the link-preview card (public/og.jpg,
- * 1200×630) and the app icons (public/icon-512.png, icon-192.png,
- * apple-touch-icon.png) from the real scene, with the title drawn on top.
+ * 1200×630: five Megas on File Island's beach board, the game's logo over the sky) and the app
+ * icons (public/icon-512.png, icon-192.png, apple-touch-icon.png) from the real scene, with
+ * the title drawn on top.
  * Frames are advanced by hand, so it also works in a background tab.
  */
 const LINEUP = ["metalgarurumon", "gallantmon", "wargreymon", "imperialdramon", "alphamon"];
@@ -64,7 +65,7 @@ function Shoot({ mode, onLog }: { mode: "og" | "icon"; onLog: (s: string) => voi
     const stage = (name: string) => Object.assign((window as unknown as { __studio: object }).__studio, { stage: name });
     (async () => {
       const want = mode === "og" ? LINEUP.length : 1;
-      const until = performance.now() + 30000;
+      const until = performance.now() + 90000; // a software renderer takes its time
       while (fitted() < want && performance.now() < until) {
         await yieldTask();
         step(1);
@@ -73,43 +74,78 @@ function Shoot({ mode, onLog }: { mode: "og" | "icon"; onLog: (s: string) => voi
       step(45); // settle into idle, let the sun slats and stars move a little
       await document.fonts.load("700 64px 'Chakra Petch'");
       await document.fonts.load("500 24px 'Exo 2 Variable'");
+      await document.fonts.load("400 80px 'Dela Gothic One'");
+      // the Latin faces by hand: load() settles for the Japanese subset's face (its 500–900
+      // weight range matches first), so canvas text would fall back to a serif
+      await Promise.all(
+        [...document.fonts].filter((f) => f.family.includes("M PLUS Rounded") && f.weight === "800").map((f) => f.load().catch(() => null)),
+      );
+      await document.fonts.load("800 22px 'M PLUS Rounded 1c'", "デジモン オートチェス");
       stage("rendering");
       if (mode === "og") {
-        camera.position.set(0, 2.5, -6.4);
-        camera.lookAt(0, 1.05, 2.2);
+        // low over the near side: the Megas, the beach and the sea, the sky left for the title
+        camera.position.set(0, 2.1, -6.6);
+        camera.lookAt(0, 1.55, 2.2);
         step(2);
         const out = document.createElement("canvas");
         out.width = 1200;
         out.height = 630;
         const g = out.getContext("2d")!;
         g.drawImage(gl.domElement, 0, 0);
-        // a dark band behind the title keeps it readable over the sun
-        const band = g.createLinearGradient(0, 0, 0, 230);
-        band.addColorStop(0, "rgba(5,6,15,0.85)");
-        band.addColorStop(1, "rgba(5,6,15,0)");
+        // a soft navy wash under the logo, as the menu's sky has
+        const band = g.createLinearGradient(0, 0, 0, 260);
+        band.addColorStop(0, "rgba(14,22,64,0.5)");
+        band.addColorStop(1, "rgba(14,22,64,0)");
         g.fillStyle = band;
-        g.fillRect(0, 0, 1200, 230);
+        g.fillRect(0, 0, 1200, 260);
         g.textAlign = "center";
-        g.font = "700 72px 'Chakra Petch'";
-        g.shadowColor = "rgba(57,216,255,0.9)";
-        g.shadowBlur = 28;
-        g.fillStyle = "#f2f6ff";
-        const left = "DIGIMON ";
-        const right = "AUTO CHESS";
-        const wl = g.measureText(left).width;
-        const wr = g.measureText(right).width;
-        const x0 = 600 - (wl + wr) / 2;
-        g.textAlign = "left";
-        g.fillText(left, x0, 92);
-        g.shadowColor = "rgba(183,107,255,0.95)";
-        g.fillStyle = "#c78bff";
-        g.fillText(right, x0 + wl, 92);
-        g.shadowBlur = 10;
-        g.shadowColor = "rgba(0,0,0,0.9)";
-        g.textAlign = "center";
-        g.font = "500 26px 'Exo 2 Variable'";
-        g.fillStyle = "#dbe6ff";
-        g.fillText("Branching digivolutions · synergies · VS a friend — free in your browser", 600, 140);
+        g.textBaseline = "alphabetic";
+        // the game's logo: デジモン オートチェス · DIGIMON in gold · AUTO CHESS, white, slanted, inked
+        g.font = "800 22px 'M PLUS Rounded 1c'";
+        g.letterSpacing = "8px";
+        g.fillStyle = "#ffffff";
+        g.shadowColor = "rgba(20,40,90,0.7)";
+        g.shadowBlur = 8;
+        g.fillText("デジモン オートチェス", 604, 50);
+        g.shadowBlur = 0;
+        g.letterSpacing = "2px";
+        g.font = "400 40px 'Dela Gothic One'";
+        g.lineJoin = "round";
+        g.lineWidth = 5;
+        g.strokeStyle = "#1b2350";
+        g.strokeText("DIGIMON", 600, 98);
+        g.fillStyle = "#ffe27a";
+        g.fillText("DIGIMON", 600, 98);
+        g.save();
+        g.translate(600, 186);
+        g.transform(1, 0, -0.18, 1, 0, 0); // skewX(-10deg)
+        g.letterSpacing = "1px";
+        g.font = "400 92px 'Dela Gothic One'";
+        g.fillStyle = "#1b2350"; // the drop under the letters
+        g.fillText("AUTO CHESS", 0, 8);
+        g.lineWidth = 7;
+        g.strokeText("AUTO CHESS", 0, 0);
+        const fill = g.createLinearGradient(0, -70, 0, 0);
+        fill.addColorStop(0, "#ffffff");
+        fill.addColorStop(0.5, "#ffffff");
+        fill.addColorStop(1, "#a8e4ff");
+        g.fillStyle = fill;
+        g.fillText("AUTO CHESS", 0, 0);
+        g.restore();
+        // the tagline on a white pill at the bottom
+        const tag = "Raise Digimon from babies · branching digivolutions · VS up to 8 — free in your browser";
+        g.letterSpacing = "0px";
+        g.font = "800 23px 'M PLUS Rounded 1c'";
+        const tw = g.measureText(tag).width + 48;
+        g.fillStyle = "rgba(255,255,255,0.92)";
+        g.shadowColor = "rgba(20,40,90,0.35)";
+        g.shadowBlur = 16;
+        g.beginPath();
+        g.roundRect(600 - tw / 2, 566, tw, 44, 22);
+        g.fill();
+        g.shadowBlur = 0;
+        g.fillStyle = "#1b2350";
+        g.fillText(tag, 600, 596);
         onLog((await post("og.jpg", out)) ? "✓ og.jpg" : "✗ og.jpg");
       } else {
         // prep units face the game camera (toward -z)
@@ -162,9 +198,7 @@ function Shoot({ mode, onLog }: { mode: "og" | "icon"; onLog: (s: string) => voi
   }
   return (
     <>
-      <color attach="background" args={[HORIZON]} />
-      <fog attach="fog" args={[HORIZON, 16, 52]} />
-      <DigitalEnvironment />
+      <IslandEnvironment />
       <Board />
       {LINEUP.map((id, i) => {
         const [x, z] = cellToWorld(0.5 + i, 1.4);
@@ -180,7 +214,7 @@ function Shoot({ mode, onLog }: { mode: "og" | "icon"; onLog: (s: string) => voi
           />
         );
       })}
-      <ScenePost />
+      <ScenePost day />
     </>
   );
 }
@@ -206,7 +240,8 @@ export function OgStudio() {
           }}
           onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
         >
-          <SceneLighting />
+          {/* the island brings its own daylight */}
+          {mode === "icon" && <SceneLighting />}
           <Shoot mode={mode} onLog={onLog} />
         </Canvas>
       </div>
