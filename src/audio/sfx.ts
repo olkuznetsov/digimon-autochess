@@ -137,7 +137,8 @@ export function battleSfx(e: CombatEvent) {
   }
   const superEff = (e.mult ?? 1) >= 1.1;
   const resisted = (e.mult ?? 1) <= 0.9;
-  if (e.heavy) {
+  // a heavy blow, or a Giga Blade critical
+  if (e.heavy || e.tag === "crit") {
     if (allow("heavy", 110)) melee(true, superEff, resisted);
   } else if (e.ranged) {
     if (allow("shot", 60)) zap(superEff);

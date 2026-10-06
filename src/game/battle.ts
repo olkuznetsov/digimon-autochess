@@ -65,8 +65,8 @@ export interface CombatEvent {
   /** hit only: attacker and target uids (damage meter) */
   src?: string;
   tgt?: string;
-  /** hit only: a burn pulse (Fire) or a dodged attack (Wind) */
-  tag?: "burn" | "miss";
+  /** hit only: a burn pulse (Fire), a dodged attack (Wind) or a critical hit (Giga Blade) */
+  tag?: "burn" | "miss" | "crit";
   /** shot only: seconds until it lands (the hit follows then) */
   flight?: number;
 }
@@ -129,19 +129,28 @@ const dist = (a: Fighter, b: Fighter) => {
 const RETARGET_MARGIN = 0.5;
 /** Lightning Coil's reach around the struck target (cells). */
 const CHAIN_RADIUS = 1.6;
+/** Rapid Fang: enemies below this share of their max HP take its extra damage. */
+const EXECUTE_BELOW = 0.4;
+/** Overclock Chip: how long its burst of speed lasts after a cast (seconds). */
+const OVERCLOCK_TIME = 4;
 /** Fire's burn: how long it lasts, and how often it bites (seconds). */
 const BURN_TIME = 3;
 const BURN_PULSE = 1;
 
 /** Item mechanics as multipliers at the moment of the hit, so they never fight other
  *  buffs over the stat itself (a rally ultimate raises `attack` mid-fight). */
-const atkMult = (f: Fighter) => 1 + (f.procs?.braved ?? 0);
-const asMult = (f: Fighter) => 1 + (f.procs?.ramped ?? 0);
+const atkMult = (f: Fighter) => 1 + (f.procs?.braved ?? 0) + (f.procs?.fed ?? 0);
+const asMult = (f: Fighter) => 1 + (f.procs?.ramped ?? 0) + ((f.procs?.overclocked ?? 0) > 0 ? f.procs!.overclock! : 0);
 
-/** Every heal goes through here: Black Gear's wound halves it. */
+/** Every heal goes through here: Black Gear's wound halves it; Crimson Code keeps what
+ *  overflows as a shield. */
 function heal(f: Fighter, amount: number) {
   if (amount <= 0 || f.hp <= 0) return;
-  f.hp = Math.min(f.maxHp, f.hp + amount * ((f.wounded ?? 0) > 0 ? 0.5 : 1));
+  const got = amount * ((f.wounded ?? 0) > 0 ? 0.5 : 1);
+  const over = f.hp + got - f.maxHp;
+  f.hp = Math.min(f.maxHp, f.hp + got);
+  const cap = f.procs?.overheal;
+  if (cap && over > 0) f.shield = Math.max(f.shield, Math.min(f.shield + over, f.maxHp * cap));
 }
 
 /** Crest of Courage: one more stack per hit dealt or taken. */
@@ -162,6 +171,8 @@ interface Hit {
   ls: number;
   /** a burn pulse: no mana, no on-hit effects */
   tag?: "burn";
+  /** a critical hit (Giga Blade): only its number looks different */
+  crit?: boolean;
 }
 
 /**
@@ -184,10 +195,11 @@ interface Tick {
 const add = (m: Map<Fighter, number>, f: Fighter, v: number) => m.set(f, (m.get(f) ?? 0) + v);
 
 /** Queue a hit; returns its damage (after the target's reduction — and a brooding Mother
- *  Eater's guard). */
-function hit(t: Tick, src: Fighter, tgt: Fighter, raw: number, mult: number, ability: boolean): number {
-  const amount = raw * (1 - tgt.dmgReduction) * (tgt.broodGuard ? BROOD_GUARD : 1);
-  t.hits.push({ src, tgt, amount, mult, ability, ls: src.lifesteal });
+ *  Eater's guard). Rapid Fang's holder hits the wounded harder. */
+function hit(t: Tick, src: Fighter, tgt: Fighter, raw: number, mult: number, ability: boolean, crit = false): number {
+  const execute = src.procs?.execute && tgt.hp < tgt.maxHp * EXECUTE_BELOW ? 1 + src.procs.execute : 1;
+  const amount = raw * execute * (1 - tgt.dmgReduction) * (tgt.broodGuard ? BROOD_GUARD : 1);
+  t.hits.push({ src, tgt, amount, mult, ability, ls: src.lifesteal, ...(crit ? { crit } : {}) });
   return amount;
 }
 
@@ -213,17 +225,55 @@ function onAttack(fr: Fighter, target: Fighter, dealt: number, fighters: Fighter
   }
 }
 
+/** Hawk Eye's second bolt: the nearest other enemy in reach (equal distances: the same choice
+ *  on both sides of a mirror). */
+function secondTarget(fr: Fighter, target: Fighter, fighters: Fighter[]): Fighter | null {
+  let best: Fighter | null = null;
+  let bestD = Infinity;
+  for (const x of fighters) {
+    if (x === target || x.team === fr.team || x.hp <= 0) continue;
+    const d = dist(fr, x);
+    if (d > fr.range + 0.05) continue;
+    if (d < bestD - 1e-9 || (best && d <= bestD + 1e-9 && preferred(fr, x, best))) {
+      bestD = d;
+      best = x;
+    }
+  }
+  return best;
+}
+
+/** One blow or bolt of an attack: a shot that flies, or (melee, Electric) a hit at once. */
+function deliver(fr: Fighter, target: Fighter, raw: number, mult: number, t: Tick, crit: boolean, extra: boolean): number | null {
+  if (fr.range > 1.5 && FORMS[fr.formId]?.element !== "Electric") {
+    (fr.shots ??= []).push({ tgt: target.uid, left: SHOT_FLIGHT, raw, mult, ...(crit ? { crit } : {}), ...(extra ? { extra } : {}) });
+    t.events?.push({ kind: "shot", col: target.col, row: target.row, attr: fr.attribute, fromCol: fr.col, fromRow: fr.row, src: fr.uid, tgt: target.uid, team: fr.team, flight: SHOT_FLIGHT });
+    return null;
+  }
+  return hit(t, fr, target, raw, mult, false, crit);
+}
+
 /** A swing's contact: the blow lands (or, ranged, the shot leaves — Electric strikes at once),
  *  the attacker gains mana and casts at full. */
 function strike(fr: Fighter, target: Fighter, fighters: Fighter[], t: Tick) {
+  const p = fr.procs;
   const mult = attributeMultiplier(fr.attribute, target.attribute);
-  const raw = fr.attack * atkMult(fr) * mult;
-  if (fr.range > 1.5 && FORMS[fr.formId]?.element !== "Electric") {
-    (fr.shots ??= []).push({ tgt: target.uid, left: SHOT_FLIGHT, raw, mult });
-    t.events?.push({ kind: "shot", col: target.col, row: target.row, attr: fr.attribute, fromCol: fr.col, fromRow: fr.row, src: fr.uid, tgt: target.uid, team: fr.team, flight: SHOT_FLIGHT });
-  } else {
-    const dealt = hit(t, fr, target, raw, mult, false);
-    if (fr.procs) onAttack(fr, target, dealt, fighters, t);
+  let raw = fr.attack * atkMult(fr) * mult;
+  // Giga Blade: every critEvery-th attack lands double
+  let crit = false;
+  if (p?.critEvery) {
+    p.swings = (p.swings ?? 0) + 1;
+    crit = p.swings % p.critEvery === 0;
+    if (crit) raw *= p.critMult ?? 2;
+  }
+  // Sniper Scope: the farther the target, the harder the attack
+  if (p?.farShot) raw *= 1 + p.farShot * dist(fr, target);
+  const dealt = deliver(fr, target, raw, mult, t, crit, false);
+  if (dealt !== null && p) onAttack(fr, target, dealt, fighters, t);
+  // Hawk Eye: a second bolt at another enemy in reach (no attack of its own: no procs)
+  const other = p?.multishot ? secondTarget(fr, target, fighters) : null;
+  if (other) {
+    const m = attributeMultiplier(fr.attribute, other.attribute);
+    deliver(fr, other, fr.attack * atkMult(fr) * m * p!.multishot!, m, t, false, true);
   }
   fr.mana = Math.min(fr.maxMana, fr.mana + MANA_PER_ATTACK * fr.manaMult);
   if (fr.mana >= fr.maxMana) {
@@ -242,8 +292,8 @@ function flyShots(fr: Fighter, fighters: Fighter[], dt: number, t: Tick) {
     shots.splice(i--, 1);
     const target = fighters.find((x) => x.uid === s.tgt && x.hp > 0);
     if (!target) continue;
-    const dealt = hit(t, fr, target, s.raw, s.mult, false);
-    if (fr.procs) onAttack(fr, target, dealt, fighters, t);
+    const dealt = hit(t, fr, target, s.raw, s.mult, false, !!s.crit);
+    if (fr.procs && !s.extra) onAttack(fr, target, dealt, fighters, t);
   }
 }
 
@@ -267,6 +317,7 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], t: Tick)
     toRow: target.row,
   });
   fr.castKey++;
+  if (fr.procs?.overclock) fr.procs.overclocked = OVERCLOCK_TIME;
   if (fr.castShield > 0) add(t.shields, fr, fr.maxHp * fr.castShield);
   if (fr.procs?.castHeal) add(t.heals, fr, fr.maxHp * fr.procs.castHeal);
   if (fr.procs?.blessing) bless(fr, fr.procs.blessing, fighters, t);
@@ -315,7 +366,7 @@ function absorb(f: Fighter, total: number) {
   f.hp -= dmg;
 }
 
-const hitEvent = (h: { src: Fighter; tgt: Fighter; amount: number; mult: number; ability: boolean; tag?: "burn" | "miss" }): CombatEvent => ({
+const hitEvent = (h: { src: Fighter; tgt: Fighter; amount: number; mult: number; ability: boolean; tag?: "burn" | "miss"; crit?: boolean }): CombatEvent => ({
   kind: "hit",
   col: h.tgt.col,
   row: h.tgt.row,
@@ -329,7 +380,7 @@ const hitEvent = (h: { src: Fighter; tgt: Fighter; amount: number; mult: number;
   ability: h.ability,
   src: h.src.uid,
   tgt: h.tgt.uid,
-  ...(h.tag ? { tag: h.tag } : {}),
+  ...(h.tag ? { tag: h.tag } : h.crit ? { tag: "crit" as const } : {}),
 });
 
 /** Apply a tick: shields, buffs and freezes first; then every hit at once (a lethal total
@@ -387,6 +438,16 @@ function resolve(fighters: Fighter[], t: Tick) {
     if (h.src.procs?.wounding) h.tgt.wounded = Math.max(h.tgt.wounded ?? 0, h.src.procs.wounding);
     if (h.tgt.procs?.courage) brave(h.tgt);
     if (h.ls > 0) add(t.heals, h.src, h.amount * share.get(h.tgt)! * h.ls);
+  }
+  // Bloodlust Code: every enemy that falls to this tick's hits feeds each holder that struck it
+  // (once a holder, however many of its hits landed)
+  const fed = new Set<string>();
+  for (const h of t.hits) {
+    const p = h.src.procs;
+    if (!p?.thirst || h.tgt.hp > 0 || h.src.hp <= 0 || fed.has(`${h.src.uid}>${h.tgt.uid}`)) continue;
+    fed.add(`${h.src.uid}>${h.tgt.uid}`);
+    p.fed = (p.fed ?? 0) + p.thirst;
+    add(t.heals, h.src, h.src.maxHp * (p.feast ?? 0));
   }
   // Spike Shell: attacks struck back after the hits (no lifesteal, no thorns on thorns)
   for (const h of t.hits) {
@@ -538,6 +599,7 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
       }
     }
     if (fr.procs?.ccImmune) fr.procs.ccImmune = Math.max(0, fr.procs.ccImmune - dt);
+    if (fr.procs?.overclocked) fr.procs.overclocked = Math.max(0, fr.procs.overclocked - dt);
     fr.cooldown = Math.max(0, fr.cooldown - dt);
     if (fr.shots) flyShots(fr, fighters, dt, t);
     // frozen units can't move, attack, or cast until the stun wears off (a swing breaks off)

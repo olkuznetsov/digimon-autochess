@@ -531,9 +531,10 @@ function Items() {
       <section className="guide-sec">
         <h3>Fusion recipes</h3>
         <p>
-          Any two base items fuse into a stronger one: pick one, then a glowing partner in your tray — or put the second
-          on a Digimon that holds the first, and they fuse right there. The Crests, Lightning Coil, Spike Shell, Rage Chip
-          and Blue Card do something of their own in battle. A <b>Digimental</b> (Digitama + a base item) makes its holder
+          Any two base items fuse into one: pick one, then a glowing partner in your tray — or put the second on a Digimon
+          that holds the first, and they fuse right there. Every pair makes its own item, and it <b>keeps both parts'
+          stats</b> (exactly as if the Digimon held the two) and adds an effect no other item has — fusing never loses
+          anything and frees a slot. A <b>Digimental</b> (Digitama + a base item) makes its holder
           count for an element — a baby too; two Digitama make a <b>Digivice</b>: one more Digimon on the board, straight from the item tray — nobody needs to hold it.
         </p>
         <div className="fuse-wrap">

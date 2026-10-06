@@ -37,9 +37,10 @@ for where the models, the art and the music come from.*
   element it gets a mechanic of its own: Fire burns, Water keeps mana after a cast, Plant grows thorns, Electric
   chains lightning, Earth holds a last stand, Wind dodges every fourth attack, Light shields the most wounded ally
   on every cast, Dark halves the enemy's healing. Fresh babies have no element until a Digimental gives them one.
-- **Items**: six base items and the rarer Digitama fuse in pairs — in the tray or right on a Digimon — into 28
-  stronger ones: Adventure's Crests, Lightning Coil (every fifth attack strikes everything around the target),
-  Spike Shell, Rage Chip, Blue Card…; Digitama + an item makes a **Digimental**, an emblem of an element, and two
+- **Items**: six base items and the rarer Digitama fuse in pairs — in the tray or right on a Digimon — into 28,
+  Teamfight Tactics' way: every pair makes its own item, which keeps both parts' stats (exactly as if the Digimon held
+  the two) and adds an effect no other item has — Giga Blade's critical hits, Hawk Eye's second bolt, Bloodlust
+  Code's takedowns, Adventure's Crests…; Digitama + an item makes a **Digimental**, an emblem of an element, and two
   Digitama make a **Digivice**, one more Digimon on the board as soon as it's made (it works from the item tray). Relics with no recipe counter freezes and healing. A Digimon holds up to three.
 - **Solo run**: a boss every fifth round, drawn from candidates so runs differ — among them Cyber Sleuth's data-eaters
   with mechanics of their own: the Eater devours your weakest Digimon and grows, the Mother Eater (endless) broods

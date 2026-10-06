@@ -83,8 +83,9 @@ export interface Fighter {
    *  frame) — or, ranged, until the shot leaves — and on whom */
   swing?: number;
   swingAt?: string;
-  /** shots in flight: each lands on its target when `left` runs out */
-  shots?: { tgt: string; left: number; raw: number; mult: number }[];
+  /** shots in flight: each lands on its target when `left` runs out (`crit`: a Giga Blade
+   *  critical; `extra`: Hawk Eye's second bolt, which counts as no attack of its own) */
+  shots?: { tgt: string; left: number; raw: number; mult: number; crit?: boolean; extra?: boolean }[];
   moving: boolean;
   targetUid: string | null;
   /** ability resource: gained on attack/hit; casts the role ability when full */
@@ -169,11 +170,33 @@ export interface Procs {
   dodgeEvery?: number;
   /** Light: every cast shields the most wounded ally for this share of its own max HP */
   blessing?: number;
+  /** Giga Blade: every critEvery-th attack deals critMult damage */
+  critEvery?: number;
+  critMult?: number;
+  /** Rapid Fang: extra damage (share) to enemies below 40% HP */
+  execute?: number;
+  /** Sniper Scope: extra attack damage (share) for every cell to the target */
+  farShot?: number;
+  /** Bloodlust Code: for every enemy it helps bring down, attack gained (share of the start)
+   *  and healing (share of max HP) */
+  thirst?: number;
+  feast?: number;
+  /** Accel Disk: attack speed for the allies that start next to it (applyAuras) */
+  aura?: number;
+  /** Hawk Eye: a second bolt at another enemy in reach, this share of an attack */
+  multishot?: number;
+  /** Overclock Chip: attack speed for OVERCLOCK_TIME seconds after every cast */
+  overclock?: number;
+  /** Crimson Code: healing past full HP becomes a shield, up to this share of max HP */
+  overheal?: number;
   // running state
   attacks?: number;
   ramped?: number;
   braved?: number;
   dodgeCount?: number;
+  swings?: number;
+  fed?: number;
+  overclocked?: number;
 }
 
 export type Phase = "prep" | "battle" | "result";

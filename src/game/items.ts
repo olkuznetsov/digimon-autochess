@@ -1,25 +1,77 @@
-import type { Element, Fighter } from "./types";
+import type { Element, Fighter, Procs } from "./types";
 
-/** Equippable items: base items drop after battle wins; any two base items fuse into one
- *  stronger item (a recipe) — in the item tray, or on a Digimon that already holds the
- *  first one. Click-to-equip in prep (max 3/unit). Some fused items carry a mechanic of
- *  their own (the Crests, Lightning Coil …): battle.ts runs those via Fighter.procs. */
+/** Equippable items, Teamfight Tactics' way: base items (components) drop after battle wins;
+ *  two components fuse into one item — in the item tray, or on a Digimon that already holds
+ *  the first one. Every fused item comes from exactly one pair, keeps the stats of both its
+ *  parts (exactly as if the Digimon held the two) and adds an effect no other item has.
+ *  Click-to-equip in prep (max 3/unit). The effects run in battle.ts via Fighter.procs. */
 export interface ItemDef {
   id: string;
   name: string;
   emoji: string;
   desc: string;
-  /** fused items: the two base items they are made from */
+  /** fused items: the two components they are made from */
   from?: [string, string];
 }
 
+/** What a component gives — on its own, and inside every item made from it. Multipliers
+ *  (attack, max HP, attack speed, mana gain) or flat (range, lifesteal). */
+interface Stats {
+  atk?: number;
+  hp?: number;
+  as?: number;
+  range?: number;
+  mana?: number;
+  ls?: number;
+}
+
+const PART: Record<string, Stats> = {
+  powerchip: { atk: 1.3 },
+  guardplate: { hp: 1.35 },
+  turbodisk: { as: 1.25 },
+  datalens: { range: 1 },
+  manacore: { mana: 1.6 },
+  vampirecode: { ls: 0.2 },
+  // Digitama gives no stats of its own: it makes Digimentals and Digivices
+  digitama: {},
+};
+
+function applyStats(f: Fighter, s: Stats) {
+  if (s.atk) f.attack = Math.round(f.attack * s.atk);
+  if (s.hp) {
+    f.maxHp = Math.round(f.maxHp * s.hp);
+    f.hp = f.maxHp;
+  }
+  if (s.as) f.attackSpeed *= s.as;
+  if (s.range) f.range += s.range;
+  if (s.mana) f.manaMult *= s.mana;
+  if (s.ls) f.lifesteal += s.ls;
+}
+
+/** The stats of some parts together, as the tooltip says them ("+69% attack" for two chips). */
+function statText(parts: Stats[]): string {
+  const mul = (k: "atk" | "hp" | "as" | "mana") => parts.reduce((m, s) => m * (s[k] ?? 1), 1);
+  const sum = (k: "range" | "ls") => parts.reduce((n, s) => n + (s[k] ?? 0), 0);
+  const pct = (m: number) => Math.round((m - 1) * 100);
+  const out: string[] = [];
+  if (mul("atk") !== 1) out.push(`+${pct(mul("atk"))}% attack`);
+  if (mul("hp") !== 1) out.push(`+${pct(mul("hp"))}% max HP`);
+  if (mul("as") !== 1) out.push(`+${pct(mul("as"))}% attack speed`);
+  if (sum("range")) out.push(`+${sum("range")} range`);
+  if (mul("mana") !== 1) out.push(`+${pct(mul("mana"))}% mana gain`);
+  if (sum("ls")) out.push(`${Math.round(sum("ls") * 100)}% lifesteal`);
+  return out.join(", ");
+}
+
+const base = (id: string, name: string, emoji: string): ItemDef => ({ id, name, emoji, desc: statText([PART[id]]) });
+
 const BASE: Record<string, ItemDef> = {
-  powerchip: { id: "powerchip", name: "Power Chip", emoji: "⚔️", desc: "+30% attack" },
-  guardplate: { id: "guardplate", name: "Guard Plate", emoji: "🛡️", desc: "+35% max HP" },
-  turbodisk: { id: "turbodisk", name: "Turbo Disk", emoji: "⚡", desc: "+25% attack speed" },
-  datalens: { id: "datalens", name: "Data Lens", emoji: "🔭", desc: "+1 range" },
-  manacore: { id: "manacore", name: "Mana Core", emoji: "🔮", desc: "+60% mana gain" },
-  vampirecode: { id: "vampirecode", name: "Vampire Code", emoji: "🩸", desc: "20% lifesteal" },
+  powerchip: base("powerchip", "Power Chip", "⚔️"),
+  guardplate: base("guardplate", "Guard Plate", "🛡️"),
+  turbodisk: base("turbodisk", "Turbo Disk", "💨"),
+  datalens: base("datalens", "Data Lens", "🔭"),
+  manacore: base("manacore", "Mana Core", "🔮"),
+  vampirecode: base("vampirecode", "Vampire Code", "🩸"),
 };
 
 /** Digitama, a Digi-Egg: a rarer component (bosses, the VS carousel). With a base item it
@@ -28,45 +80,44 @@ const BASE: Record<string, ItemDef> = {
 const SPECIAL: Record<string, ItemDef> = {
   digitama: { id: "digitama", name: "Digitama", emoji: "🥚", desc: "a Digi-Egg: with a base item it makes a Digimental, with another Digitama a Digivice" },
 };
-const fused = (id: string, name: string, emoji: string, desc: string, a: string, b: string): ItemDef => ({
-  id,
-  name,
-  emoji,
-  desc,
-  from: [a, b],
-});
 
+/** A fused item: its parts' stats, then what it does of its own. */
+const fused = (id: string, name: string, emoji: string, a: string, b: string, effect: string): ItemDef => {
+  const stats = statText([PART[a], PART[b]]);
+  return { id, name, emoji, desc: stats ? `${stats}; ${effect}` : effect, from: [a, b] };
+};
+
+// Every pair of components makes one item, and every item does something no other does.
 const FUSED: Record<string, ItemDef> = {
-  gigablade: fused("gigablade", "Giga Blade", "🗡️", "+70% attack", "powerchip", "powerchip"),
-  rapidfang: fused("rapidfang", "Rapid Fang", "🐺", "+30% attack, +30% attack speed", "powerchip", "turbodisk"),
-  bloodlust: fused("bloodlust", "Bloodlust Code", "🧛", "+30% attack, 30% lifesteal", "powerchip", "vampirecode"),
-  sniperscope: fused("sniperscope", "Sniper Scope", "🎯", "+1 range, +35% attack", "datalens", "powerchip"),
-  chromedigizoid: fused("chromedigizoid", "Chrome Digizoid", "🪨", "+50% max HP, takes 15% less damage", "guardplate", "guardplate"),
-  holybarrier: fused("holybarrier", "Holy Barrier", "✨", "+25% max HP; casting shields for 20% max HP", "guardplate", "manacore"),
-  regenmatrix: fused("regenmatrix", "Regen Matrix", "💚", "+25% max HP, heals 2.5% max HP per second", "guardplate", "vampirecode"),
-  accelsdisk: fused("accelsdisk", "Accel Disk", "⏩", "+55% attack speed", "turbodisk", "turbodisk"),
-  overclock: fused("overclock", "Overclock Chip", "🔥", "+20% attack speed, +60% mana gain", "manacore", "turbodisk"),
-  hawkeye: fused("hawkeye", "Hawk Eye", "🦅", "+1 range, +25% attack speed", "datalens", "turbodisk"),
-  digiegg: fused("digiegg", "Digi-Egg of Miracles", "🌟", "starts with 50% mana, +40% mana gain", "manacore", "manacore"),
-  crimsoncode: fused("crimsoncode", "Crimson Code", "🩸", "45% lifesteal", "vampirecode", "vampirecode"),
-  // ---- every other pair: an item with a mechanic of its own (Adventure's Crests among them)
-  couragecrest: fused("couragecrest", "Crest of Courage", "🧡", "+15% attack and HP; every hit dealt or taken: +2% attack, up to +40%", "powerchip", "guardplate"),
-  knowledgecrest: fused("knowledgecrest", "Crest of Knowledge", "💜", "+20% attack, +30% mana gain; ultimates deal +35% damage", "powerchip", "manacore"),
-  spikeshell: fused("spikeshell", "Spike Shell", "🌵", "+30% max HP; attackers take 25% of the damage back", "guardplate", "turbodisk"),
-  reliabilitycrest: fused("reliabilitycrest", "Crest of Reliability", "🩶", "+25% max HP; the first time below 40% HP: a shield of 40% max HP", "guardplate", "datalens"),
-  ragechip: fused("ragechip", "Rage Chip", "💢", "+15% attack speed, 10% lifesteal; every attack +6% attack speed, up to +60%", "turbodisk", "vampirecode"),
-  lightningcoil: fused("lightningcoil", "Lightning Coil", "🌩️", "+1 range; every 5th attack, lightning strikes the target and every enemy near it (120%)", "datalens", "datalens"),
-  bluecard: fused("bluecard", "Blue Card", "🃏", "+30% mana gain; keeps 40% of its mana after casting", "datalens", "manacore"),
-  sincerecrest: fused("sincerecrest", "Crest of Sincerity", "🍀", "10% lifesteal; 30% of attack damage heals the most wounded ally", "datalens", "vampirecode"),
-  lovecrest: fused("lovecrest", "Crest of Love", "❤️", "+30% mana gain; every cast heals it for 25% max HP", "manacore", "vampirecode"),
+  gigablade: fused("gigablade", "Giga Blade", "🗡️", "powerchip", "powerchip", "every 4th attack is a critical hit: double damage"),
+  couragecrest: fused("couragecrest", "Crest of Courage", "🧡", "powerchip", "guardplate", "every hit dealt or taken: +2% attack, up to +30%"),
+  rapidfang: fused("rapidfang", "Rapid Fang", "🐺", "powerchip", "turbodisk", "+50% damage to enemies below 40% HP"),
+  sniperscope: fused("sniperscope", "Sniper Scope", "🎯", "powerchip", "datalens", "+10% attack damage for every cell to the target"),
+  knowledgecrest: fused("knowledgecrest", "Crest of Knowledge", "💜", "powerchip", "manacore", "ultimates deal +30% damage"),
+  bloodlust: fused("bloodlust", "Bloodlust Code", "🧛", "powerchip", "vampirecode", "each takedown: heals 20% max HP, +10% attack for the battle"),
+  chromedigizoid: fused("chromedigizoid", "Chrome Digizoid", "🪨", "guardplate", "guardplate", "takes 15% less damage"),
+  spikeshell: fused("spikeshell", "Spike Shell", "🌵", "guardplate", "turbodisk", "attackers take 25% of the damage back"),
+  reliabilitycrest: fused("reliabilitycrest", "Crest of Reliability", "🩶", "guardplate", "datalens", "the first time below 40% HP: a shield of 40% max HP"),
+  holybarrier: fused("holybarrier", "Holy Barrier", "💠", "guardplate", "manacore", "every cast shields it for 20% max HP"),
+  regenmatrix: fused("regenmatrix", "Regen Matrix", "💚", "guardplate", "vampirecode", "regenerates 2.5% max HP a second"),
+  accelsdisk: fused("accelsdisk", "Accel Disk", "⏩", "turbodisk", "turbodisk", "allies starting next to it: +15% attack speed"),
+  hawkeye: fused("hawkeye", "Hawk Eye", "🦅", "turbodisk", "datalens", "every attack also hits a second enemy in reach (50%)"),
+  overclock: fused("overclock", "Overclock Chip", "⏱️", "turbodisk", "manacore", "after every cast: +40% attack speed for 4 s"),
+  ragechip: fused("ragechip", "Rage Chip", "💢", "turbodisk", "vampirecode", "every attack: +6% attack speed, up to +60%"),
+  lightningcoil: fused("lightningcoil", "Lightning Coil", "🌩️", "datalens", "datalens", "every 5th attack, lightning hits the target and every enemy near it (120%)"),
+  bluecard: fused("bluecard", "Blue Card", "🃏", "datalens", "manacore", "keeps 40% of its mana after casting"),
+  sincerecrest: fused("sincerecrest", "Crest of Sincerity", "🍀", "datalens", "vampirecode", "30% of its attack damage heals the most wounded ally"),
+  digiegg: fused("digiegg", "Digi-Egg of Miracles", "🌟", "manacore", "manacore", "starts every battle with 50% mana"),
+  lovecrest: fused("lovecrest", "Crest of Love", "❤️", "manacore", "vampirecode", "every cast heals it for 25% max HP"),
+  crimsoncode: fused("crimsoncode", "Crimson Code", "💉", "vampirecode", "vampirecode", "healing past full HP becomes a shield (up to 40% max HP)"),
   // ---- Digitama + a base item: Digimentals, emblems of an element (TFT's Spatula); two Digitama: a Digivice
-  couragemental: fused("couragemental", "Digimental of Courage", "🔶", "counts as Fire; +30% attack", "digitama", "powerchip"),
-  friendmental: fused("friendmental", "Digimental of Friendship", "🔷", "counts as Electric; +1 range", "digitama", "datalens"),
-  lovemental: fused("lovemental", "Digimental of Love", "💗", "counts as Wind; +25% attack speed", "digitama", "turbodisk"),
-  reliamental: fused("reliamental", "Digimental of Reliability", "💧", "counts as Water; +35% max HP", "digitama", "guardplate"),
-  kindmental: fused("kindmental", "Digimental of Kindness", "🌑", "counts as Dark; +60% mana gain", "digitama", "manacore"),
-  hopemental: fused("hopemental", "Digimental of Hope", "🌠", "its own element counts twice; 20% lifesteal", "digitama", "vampirecode"),
-  digivice: fused("digivice", "Digivice", "📟", "+1 Digimon on the board — from the tray, no need to equip it", "digitama", "digitama"),
+  couragemental: fused("couragemental", "Digimental of Courage", "🔶", "digitama", "powerchip", "counts as Fire"),
+  friendmental: fused("friendmental", "Digimental of Friendship", "🔷", "digitama", "datalens", "counts as Electric"),
+  lovemental: fused("lovemental", "Digimental of Love", "💗", "digitama", "turbodisk", "counts as Wind"),
+  reliamental: fused("reliamental", "Digimental of Reliability", "💧", "digitama", "guardplate", "counts as Water"),
+  kindmental: fused("kindmental", "Digimental of Kindness", "🌑", "digitama", "manacore", "counts as Dark"),
+  hopemental: fused("hopemental", "Digimental of Hope", "🌠", "digitama", "vampirecode", "its own element counts twice"),
+  digivice: fused("digivice", "Digivice", "📟", "digitama", "digitama", "+1 Digimon on the board — from the tray, no need to equip it"),
 };
 
 /** Complete items with no recipe (TFT's artifacts): bosses and the VS carousel hand them
@@ -112,146 +163,100 @@ export function fuseResult(a: string, b: string): string | null {
   return RECIPES.get([a, b].sort().join("+")) ?? null;
 }
 
-/** Bake item effects into a fighter's combat stats (called from makeFighter). */
+/** What each item does beyond its parts' stats. A second copy on one Digimon adds its stats
+ *  again; its effect adds up where it's an amount, and doesn't where it's a rhythm (a crit
+ *  every 4th attack stays every 4th). */
+const EFFECT: Record<string, (f: Fighter, p: Procs) => void> = {
+  gigablade: (_, p) => {
+    p.critEvery = Math.min(p.critEvery ?? Infinity, 4);
+    p.critMult = 2;
+  },
+  couragecrest: (_, p) => Object.assign(p, { courage: 0.02, courageMax: 0.3 }),
+  rapidfang: (_, p) => {
+    p.execute = (p.execute ?? 0) + 0.5;
+  },
+  sniperscope: (_, p) => {
+    p.farShot = (p.farShot ?? 0) + 0.1;
+  },
+  knowledgecrest: (_, p) => {
+    p.ultPower = (p.ultPower ?? 1) * 1.3;
+  },
+  bloodlust: (_, p) => {
+    p.thirst = (p.thirst ?? 0) + 0.1;
+    p.feast = (p.feast ?? 0) + 0.2;
+  },
+  chromedigizoid: (f) => {
+    f.dmgReduction = Math.min(0.5, f.dmgReduction + 0.15);
+  },
+  spikeshell: (_, p) => {
+    p.reflect = (p.reflect ?? 0) + 0.25;
+  },
+  reliabilitycrest: (_, p) => {
+    p.rescue = 0.4;
+  },
+  holybarrier: (f) => {
+    f.castShield += 0.2;
+  },
+  regenmatrix: (f) => {
+    f.regen += 0.025;
+  },
+  accelsdisk: (_, p) => {
+    p.aura = (p.aura ?? 0) + 0.15;
+  },
+  hawkeye: (_, p) => {
+    p.multishot = Math.max(p.multishot ?? 0, 0.5);
+  },
+  overclock: (_, p) => {
+    p.overclock = (p.overclock ?? 0) + 0.4;
+  },
+  ragechip: (_, p) => Object.assign(p, { ramp: 0.06, rampMax: 0.6 }),
+  lightningcoil: (_, p) => Object.assign(p, { chainEvery: 5, chainFactor: 1.2 }),
+  bluecard: (_, p) => {
+    p.castRefund = 0.4;
+  },
+  sincerecrest: (_, p) => {
+    p.allyHeal = (p.allyHeal ?? 0) + 0.3;
+  },
+  digiegg: (f) => {
+    f.mana = Math.max(f.mana, f.maxMana * 0.5);
+  },
+  lovecrest: (_, p) => {
+    p.castHeal = (p.castHeal ?? 0) + 0.25;
+  },
+  crimsoncode: (_, p) => {
+    p.overheal = Math.max(p.overheal ?? 0, 0.4);
+  },
+  // ---- relics: no parts, so their stats live here
+  holyring: (f, p) => {
+    f.attackSpeed *= 1.15;
+    p.ccImmune = 10;
+  },
+  blackgear: (f, p) => {
+    f.attack = Math.round(f.attack * 1.15);
+    p.wounding = 5;
+  },
+};
+
+/** Bake item effects into a fighter's combat stats (called from makeFighter): each item's
+ *  parts (a component is its own part), then its effect. A Digimental's element counts in
+ *  synergies.ts; the Accel Disk's aura is laid once the board is set (applyAuras). */
 export function applyItems(f: Fighter, items: string[]): void {
-  const procs = () => (f.procs ??= {});
-  const hp = (mult: number) => {
-    f.maxHp = Math.round(f.maxHp * mult);
-    f.hp = f.maxHp;
-  };
   for (const id of items) {
-    switch (id) {
-      case "powerchip":
-        f.attack = Math.round(f.attack * 1.3);
-        break;
-      case "guardplate":
-        hp(1.35);
-        break;
-      case "turbodisk":
-        f.attackSpeed *= 1.25;
-        break;
-      case "datalens":
-        f.range += 1;
-        break;
-      case "manacore":
-        f.manaMult *= 1.6;
-        break;
-      case "vampirecode":
-        f.lifesteal += 0.2;
-        break;
-      case "gigablade":
-        f.attack = Math.round(f.attack * 1.7);
-        break;
-      case "rapidfang":
-        f.attack = Math.round(f.attack * 1.3);
-        f.attackSpeed *= 1.3;
-        break;
-      case "bloodlust":
-        f.attack = Math.round(f.attack * 1.3);
-        f.lifesteal += 0.3;
-        break;
-      case "sniperscope":
-        f.range += 1;
-        f.attack = Math.round(f.attack * 1.35);
-        break;
-      case "chromedigizoid":
-        hp(1.5);
-        f.dmgReduction = Math.min(0.5, f.dmgReduction + 0.15);
-        break;
-      case "holybarrier":
-        hp(1.25);
-        f.castShield += 0.2;
-        break;
-      case "regenmatrix":
-        hp(1.25);
-        f.regen += 0.025;
-        break;
-      case "accelsdisk":
-        f.attackSpeed *= 1.55;
-        break;
-      case "overclock":
-        f.attackSpeed *= 1.2;
-        f.manaMult *= 1.6;
-        break;
-      case "hawkeye":
-        f.range += 1;
-        f.attackSpeed *= 1.25;
-        break;
-      case "digiegg":
-        f.manaMult *= 1.4;
-        f.mana = Math.max(f.mana, f.maxMana * 0.5);
-        break;
-      case "crimsoncode":
-        f.lifesteal += 0.45;
-        break;
-      // ---- mechanics of their own (battle.ts reads f.procs)
-      case "couragecrest":
-        f.attack = Math.round(f.attack * 1.15);
-        hp(1.15);
-        Object.assign(procs(), { courage: 0.02, courageMax: 0.4 });
-        break;
-      case "knowledgecrest":
-        f.attack = Math.round(f.attack * 1.2);
-        f.manaMult *= 1.3;
-        procs().ultPower = (procs().ultPower ?? 1) * 1.35;
-        break;
-      case "spikeshell":
-        hp(1.3);
-        procs().reflect = (procs().reflect ?? 0) + 0.25;
-        break;
-      case "reliabilitycrest":
-        hp(1.25);
-        procs().rescue = 0.4;
-        break;
-      case "ragechip":
-        f.attackSpeed *= 1.15;
-        f.lifesteal += 0.1;
-        Object.assign(procs(), { ramp: 0.06, rampMax: 0.6 });
-        break;
-      case "lightningcoil":
-        f.range += 1;
-        Object.assign(procs(), { chainEvery: 5, chainFactor: 1.2 });
-        break;
-      case "bluecard":
-        f.manaMult *= 1.3;
-        procs().castRefund = 0.4;
-        break;
-      case "sincerecrest":
-        f.lifesteal += 0.1;
-        procs().allyHeal = (procs().allyHeal ?? 0) + 0.3;
-        break;
-      case "lovecrest":
-        f.manaMult *= 1.3;
-        procs().castHeal = (procs().castHeal ?? 0) + 0.25;
-        break;
-      // ---- Digimentals: their component's stat; the element itself counts in synergies.ts
-      case "couragemental":
-        f.attack = Math.round(f.attack * 1.3);
-        break;
-      case "friendmental":
-        f.range += 1;
-        break;
-      case "lovemental":
-        f.attackSpeed *= 1.25;
-        break;
-      case "reliamental":
-        hp(1.35);
-        break;
-      case "kindmental":
-        f.manaMult *= 1.6;
-        break;
-      case "hopemental":
-        f.lifesteal += 0.2;
-        break;
-      // ---- relics
-      case "holyring":
-        f.attackSpeed *= 1.15;
-        procs().ccImmune = 10;
-        break;
-      case "blackgear":
-        f.attack = Math.round(f.attack * 1.15);
-        procs().wounding = 5;
-        break;
-    }
+    const def = ITEMS[id];
+    if (!def) continue;
+    for (const part of def.from ?? [id]) if (PART[part]) applyStats(f, PART[part]);
+    const effect = EFFECT[id];
+    if (effect) effect(f, (f.procs ??= {}));
+  }
+}
+
+/** Accel Disk: allies that start the battle next to its holder (the 8 cells around it) attack
+ *  faster. Called once a side's fighters stand on their cells (applySynergies). */
+export function applyAuras(fighters: Fighter[]): void {
+  for (const f of fighters) {
+    const aura = f.procs?.aura;
+    if (!aura) continue;
+    for (const o of fighters)
+      if (o !== f && o.team === f.team && Math.abs(o.col - f.col) <= 1 && Math.abs(o.row - f.row) <= 1) o.attackSpeed *= 1 + aura;
   }
 }

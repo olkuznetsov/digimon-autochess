@@ -894,6 +894,11 @@ body,
   color: #ff7a3d;
   text-shadow: 0 0 8px rgba(255, 90, 30, 0.7), 0 2px 6px rgba(0, 0, 0, 0.6);
 }
+/* Giga Blade's critical hit */
+.dmgn.crit {
+  color: #ff5470;
+  text-shadow: 0 0 12px rgba(255, 60, 90, 0.85), 0 2px 6px rgba(0, 0, 0, 0.6);
+}
 /* Wind's dodge */
 .dmgn.miss {
   color: #c8fff2;

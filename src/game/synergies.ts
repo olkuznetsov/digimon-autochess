@@ -1,6 +1,6 @@
 import type { Fighter, Procs, Unit } from "./types";
 import { FORMS, ATTR_COLOR, ELEMENT_COLOR, ELEMENT_ICON } from "./creatures";
-import { EMBLEM_ELEMENT } from "./items";
+import { EMBLEM_ELEMENT, applyAuras } from "./items";
 
 export interface TraitTier {
   need: number;
@@ -223,6 +223,8 @@ export function applySynergies(fighters: Fighter[], units: Unit[]): void {
     f.attack = Math.round(f.attack);
     f.hp = f.maxHp;
   }
+  // the board is set: Accel Disks speed up their neighbours
+  applyAuras(fighters);
   // Light: a shield when battle starts (sized on the final max HP)
   for (const def of TRAITS) {
     const a = activeTier(def, counts.get(def.key) ?? 0);

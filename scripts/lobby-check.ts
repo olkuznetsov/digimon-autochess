@@ -170,7 +170,8 @@ console.log("augments: a mirror duel is a draw; 3 combat augments win it");
 // fairness: any board against its own mirror is a draw, whichever round (home/away order)
 {
   const forms = PLAYABLE_IDS;
-  const items = ["powerchip", "guardplate", "turbodisk", "datalens", "manacore", "vampirecode", "lightningcoil", "spikeshell", "couragecrest", "ragechip", "sincerecrest", "lovecrest", "bluecard", "reliabilitycrest", "knowledgecrest", "holyring", "blackgear", "couragemental", "hopemental"];
+  // every item: components, every fused effect, relics, Digimentals
+  const items = Object.keys(ITEMS).filter((id) => id !== "digitama" && id !== "digivice");
   let unfair = 0;
   for (let i = 0; i < 300; i++) {
     const n = 1 + Math.floor(rand() * 8);

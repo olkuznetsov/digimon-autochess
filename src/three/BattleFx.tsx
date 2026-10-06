@@ -529,7 +529,7 @@ function DamageNumbers({ host }: { host: HTMLDivElement }) {
       const variant = f.tag ?? (f.ability ? "abil" : mult >= 1.1 ? "se" : mult <= 0.9 ? "res" : "");
       // the big ones: an ultimate's hits (and a dodge); every other hit — super-effective and
       // heavy swings included — is chatter: small, and summed per unit
-      const big = !!f.ability || f.tag === "miss";
+      const big = !!f.ability || f.tag === "miss" || f.tag === "crit";
       if (mode === "big" && !big) continue;
       // chatter on one unit adds up in one small number instead of a new one per hit
       if (!big) {
@@ -558,7 +558,7 @@ function DamageNumbers({ host }: { host: HTMLDivElement }) {
       slot.y = 1.45 + Math.min(stack, 4) * 0.32;
       slot.z = bz;
       slot.drift = (Math.random() - 0.5) * 26;
-      slot.size = f.tag
+      slot.size = f.tag && f.tag !== "crit"
         ? 0.85
         : big
           ? Math.min(1.9, (0.85 + Math.log10(Math.max(10, amount)) * 0.28) * (f.ability ? 1.15 : 1) * (f.heavy ? 1.08 : 1))
@@ -567,7 +567,7 @@ function DamageNumbers({ host }: { host: HTMLDivElement }) {
       slot.target = `${f.col},${f.row}`;
       slot.total = amount;
       slot.el.className = `dmgn ${variant}${f.heavy ? " heavy" : ""}${big ? "" : " small"}`;
-      slot.el.textContent = f.tag === "miss" ? "miss" : variant === "se" ? `${amount}!` : `${amount}`;
+      slot.el.textContent = f.tag === "miss" ? "miss" : f.tag === "crit" ? `${amount}‼` : variant === "se" ? `${amount}!` : `${amount}`;
     }
     if (seen.current.size > 400) seen.current = new Set(fx.map((f) => f.id));
 
