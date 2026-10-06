@@ -2,7 +2,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { FORMS } from "../game/creatures";
 import { useGame } from "../game/store";
 import { fetchLadderTop, fightGhost, ladderReady, leagueOf, loadLadderMe, useLadder, type LadderTop } from "../net/ladder";
-import { playerId } from "../net/leaderboard";
+import { myPublicKey } from "../net/leaderboard";
 import { sfx } from "../audio/sfx";
 import { BlackGear } from "./kit";
 import { Portrait } from "./Portrait";
@@ -28,7 +28,10 @@ export function Ladder({ onClose }: { onClose: () => void }) {
   const lg = leagueOf(lp);
   const pct = lg.next ? Math.max(0, Math.min(100, (100 * (lp - lg.from)) / (lg.next.from - lg.from))) : 100;
   const why = ladderReady();
-  const self = playerId();
+  const [self, setSelf] = useState<string | null>(null);
+  useEffect(() => {
+    void myPublicKey().then(setSelf);
+  }, []);
   return (
     <div className="dv-overlay" onClick={onClose}>
       <section className="dv glass ladder" onClick={(e) => e.stopPropagation()} aria-label="Ghost ladder">
@@ -94,7 +97,7 @@ export function Ladder({ onClose }: { onClose: () => void }) {
             {top.slice(0, 10).map((t, i) => {
               const l = leagueOf(t.lp);
               return (
-                <li key={t.id} className={t.id === self ? "me" : ""}>
+                <li key={t.key} className={t.key === self ? "me" : ""}>
                   <span className="ld-rank">{i + 1}</span>
                   {t.partner && FORMS[t.partner] ? <Portrait formId={t.partner} className="fr-face" /> : <span className="fr-face empty" />}
                   <span className="ld-name">{t.name}</span>

@@ -15,7 +15,7 @@ import {
   type Outcome,
   type WireUnit,
 } from "./lobby";
-import { duelFighters, ghostFighters, outcomesHash, pveFighters, roundOutcomes, FIGHT_STEPS } from "./vsFights";
+import { duelFighters, ghostFighters, ladderFighters, outcomesHash, pveFighters, roundOutcomes, FIGHT_STEPS, LADDER_STEPS } from "./vsFights";
 import { augmentOffer, isAugmentRound, MAX_AUGMENTS } from "./augments";
 import { XP_TO_NEXT, MAX_LEVEL } from "./xpView";
 import { sfx, battleSfx } from "../audio/sfx";
@@ -588,15 +588,6 @@ export const boardCap = (units: Unit[], level: number, inventory: string[] = [])
   inventory.filter((i) => i === DIGIVICE).length +
   units.reduce((n, u) => n + (u.items ?? []).filter((i) => i === DIGIVICE).length, 0);
 
-/** A wire board unit as a Unit (for applySynergies, which only counts forms). */
-const wireToUnit = (uid: string, u: PvpBoardUnit): Unit => ({
-  uid,
-  formId: u.formId,
-  placement: { kind: "board", col: u.col, row: u.row },
-  items: u.items ?? [],
-  ...(u.star === 2 || u.star === 3 ? { star: u.star } : {}),
-});
-
 /** Mirror a board cell to the other half (row 0 <-> row 5, col 0 <-> col 5). */
 const mirrorCol = (c: number) => COLS - 1 - c;
 const mirrorRow = (r: number) => ROWS - 1 - r;
@@ -874,11 +865,12 @@ export const useGame = create<GameState>((set, get) => ({
       alive.length === fighters.length ? state.corpses : [...state.corpses, ...fighters.filter((fr) => fr.hp <= 0)];
     const playersLeft = alive.some((fr) => fr.team === "player");
     const enemiesLeft = alive.some((fr) => fr.team === "enemy");
-    // a VS fight still undecided after FIGHT_STEPS is a draw, as in everyone's simulation
-    const stalemate = !!state.pvp?.fight && state.tick + 1 >= FIGHT_STEPS;
+    // a VS fight still undecided after FIGHT_STEPS is a draw, as in everyone's simulation; a
+    // ladder fight after LADDER_STEPS is lost, as the worker rates it
+    const stalemate = (!!state.pvp?.fight && state.tick + 1 >= FIGHT_STEPS) || (!!state.ghost && state.tick + 1 >= LADDER_STEPS);
 
     if (!playersLeft || !enemiesLeft || stalemate) {
-      const win = playersLeft;
+      const win = playersLeft && !enemiesLeft;
       if (state.ghost) {
         // ghost scrim: show the result, change nothing about the run
         if (win) sfx.win();
@@ -1306,12 +1298,8 @@ export const useGame = create<GameState>((set, get) => ({
     const mine = wireBoard(state.units);
     if (mine.length === 0 || board.length === 0) return;
 
-    const myFighters = mine.map((u) => makeFighter(u.formId, `m_${u.uid}`, "player", u.col, u.row, 1, u.items, u.star ?? 1));
-    applySynergies(myFighters, mine.map((u) => wireToUnit(`m_${u.uid}`, u)));
-    const ghostFighters = board.map((u, i) =>
-      makeFighter(u.formId, `g_${u.uid ?? i}`, "enemy", mirrorCol(u.col), mirrorRow(u.row), 1, u.items ?? [], u.star ?? 1),
-    );
-    applySynergies(ghostFighters, board.map((u, i) => wireToUnit(`g_${u.uid ?? i}`, u)));
+    // built exactly as the worker builds it to rate the fight (vsFights.ts)
+    const fighters = ladderFighters(mine, board);
 
     sfx.battleStart();
     set({
@@ -1322,7 +1310,7 @@ export const useGame = create<GameState>((set, get) => ({
       viewFlip: false,
       result: null,
       boardSnapshot: state.units,
-      fighters: [...myFighters, ...ghostFighters],
+      fighters,
       corpses: [],
       fx: [],
       battleTime: 0,

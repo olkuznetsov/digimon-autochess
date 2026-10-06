@@ -19,7 +19,8 @@ export interface LadderMe {
   peak: number;
 }
 export interface LadderTop extends LadderMe {
-  id: string;
+  /** the tamer's public handle (see leaderboard.ts myPublicKey) */
+  key: string;
   name: string;
   partner: string | null;
 }
@@ -131,11 +132,12 @@ export function startLadder() {
           const r = await fetch(`${BASE}/lb/ladder/result`, {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ id: playerId(), name: playerName(), partner: partnerForm(), gid: fight.gid, win, round: fight.round, board: fight.board }),
+            // the worker plays the fight itself: no word of who won is sent, only the boards
+            body: JSON.stringify({ id: playerId(), name: playerName(), partner: partnerForm(), gid: fight.gid, round: fight.round, board: fight.board }),
           });
           if (!r.ok) throw new Error("unrated");
-          const out = (await r.json()) as LadderMe & { delta: number };
-          useLadder.setState({ me: { lp: out.lp, wins: out.wins, losses: out.losses, peak: out.peak }, last: { delta: out.delta, lp: out.lp, win, key } });
+          const out = (await r.json()) as LadderMe & { delta: number; win: boolean };
+          useLadder.setState({ me: { lp: out.lp, wins: out.wins, losses: out.losses, peak: out.peak }, last: { delta: out.delta, lp: out.lp, win: out.win, key } });
         } catch {
           // offline (or too fast): this one goes unrated
           useLadder.setState({ last: { delta: 0, lp: useLadder.getState().me?.lp ?? 1000, win, key } });

@@ -81,6 +81,35 @@ export function ghostFighters(
   return round % 2 === 1 ? [...h, ...g] : [...g, ...h];
 }
 
+/** A ghost-ladder fight: your board on the near half against a ghost's — another tamer's
+ *  board, mirrored onto the far one, no augments. Built the same way by the client, which plays
+ *  it, and by the worker, which rates it (it plays the fight itself instead of taking a win on
+ *  trust). A seed ghost's units may have no uid: their index stands in. */
+export function ladderFighters(mine: WireUnit[], ghost: WireUnit[]): Fighter[] {
+  const near = mine.map((u) => makeFighter(u.formId, `m_${u.uid}`, "player", u.col, u.row, 1, u.items ?? [], u.star ?? 1));
+  applySynergies(near, mine.map((u) => asUnit(`m_${u.uid}`, u)));
+  const far = ghost.map((u, i) =>
+    makeFighter(u.formId, `g_${u.uid ?? i}`, "enemy", mirrorCol(u.col), mirrorRow(u.row), 1, u.items ?? [], u.star ?? 1),
+  );
+  applySynergies(far, ghost.map((u, i) => asUnit(`g_${u.uid ?? i}`, u)));
+  return [...near, ...far];
+}
+
+/** A ladder fight still undecided after this many steps (45 s) is lost — on screen too. */
+export const LADDER_STEPS = 900;
+
+/** Does your board beat the ghost? Stepped exactly as the screen steps it. */
+export function ladderWins(mine: WireUnit[], ghost: WireUnit[]): boolean {
+  const fighters = ladderFighters(mine, ghost);
+  for (let i = 0; i < LADDER_STEPS; i++) {
+    stepCombat(fighters, SIM_DT);
+    const near = fighters.some((f) => f.hp > 0 && f.team === "player");
+    const far = fighters.some((f) => f.hp > 0 && f.team === "enemy");
+    if (!near || !far) return near && !far;
+  }
+  return false;
+}
+
 /** A player against the round's wild / boss wave (`variant`: the room's, picks the boss). */
 export function pveFighters(board: WireUnit[], round: number, seat: number, augments: string[] = [], variant = 0): Fighter[] {
   return [...side(board, `${seat}_`, "player", augments), ...makeVsWave(round, "W", variant)];

@@ -79,8 +79,10 @@ export class Social extends DurableObject {
 
   private newCode(): string {
     for (;;) {
+      // a code is a key to befriending someone: from the crypto source, not Math.random
+      const bytes = crypto.getRandomValues(new Uint8Array(6));
       let c = "";
-      for (let i = 0; i < 6; i++) c += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+      for (const b of bytes) c += ALPHABET[b % ALPHABET.length];
       if (!this.sql("SELECT 1 FROM tamers WHERE code = ?", c).length) return c;
     }
   }
@@ -122,8 +124,9 @@ export class Social extends DurableObject {
     if (!target) return { ok: false, error: "No tamer has that code" };
     if (target.id === id) return { ok: false, error: "That's your own code" };
     if (!this.sql("SELECT 1 FROM tamers WHERE id = ?", id).length) return { ok: false, error: "Check in first" };
-    const count = this.sql<{ n: number }>("SELECT COUNT(*) AS n FROM friends WHERE a = ?", id)[0]?.n ?? 0;
-    if (count >= MAX_FRIENDS) return { ok: false, error: `Up to ${MAX_FRIENDS} friends` };
+    const count = (who: string) => this.sql<{ n: number }>("SELECT COUNT(*) AS n FROM friends WHERE a = ?", who)[0]?.n ?? 0;
+    if (count(id) >= MAX_FRIENDS) return { ok: false, error: `Up to ${MAX_FRIENDS} friends` };
+    if (count(target.id) >= MAX_FRIENDS) return { ok: false, error: "That tamer has all the friends they can" };
     const now = Date.now();
     this.sql("INSERT OR IGNORE INTO friends (a, b, since) VALUES (?, ?, ?)", id, target.id, now);
     this.sql("INSERT OR IGNORE INTO friends (a, b, since) VALUES (?, ?, ?)", target.id, id, now);

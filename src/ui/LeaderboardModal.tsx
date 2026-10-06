@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useGame } from "../game/store";
-import { fetchTop, fetchBoard, playerId, type LbEntry } from "../net/leaderboard";
+import { fetchTop, fetchBoard, myPublicKey, type LbEntry } from "../net/leaderboard";
 import { FORMS } from "../game/creatures";
 import { Portrait } from "./Portrait";
 
@@ -25,7 +25,11 @@ export function LeaderboardModal({ onClose }: { onClose: () => void }) {
   const pvp = useGame((s) => s.pvp);
   const boardUnits = useGame((s) => s.units.filter((u) => u.placement.kind === "board").length);
   const ghostFight = useGame((s) => s.ghostFight);
-  const me = playerId();
+  // which row is mine: the tables show public handles, so mine is the hash of my id
+  const [me, setMe] = useState<string | null>(null);
+  useEffect(() => {
+    void myPublicKey().then(setMe);
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -42,9 +46,9 @@ export function LeaderboardModal({ onClose }: { onClose: () => void }) {
   const canFight = phase === "prep" && !pvp && boardUnits > 0;
 
   const fight = async (e: LbEntry) => {
-    setBusy(e.id);
+    setBusy(e.key);
     try {
-      const board = await fetchBoard(e.id);
+      const board = await fetchBoard(e.key);
       ghostFight(board, e.name, e.partner);
       onClose();
     } catch {
@@ -78,7 +82,7 @@ export function LeaderboardModal({ onClose }: { onClose: () => void }) {
         {rows && rows.length > 0 && tab === "rating" && (
           <div className="lb-table">
             {rows.map((e, i) => (
-              <div key={e.id} className={`lb-row rating${e.id === me ? " me" : ""}`}>
+              <div key={e.key} className={`lb-row rating${e.key === me ? " me" : ""}`}>
                 <span className="lb-rank">{i + 1}</span>
                 <Who e={e} />
                 <span className="lb-best" title="VS lobby rating">★{e.rating ?? 0}</span>
@@ -90,7 +94,7 @@ export function LeaderboardModal({ onClose }: { onClose: () => void }) {
         {rows && rows.length > 0 && tab === "best" && (
           <div className="lb-table">
             {rows.map((e, i) => (
-              <div key={e.id} className={`lb-row${e.id === me ? " me" : ""}`}>
+              <div key={e.key} className={`lb-row${e.key === me ? " me" : ""}`}>
                 <span className="lb-rank">{i + 1}</span>
                 <Who e={e} />
                 <span className="lb-best" title="Best round reached">R{e.best}</span>
@@ -102,7 +106,7 @@ export function LeaderboardModal({ onClose }: { onClose: () => void }) {
                     title={canFight ? `Fight ${e.name}'s best board (no risk)` : "Place units on your board first (prep, solo)"}
                     onClick={() => fight(e)}
                   >
-                    {busy === e.id ? "…" : "Fight"}
+                    {busy === e.key ? "…" : "Fight"}
                   </button>
                 ) : (
                   <span className="lb-fight none">—</span>

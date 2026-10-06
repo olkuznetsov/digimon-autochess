@@ -21,7 +21,8 @@
     "check-models": "node scripts/check-models.mjs",
     "runsim": "node scripts/run-ts.mjs scripts/run-sim.ts",
     "lobbycheck": "node scripts/run-ts.mjs scripts/lobby-check.ts",
-    "clip": "node scripts/clip/record.mjs && python3 scripts/clip/assemble.py"
+    "clip": "node scripts/clip/record.mjs && python3 scripts/clip/assemble.py",
+    "typecheck:worker": "tsc -p server/tsconfig.json"
   },
   "dependencies": {
     "@fontsource/dela-gothic-one": "^5.3.0",

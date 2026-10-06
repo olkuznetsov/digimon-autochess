@@ -1,0 +1,18 @@
+{
+  // The worker's own type check (npm run typecheck:worker): its runtime's types come from
+  // `wrangler types` (worker-configuration.d.ts — regenerate after changing wrangler.jsonc).
+  "compilerOptions": {
+    "target": "es2022",
+    "lib": ["ES2023"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": [],
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "include": ["src/**/*.ts", "worker-configuration.d.ts"]
+}

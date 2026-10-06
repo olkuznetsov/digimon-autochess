@@ -7,7 +7,8 @@ import { session } from "./account";
 const BASE = WORKER_HTTP;
 
 export interface LbEntry {
-  id: string;
+  /** the tamer's public handle (a hash of their id: the id itself never leaves the worker) */
+  key: string;
   name: string;
   best: number;
   wins: number;
@@ -31,6 +32,21 @@ export function playerId(): string {
   } catch {
     return "anon";
   }
+}
+
+/** This tamer's public handle, as the worker shows it in its tables (see publicKey there). */
+let keyMemo: { id: string; key: Promise<string> } | null = null;
+export function myPublicKey(): Promise<string> {
+  const id = playerId();
+  if (keyMemo?.id !== id) {
+    keyMemo = {
+      id,
+      key: crypto.subtle
+        .digest("SHA-256", new TextEncoder().encode(`pub:${id}`))
+        .then((h) => [...new Uint8Array(h).slice(0, 8)].map((b) => b.toString(16).padStart(2, "0")).join("")),
+    };
+  }
+  return keyMemo.key;
 }
 
 /** The partner at the tamer's side (their avatar), straight from the saved profile. */
@@ -72,8 +88,8 @@ export async function fetchTop(by: "best" | "rating" = "best"): Promise<LbEntry[
   return r.json();
 }
 
-export async function fetchBoard(id: string): Promise<PvpBoardUnit[]> {
-  const r = await fetch(`${BASE}/lb/board/${encodeURIComponent(id)}`);
+export async function fetchBoard(key: string): Promise<PvpBoardUnit[]> {
+  const r = await fetch(`${BASE}/lb/board/${encodeURIComponent(key)}`);
   if (!r.ok) throw new Error("no board saved");
   return r.json();
 }

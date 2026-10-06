@@ -90,7 +90,7 @@ export async function accountIdFor(sub: string): Promise<string> {
   return [...h.slice(0, 12)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-const hmacKey = (secret: string, usage: KeyUsage) =>
+const hmacKey = (secret: string, usage: "sign" | "verify") =>
   crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [usage]);
 
 /** A session for an account: `body.signature`, valid for `days`. */
