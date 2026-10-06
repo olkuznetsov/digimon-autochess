@@ -1,10 +1,10 @@
 import { create } from "zustand";
 import type { Fighter, PendingEvolution, Phase, Placement, Unit } from "./types";
-import { FORMS, PLAYABLE_IDS, ROOKIE_IDS, babyOf, costOf, isTerminal, mergeParts, sellValue } from "./creatures";
+import { FORMS, PLAYABLE_IDS, ROOKIE_IDS, babyOf, costOf, mergeParts, sellValue } from "./creatures";
 import { makeFighter, stepCombat, SIM_DT, type CombatEvent } from "./battle";
 import { applySynergies } from "./synergies";
 import { BASE_ITEM_IDS, DIGIVICE, FUSED_ITEM_IDS, MAX_ITEMS, RARE_ITEM_IDS, fuseResult } from "./items";
-import { DIFFICULTY, ECONOMY, SHOP_ODDS, VS, isBossRound, isDifficulty, makeEnemyWave, vsRoundKind, type Difficulty } from "./tuning";
+import { DIFFICULTY, ECONOMY, VS, isBossRound, isDifficulty, makeEnemyWave, vsRoundKind, type Difficulty } from "./tuning";
 import {
   carouselEnd,
   carouselPick,
@@ -13,17 +13,21 @@ import {
   type LobbyFight,
   type LobbySnapshot,
   type Outcome,
-  type WireUnit,
 } from "./lobby";
 import { duelFighters, ghostFighters, ladderFighters, outcomesHash, pveFighters, roundOutcomes, FIGHT_STEPS, LADDER_STEPS } from "./vsFights";
 import { augmentOffer, isAugmentRound, MAX_AUGMENTS } from "./augments";
-import { XP_TO_NEXT, MAX_LEVEL } from "./xpView";
+import { MAX_LEVEL } from "./xpView";
 import { sfx, battleSfx } from "../audio/sfx";
-import { BENCH_SLOTS, COLS, PLAYER_ROWS, ROWS } from "./board";
 import { net } from "../net/bus";
 import { submitScore } from "../net/leaderboard";
+import { discover, discovery, gainXp, interest, rollShop, shopPool, streakBonus } from "./shop";
+import { resolveEvolutions } from "./merge";
+import { autoFill, boardCap, boardCount, firstEmptyBench, mirrorCol, mirrorRow, wireBoard } from "./placement";
+import type { Fx, GameState, MeterRow, PvpState } from "./storeTypes";
 
-const SHOP_SIZE = 5;
+// what the rest of the game takes from here
+export { boardCap, wireBoard } from "./placement";
+export type { Fx, MeterRow, PvpBoardUnit, PvpState } from "./storeTypes";
 
 const START_LEVEL = 2;
 const START_HEALTH = 100;
@@ -32,342 +36,8 @@ const START_HEALTH = 100;
 let uidCounter = 0;
 const nextUid = () => `u${uidCounter++}`;
 
-/** A board unit as sent over the wire (VS boards, live scouting, ghost boards). */
-export type PvpBoardUnit = WireUnit;
-
-/** Live VS lobby / match state (null = solo). Rules: src/game/lobby.ts. */
-export interface PvpState {
-  code: string;
-  seat: number;
-  /** the room's secret for our seat: reclaims it after a dropped connection */
-  pid: string;
-  /** the room as the server last described it: stage, host, players, HP, pairings */
-  snap: LobbySnapshot;
-  /** everyone's latest arrangement (live scouting) */
-  boards: Record<number, PvpBoardUnit[]>;
-  /** whose board the preview shows (null = this round's opponent) */
-  scout: number | null;
-  myReady: boolean;
-  /** board we last readied with — resent after a reconnect */
-  lastReady: PvpBoardUnit[] | null;
-  /** planning deadline (ms epoch); 0 = no timer running */
-  prepEndsAt: number;
-  /** our socket dropped; reconnecting */
-  selfOffline: boolean;
-  /** gave up reconnecting */
-  connLost: boolean;
-  /** the room runs other rules than this tab (an update went out): reload to play */
-  outdated: boolean;
-  /** the fight on screen and our outcome in it — known when it starts, since every
-   *  client simulates every fight of the round the same way */
-  fight: { round: number; opp: number | null; ghost: boolean; outcome: Outcome } | null;
-  /** room updates that would spoil the ending of the fight on screen */
-  pending: { snap: LobbySnapshot; eliminated: number[] } | null;
-  /** knocked out, and chose to keep watching */
-  watching: boolean;
-  /** the round whose carousel item is already in our tray */
-  carouselGot: number;
-}
-
-/** A live combat effect (damage number, projectile, death burst) with its spawn time. */
-export interface Fx extends CombatEvent {
-  id: string;
-  born: number; // battleTime seconds
-  jx: number; // small positional jitter so stacked numbers don't overlap
-  jz: number;
-  /** cast only: cast by the viewer's own side (after the PvP view flip) */
-  mine?: boolean;
-}
 let fxCounter = 0;
 const FX_TTL = 1.0; // seconds an effect stays in the list
-
-/**
- * Five offers for the shop: a tier — the stage, Fresh 1 … Mega 5 — by the player's
- * level, then a form of that tier. Fresh, In-Training and Rookies are always on offer;
- * a Champion or Mega only once raised this game (`discovered`). In a VS lobby the
- * shared pool weighs the draw — every copy left is a ticket, and a form that has run
- * out can't show up (a tier with nothing on offer is skipped).
- */
-function rollShop(level: number, discovered: string[], pool?: Record<string, number>): string[] {
-  const odds = SHOP_ODDS[Math.max(1, Math.min(MAX_LEVEL, level))];
-  const left = (id: string) => (pool ? (pool[id] ?? 0) : 1);
-  const open = new Set(discovered);
-  const inTier = (tier: number) =>
-    PLAYABLE_IDS.filter((id) => FORMS[id].stage === tier && (tier <= 3 || open.has(id)) && left(id) > 0);
-  const weights = odds.map((w, t) => (inTier(t + 1).length > 0 ? w : 0));
-  const total = weights.reduce((a, b) => a + b, 0);
-  return Array.from({ length: SHOP_SIZE }, () => {
-    if (total === 0) return "";
-    let r = Math.random() * total;
-    let tier = 1;
-    for (let t = 0; t < weights.length; t++) {
-      r -= weights[t];
-      if (r < 0) {
-        tier = t + 1;
-        break;
-      }
-    }
-    const cands = inTier(tier);
-    let x = Math.random() * cands.reduce((a, id) => a + left(id), 0);
-    for (const id of cands) {
-      x -= left(id);
-      if (x < 0) return id;
-    }
-    return cands[cands.length - 1];
-  });
-}
-
-/** Champions and Megas the player now has join the discovered list: from now on they
- *  can show up in the shop (Fresh, In-Training and Rookies always can). */
-function discover(discovered: string[], units: Unit[]): string[] {
-  const add = [...new Set(units.map((u) => u.formId))].filter((id) => FORMS[id].stage >= 4 && !discovered.includes(id));
-  return add.length ? [...discovered, ...add] : discovered;
-}
-
-/** discover() plus the toast for whatever is new (spread into a store update). */
-function discovery(prev: string[], units: Unit[]) {
-  const next = discover(prev, units);
-  return next === prev ? {} : { discovered: next, discoveryFlash: { ids: next.slice(prev.length), key: Date.now() } };
-}
-
-/** The shared pool shops roll from — only during a VS match. */
-const shopPool = (s: { pvp: PvpState | null }) => (s.pvp?.snap.stage === "match" ? s.pvp.snap.pool : undefined);
-
-function gainXp(level: number, xp: number, amount: number): { level: number; xp: number } {
-  let L = level;
-  let X = xp + amount;
-  while (L < MAX_LEVEL && X >= (XP_TO_NEXT[L] ?? Infinity)) {
-    X -= XP_TO_NEXT[L];
-    L++;
-  }
-  if (L >= MAX_LEVEL) X = 0;
-  return { level: L, xp: X };
-}
-
-const interest = (gold: number, cap = 5) => Math.min(Math.floor(gold / 10), cap);
-const streakBonus = (streak: number) => {
-  const a = Math.abs(streak);
-  return a >= 4 ? 3 : a >= 3 ? 2 : a >= 2 ? 1 : 0;
-};
-
-/**
- * Resolve digivolutions after a unit changes. Auto-evolves any 3-of-a-kind whose
- * form has a single branch (looping), and stops at the first 3-of-a-kind that has
- * multiple branches — returning a PendingEvolution for the player to choose.
- * Items of the merged copies carry over: two on the evolved unit, the rest come
- * back in `spill` (for the item tray).
- */
-function resolveEvolutions(units: Unit[]): {
-  units: Unit[];
-  pending: PendingEvolution | null;
-  evolved: { from: string; to: string; uid: string; star?: number }[];
-  spill: string[];
-} {
-  let current = units;
-  const evolved: { from: string; to: string; uid: string; star?: number }[] = [];
-  const spill: string[] = [];
-  // guard against pathological loops
-  for (let guard = 0; guard < 64; guard++) {
-    const groups = new Map<string, Unit[]>();
-    for (const u of current) {
-      const form = FORMS[u.formId];
-      if (!form.evolvesTo || form.evolvesTo.length === 0) continue;
-      const arr = groups.get(u.formId) ?? [];
-      arr.push(u);
-      groups.set(u.formId, arr);
-    }
-
-    let acted = false;
-    for (const [formId, arr] of groups) {
-      if (arr.length < 3) continue;
-      const form = FORMS[formId];
-      const onBoard = arr.find((u) => u.placement.kind === "board");
-      const keep = onBoard ?? arr[0];
-      const others = arr.filter((u) => u.uid !== keep.uid).slice(0, 2);
-
-      if (form.evolvesTo!.length === 1) {
-        const consumed = new Set(others.map((u) => u.uid));
-        const items = [...(keep.items ?? []), ...others.flatMap((u) => u.items ?? [])];
-        spill.push(...items.slice(MAX_ITEMS));
-        const parts = mergeParts([keep, ...others]);
-        current = current
-          .filter((u) => !consumed.has(u.uid))
-          .map((u) => (u.uid === keep.uid ? { ...u, formId: form.evolvesTo![0], items: items.slice(0, MAX_ITEMS), parts } : u));
-        evolved.push({ from: formId, to: form.evolvesTo![0], uid: keep.uid });
-        acted = true;
-        break; // re-scan from the top
-      }
-
-      // multiple branches → ask the player
-      return {
-        units: current,
-        pending: {
-          fromFormId: formId,
-          consume: [keep.uid, ...others.map((u) => u.uid)],
-          options: form.evolvesTo!,
-          placement: keep.placement,
-        },
-        evolved,
-        spill,
-      };
-    }
-    if (!acted) {
-      // a Mega has nowhere to digivolve: three of the same star level star it up (★★, ★★★)
-      const stars = new Map<string, Unit[]>();
-      for (const u of current) {
-        if (!isTerminal(u.formId) || (u.star ?? 1) >= 3) continue;
-        const key = `${u.formId}|${u.star ?? 1}`;
-        stars.set(key, [...(stars.get(key) ?? []), u]);
-      }
-      for (const arr of stars.values()) {
-        if (arr.length < 3) continue;
-        const keep = arr.find((u) => u.placement.kind === "board") ?? arr[0];
-        const others = arr.filter((u) => u.uid !== keep.uid).slice(0, 2);
-        const consumed = new Set(others.map((u) => u.uid));
-        const items = [...(keep.items ?? []), ...others.flatMap((u) => u.items ?? [])];
-        spill.push(...items.slice(MAX_ITEMS));
-        const star = ((keep.star ?? 1) + 1) as 2 | 3;
-        const parts = mergeParts([keep, ...others]);
-        current = current
-          .filter((u) => !consumed.has(u.uid))
-          .map((u) => (u.uid === keep.uid ? { ...u, star, items: items.slice(0, MAX_ITEMS), parts } : u));
-        evolved.push({ from: keep.formId, to: keep.formId, uid: keep.uid, star });
-        acted = true;
-        break;
-      }
-    }
-    if (!acted) break;
-  }
-  return { units: current, pending: null, evolved, spill };
-}
-
-interface GameState {
-  gold: number;
-  level: number;
-  xp: number;
-  health: number;
-  round: number;
-  /** the solo run's seed: picks which boss each boss round brings (0 = the classic ones) */
-  runSeed: number;
-  /** the solo run's difficulty (chosen when it starts) */
-  difficulty: Difficulty;
-  /** the Primary Village mode: a Digimon that falls in battle hatches again, in the same
-   *  fight, as its line's baby (once a fight) — off the leaderboard */
-  village: boolean;
-  streak: number;
-  gameOver: boolean;
-
-  shop: string[];
-  /** Champions and Megas raised this game: the shop's tiers 4–5 offer only these */
-  discovered: string[];
-  /** the latest discoveries — the "now in your shop" toast */
-  discoveryFlash: { ids: string[]; key: number } | null;
-  units: Unit[];
-  inventory: string[];
-  selectedItem: string | null;
-  inspected: string | null;
-  /** the latest digivolution — banner text and the 3D sequence on that unit */
-  evoFlash: { from: string; to: string; uid: string; key: number; star?: number } | null;
-  pendingEvolution: PendingEvolution | null;
-  phase: Phase;
-  result: "win" | "lose" | null;
-  lastDamage: number;
-
-  fighters: Fighter[];
-  /** fighters that died this battle — kept so the renderer can play their death */
-  corpses: Fighter[];
-  /** bumped whenever a fight starts, so every battle mounts fresh units and effects */
-  battleSeq: number;
-  /** damage dealt / taken per fighter uid this battle */
-  meter: Record<string, { dealt: number; taken: number }>;
-  /** the last battle's meter, for the prep view (null before the first battle) */
-  lastMeter: MeterRow[] | null;
-  fx: Fx[];
-  battleTime: number;
-  tick: number;
-  /** battle playback speed multiplier (1 = normal; solo/ghost only — VS stays at 1) */
-  simSpeed: number;
-  /** keep the current shop through the next round */
-  shopLocked: boolean;
-  /** rewards of the round that just ended (result screen) */
-  loot: { gold: number; items: string[] } | null;
-  /** VS augments picked this match (src/game/augments.ts) */
-  augments: string[];
-  /** an augment round's three options (null = no pick open) */
-  augmentOffer: string[] | null;
-  /** rerolls left for the open augment offer */
-  augmentRerolls: number;
-  /** free shop rerolls left this round (Lucky Roll) */
-  freeRerolls: number;
-  boardSnapshot: Unit[] | null;
-
-  dragId: string | null;
-  dragPos: { x: number; z: number } | null;
-
-  pvp: PvpState | null;
-  /** render the battle mirrored (PvP guest: the canonical sim has host at the bottom) */
-  viewFlip: boolean;
-  /** ghost battle vs a leaderboard player's saved board (no run consequences) */
-  ghost: { name: string; partner?: string | null } | null;
-
-  reroll: () => void;
-  buy: (shopIndex: number) => void;
-  buyXp: () => void;
-  chooseEvolution: (formId: string) => void;
-  selectItem: (id: string | null) => void;
-  /** fuse inventory items at indices a and b (a recipe must exist) */
-  fuseItems: (a: number, b: number) => void;
-  equipItem: (uid: string) => void;
-  setInspected: (uid: string | null) => void;
-  clearEvoFlash: () => void;
-  sellUnit: (uid: string) => void;
-  moveUnit: (uid: string, target: Placement) => void;
-  setDrag: (uid: string | null, pos: { x: number; z: number } | null) => void;
-  startBattle: () => void;
-  stepBattle: (dt: number) => void;
-  toPrep: () => void;
-  reset: () => void;
-  toggleShopLock: () => void;
-  setSimSpeed: (speed: number) => void;
-
-  /** connected to a lobby (or back in it after a drop) */
-  pvpJoined: (
-    code: string,
-    seat: number,
-    pid: string,
-    snap: LobbySnapshot,
-    boards: Record<number, PvpBoardUnit[]>,
-    lastFight?: LobbyFight,
-  ) => void;
-  /** the host started a match (or a new one) */
-  pvpStarted: (snap: LobbySnapshot) => void;
-  /** the room changed (players, HP, places, next pairings); `eliminated` = just knocked out */
-  pvpSync: (snap: LobbySnapshot, eliminated: number[], lastFight?: LobbyFight) => void;
-  pvpSeatReady: (seat: number, round: number) => void;
-  pvpBoard: (seat: number, board: PvpBoardUnit[]) => void;
-  /** everyone is locked in: simulate the round, report it, play our own fight */
-  pvpFight: (fight: LobbyFight) => void;
-  pvpReadyUp: (force?: boolean) => void;
-  /** planning timer ran out: settle open choices and ready with the current board */
-  pvpAutoReady: () => void;
-  pvpStart: () => void;
-  pvpSurrender: () => void;
-  pvpScout: (seat: number | null) => void;
-  pvpWatch: () => void;
-  pvpSelfOffline: (offline: boolean) => void;
-  pvpConnectionLost: () => void;
-  /** the room turned us away: it runs other rules than this tab */
-  pvpOutdated: () => void;
-  /** back to the solo run that was paused for the match */
-  pvpQuit: () => void;
-  /** carousel: take the item at this index (when it's our turn) */
-  pvpPick: (index: number) => void;
-  pickAugment: (id: string) => void;
-  rerollAugments: () => void;
-
-  ghostFight: (board: PvpBoardUnit[], name: string, partner?: string | null) => void;
-  ghostReturn: () => void;
-}
 
 const touchDevice = () => typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
 /** When the VS planning phase that starts now runs out. */
@@ -390,15 +60,6 @@ function vsRewards(round: number, o: Outcome, streak: number) {
     gold: pve ? (o.won ? (kind === "boss" ? 4 : 2) : 1) : o.won ? ECONOMY.winGold : 0,
     streak: pve ? streak : o.won ? Math.max(1, streak + 1) : Math.min(-1, streak - 1),
   };
-}
-
-/** One of your units in a damage meter. */
-export interface MeterRow {
-  uid: string;
-  formId: string;
-  dead: boolean;
-  dealt: number;
-  taken: number;
 }
 
 /** Your side of a battle, best damage first (the live meter and the last battle's). */
@@ -535,71 +196,6 @@ function initialState() {
     viewFlip: false,
     ghost: null as { name: string; partner?: string | null } | null,
   };
-}
-
-function firstEmptyBench(units: Unit[]): number | null {
-  const used = new Set(
-    units.filter((u) => u.placement.kind === "bench").map((u) => (u.placement as { slot: number }).slot),
-  );
-  for (let i = 0; i < BENCH_SLOTS; i++) if (!used.has(i)) return i;
-  return null;
-}
-
-const boardCount = (units: Unit[]) => units.filter((u) => u.placement.kind === "board").length;
-/** Columns from the middle outwards. */
-const COL_ORDER = Array.from({ length: COLS }, (_, i) => i).sort((a, b) => Math.abs(a - (COLS - 1) / 2) - Math.abs(b - (COLS - 1) / 2) || a - b);
-
-/** Teamfight Tactics: a fight starts with every board slot filled — empty slots take bench
- *  units, first slot first, into the back row first (the middle columns first): the front
- *  stays the line the player set up. */
-function autoFill(units: Unit[], level: number, inventory: string[]): Unit[] {
-  let out = units;
-  const taken = new Set(
-    units.filter((u) => u.placement.kind === "board").map((u) => {
-      const p = u.placement as { col: number; row: number };
-      return `${p.col},${p.row}`;
-    }),
-  );
-  const bench = units
-    .filter((u) => u.placement.kind === "bench")
-    .sort((a, b) => (a.placement as { slot: number }).slot - (b.placement as { slot: number }).slot);
-  for (const u of bench) {
-    if (boardCount(out) >= boardCap(out, level, inventory)) break;
-    // into the back rows: the front is the line the player set up themselves
-    let cell: { col: number; row: number } | null = null;
-    for (const row of PLAYER_ROWS) {
-      for (const col of COL_ORDER) if (!cell && !taken.has(`${col},${row}`)) cell = { col, row };
-      if (cell) break;
-    }
-    if (!cell) break;
-    taken.add(`${cell.col},${cell.row}`);
-    const placed = cell;
-    out = out.map((x) => (x.uid === u.uid ? { ...x, placement: { kind: "board", ...placed } } : x));
-  }
-  return out;
-}
-
-/** How many Digimon may fight: the level, plus one per Digivice on a fielded unit. */
-/** Room on the board: the level, plus one for every Digivice owned — it works from the item
- *  tray (no Digimon has to hold it); one a Digimon holds, from an older save or fused right on
- *  it, counts all the same. */
-export const boardCap = (units: Unit[], level: number, inventory: string[] = []) =>
-  level +
-  inventory.filter((i) => i === DIGIVICE).length +
-  units.reduce((n, u) => n + (u.items ?? []).filter((i) => i === DIGIVICE).length, 0);
-
-/** Mirror a board cell to the other half (row 0 <-> row 5, col 0 <-> col 5). */
-const mirrorCol = (c: number) => COLS - 1 - c;
-const mirrorRow = (r: number) => ROWS - 1 - r;
-
-/** Serialize on-board units (VS boards, live scouting, leaderboard ghost boards). */
-export function wireBoard(units: Unit[]): PvpBoardUnit[] {
-  return units
-    .filter((u) => u.placement.kind === "board")
-    .map((u) => {
-      const p = u.placement as { col: number; row: number };
-      return { uid: u.uid, formId: u.formId, col: p.col, row: p.row, items: u.items ?? [], ...(u.star ? { star: u.star } : {}) };
-    });
 }
 
 export const useGame = create<GameState>((set, get) => ({
