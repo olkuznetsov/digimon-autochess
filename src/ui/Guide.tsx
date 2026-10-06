@@ -79,7 +79,7 @@ function Basics() {
       <section className="guide-sec">
         <h3>The round</h3>
         <ul>
-          <li>🛒 <b>Buy Digimon</b> in the shop — the price is the stage: ⛂1 Fresh, ⛂2 In-Training, ⛂3 Rookie, ⛂4 Champion, ⛂5 Mega. They wait on your bench.</li>
+          <li>🛒 <b>Buy Digimon</b> in the shop — the price is the stage: ⛂1 Fresh, ⛂2 In-Training, ⛂3 Rookie, ⛂4 Champion, ⛂5 Mega. They wait on your bench; a full bench still takes the copy that merges right away.</li>
           <li>🖱 <b>Drag them onto your half</b> of the board. Your level is how many can fight.</li>
           <li>⚔ <b>The battle plays itself</b>: units attack, fill their mana and cast their ultimate.</li>
           <li>♥ Lose and you take damage; at 0 the run (or match) is over.</li>
@@ -92,7 +92,7 @@ function Basics() {
           <li>🔀 Most stages <b>branch</b> — you pick the evolution (3 Koromon: Agumon, Guilmon or Dracomon), and with it the attribute and element.</li>
           <li>🍼 <b>Babies</b> (Fresh, In-Training) are <b>Free</b>: neutral to every attribute. Fresh have no element yet; In-Training already carry one, as in Cyber Sleuth. Raise them into Rookies.</li>
           <li>⭐ A <b>Mega</b> has nowhere to digivolve: three copies star it up — <b>★★</b> (×1.8 HP and attack), and three ★★ make <b>★★★</b> (×3.2, its ultimate +50%).</li>
-          <li>🪑 When a fight starts, empty board slots fill from your bench, first slot first — tanks to the front, ranged to the back.</li>
+          <li>🪑 When a fight starts, empty board slots fill from your bench, first slot first — into the back row, so the front stays the line you set up.</li>
           <li>🎒 Items carry over: three stay on the new form, the rest go back to your tray.</li>
           <li>✨ The shop highlights what you're collecting: <b>×1 owned</b>, <b>⬆ Digivolve</b> (third copy), <b>→ Greymon</b> (it digivolves into one you have).</li>
         </ul>
