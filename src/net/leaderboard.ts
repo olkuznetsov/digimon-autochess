@@ -19,6 +19,9 @@ export interface LbEntry {
   partner?: string | null;
 }
 
+/** For a browser that keeps no storage: an id for this visit only. */
+let visitId: string | null = null;
+
 export function playerId(): string {
   const account = session();
   if (account) return account.id;
@@ -30,7 +33,8 @@ export function playerId(): string {
     }
     return id;
   } catch {
-    return "anon";
+    // never one shared id: every storage-less tamer would overwrite the others' scores
+    return (visitId ??= crypto.randomUUID());
   }
 }
 

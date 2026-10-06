@@ -667,8 +667,9 @@ export default {
       return json(r, "error" in r ? 429 : 200);
     }
     if (url.pathname === "/lb/admin/delete" && request.method === "POST") {
-      const key = request.headers.get("x-admin-key") ?? "";
-      if (!env.ADMIN_KEY || key.length !== env.ADMIN_KEY.length || key !== env.ADMIN_KEY) {
+      const key = new TextEncoder().encode(request.headers.get("x-admin-key") ?? "");
+      const want = new TextEncoder().encode(env.ADMIN_KEY ?? "");
+      if (!env.ADMIN_KEY || key.byteLength !== want.byteLength || !crypto.subtle.timingSafeEqual(key, want)) {
         return json({ error: "forbidden" }, 403);
       }
       let body: { ids?: unknown };
