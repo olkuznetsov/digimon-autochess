@@ -22,7 +22,7 @@ import { net } from "../net/bus";
 import { submitScore } from "../net/leaderboard";
 import { discover, discovery, gainXp, interest, rollShop, shopPool, streakBonus } from "./shop";
 import { resolveEvolutions } from "./merge";
-import { autoFill, boardCap, boardCount, firstEmptyBench, mirrorCol, mirrorRow, wireBoard } from "./placement";
+import { autoFill, boardCap, boardCount, firstEmptyBench, mirrorCol, mirrorRow, samePlace, wireBoard } from "./placement";
 import type { Fx, GameState, MeterRow, PvpState } from "./storeTypes";
 
 // what the rest of the game takes from here
@@ -348,16 +348,7 @@ export const useGame = create<GameState>((set, get) => ({
     const moving = units.find((u) => u.uid === uid);
     if (!moving) return;
 
-    const occupant = units.find(
-      (u) =>
-        u.uid !== uid &&
-        u.placement.kind === target.kind &&
-        ((target.kind === "bench" &&
-          (u.placement as { slot: number }).slot === (target as { slot: number }).slot) ||
-          (target.kind === "board" &&
-            (u.placement as { col: number; row: number }).col === (target as { col: number; row: number }).col &&
-            (u.placement as { col: number; row: number }).row === (target as { col: number; row: number }).row)),
-    );
+    const occupant = units.find((u) => u.uid !== uid && samePlace(u.placement, target));
 
     if (target.kind === "board" && moving.placement.kind === "bench" && !occupant && boardCount(units) >= boardCap(units, level, inventory)) {
       return;

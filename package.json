@@ -10,6 +10,7 @@
     "dev": "vite",
     "prebuild": "node scripts/rules-version.mjs && node scripts/jp-fonts.mjs",
     "build": "tsc -b && vite build",
+    "postbuild": "find dist -name .DS_Store -delete",
     "lint": "oxlint",
     "preview": "vite preview",
     "balance": "esbuild scripts/balance-sim.ts --bundle --platform=node --outfile=node_modules/.cache/balance-sim.cjs --log-level=warning && node node_modules/.cache/balance-sim.cjs",

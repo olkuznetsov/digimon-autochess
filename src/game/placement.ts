@@ -1,4 +1,4 @@
-import type { Unit } from "./types";
+import type { Placement, Unit } from "./types";
 import type { WireUnit } from "./lobby";
 import { DIGIVICE } from "./items";
 import { BENCH_SLOTS, COLS, PLAYER_ROWS, ROWS } from "./board";
@@ -14,6 +14,9 @@ export function firstEmptyBench(units: Unit[]): number | null {
 }
 
 export const boardCount = (units: Unit[]) => units.filter((u) => u.placement.kind === "board").length;
+/** The same bench slot or the same board cell. */
+export const samePlace = (a: Placement, b: Placement) =>
+  a.kind === "bench" ? b.kind === "bench" && a.slot === b.slot : b.kind === "board" && a.col === b.col && a.row === b.row;
 /** Columns from the middle outwards. */
 export const COL_ORDER = Array.from({ length: COLS }, (_, i) => i).sort((a, b) => Math.abs(a - (COLS - 1) / 2) - Math.abs(b - (COLS - 1) / 2) || a - b);
 
