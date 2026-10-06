@@ -226,9 +226,13 @@ export const useGame = create<GameState>((set, get) => ({
     const placement: Placement =
       slot !== null ? { kind: "bench", slot } : { kind: "bench", slot: 98 }; // temp; consumed by the merge
     const newUnit: Unit = { uid: nextUid(), formId, placement, items: [] };
+    const resolved = resolveEvolutions([...units, newUnit]);
+    // ...but not a copy that merges with nothing and would stand nowhere (a Mega whose
+    // copies hold different stars)
+    if (slot === null && resolved.units.some((u) => u.uid === newUnit.uid) && !resolved.pending?.consume.includes(newUnit.uid))
+      return;
     const newShop = [...shop];
     newShop[shopIndex] = "";
-    const resolved = resolveEvolutions([...units, newUnit]);
     sfx.buy();
     const last = resolved.evolved[resolved.evolved.length - 1];
     if (last) sfx.evolve();
@@ -254,11 +258,19 @@ export const useGame = create<GameState>((set, get) => ({
     const { pendingEvolution, units, inventory } = get();
     if (!pendingEvolution || !pendingEvolution.options.includes(formId)) return;
     const consumed = new Set(pendingEvolution.consume);
-    const pooled = units.filter((u) => consumed.has(u.uid)).flatMap((u) => u.items ?? []);
+    const copies = units.filter((u) => consumed.has(u.uid));
+    // never from fewer than three (the choice can be tucked away while the board stays live)
+    if (copies.length < consumed.size) {
+      set({ pendingEvolution: null });
+      return;
+    }
+    const pooled = copies.flatMap((u) => u.items ?? []);
     const remaining = units.filter((u) => !consumed.has(u.uid));
     const evolvedUid = nextUid();
-    const parts = mergeParts(units.filter((u) => consumed.has(u.uid)));
-    remaining.push({ uid: evolvedUid, formId, placement: pendingEvolution.placement, items: pooled.slice(0, MAX_ITEMS), parts });
+    const parts = mergeParts(copies);
+    // where the kept copy stands now: it may have moved while the choice was tucked away
+    const placement = copies.find((u) => u.uid === pendingEvolution.consume[0])?.placement ?? pendingEvolution.placement;
+    remaining.push({ uid: evolvedUid, formId, placement, items: pooled.slice(0, MAX_ITEMS), parts });
     const resolved = resolveEvolutions(remaining);
     sfx.evolve();
     const last = resolved.evolved[resolved.evolved.length - 1];
@@ -291,8 +303,10 @@ export const useGame = create<GameState>((set, get) => ({
   clearEvoFlash: () => set({ evoFlash: null }),
 
   sellUnit: (uid) => {
-    const { units, gold, inventory, phase } = get();
+    const { units, gold, inventory, phase, pendingEvolution } = get();
     if (phase !== "prep") return;
+    // a copy waiting on the evolution choice is spoken for
+    if (pendingEvolution?.consume.includes(uid)) return;
     const u = units.find((x) => x.uid === uid);
     if (!u) return;
     sfx.sell();

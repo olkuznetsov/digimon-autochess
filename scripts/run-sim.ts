@@ -24,7 +24,7 @@ import { SIM_DT } from "../src/game/battle";
 import { traitCounts, TRAITS } from "../src/game/synergies";
 import { COLS, BENCH_SLOTS } from "../src/game/board";
 import type { Unit, Placement } from "../src/game/types";
-import { ECONOMY, SHOP_ODDS, WAVES, isBossRound, makeEnemyWave, vsRoundKind } from "../src/game/tuning";
+import { ECONOMY, WAVES, isBossRound, makeEnemyWave, vsRoundKind } from "../src/game/tuning";
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.split("=")));
 const RUNS = Number(args.runs ?? 300);

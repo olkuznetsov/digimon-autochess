@@ -16,6 +16,8 @@ export function UnitPanel() {
   useGame((s) => (s.inspected && s.phase === "battle" ? s.tick : 0));
   const setInspected = useGame((s) => s.setInspected);
   const phase = useGame((s) => s.phase);
+  // a copy waiting on the evolution choice is spoken for
+  const spoken = useGame((s) => !!s.inspected && !!s.pendingEvolution?.consume.includes(s.inspected));
   const sellUnit = useGame((s) => s.sellUnit);
 
   if (!inspected) return null;
@@ -91,7 +93,7 @@ export function UnitPanel() {
           })
         )}
       </div>
-      {phase === "prep" && unit && (
+      {phase === "prep" && unit && !spoken && (
         <button className="up-sell" onClick={() => sellUnit(unit.uid)}>
           Sell for {sellValue(unit)} ⛂
         </button>
