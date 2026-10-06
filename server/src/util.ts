@@ -41,11 +41,13 @@ export interface BoardUnit {
 }
 
 /** A board must be real player forms (no bosses, no wild Digimon) on real player cells
- *  (rows 0–2) with real items; null when anything is off. An empty board is valid. */
+ *  (rows 0–3), one a cell, each its own uid, with real items; null when anything is off.
+ *  An empty board is valid. */
 export function cleanUnits(raw: unknown): BoardUnit[] | null {
   // level 10 plus Digivices
   if (!Array.isArray(raw) || raw.length > 12) return null;
   const units: BoardUnit[] = [];
+  const taken = new Set<string>();
   for (const u of raw as Record<string, unknown>[]) {
     const formId = String(u?.formId ?? "");
     const col = Number(u?.col);
@@ -57,7 +59,11 @@ export function cleanUnits(raw: unknown): BoardUnit[] | null {
     // stars only on a Mega (three copies of one), ★★ or ★★★
     const star = u?.star === undefined ? 1 : Number(u.star);
     if (![1, 2, 3].includes(star) || (star > 1 && !isTerminal(formId))) return null;
-    units.push({ uid: String(u?.uid ?? "").slice(0, 24), formId, col, row, items, ...(star > 1 ? { star } : {}) });
+    // two on one cell, or two answering to one uid (the sim aims by uid), is no real board
+    const uid = String(u?.uid ?? "").slice(0, 24);
+    if (taken.has(`cell:${col},${row}`) || taken.has(`uid:${uid}`)) return null;
+    taken.add(`cell:${col},${row}`).add(`uid:${uid}`);
+    units.push({ uid, formId, col, row, items, ...(star > 1 ? { star } : {}) });
   }
   return units;
 }

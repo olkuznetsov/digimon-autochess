@@ -26,7 +26,8 @@ import {
 } from "../../src/game/lobby";
 import { isCarouselRound } from "../../src/game/tuning";
 import { formOf, isPlayable } from "../../src/game/creatures";
-import { AUGMENTS, MAX_AUGMENTS } from "../../src/game/augments";
+import { AUGMENTS, AUGMENT_ROUNDS, MAX_AUGMENTS } from "../../src/game/augments";
+import { outcomesHash, roundOutcomes } from "../../src/game/vsFights";
 
 /**
  * A lobby for 2–8 players, one Durable Object per room code. Players gather in
@@ -35,13 +36,16 @@ import { AUGMENTS, MAX_AUGMENTS } from "../../src/game/augments";
  *     (their last board plays), and a deadline covers anyone AFK;
  *  2. the room broadcasts every board with the round's pairings;
  *  3. every client simulates every fight of the round (the sim is deterministic)
- *     and reports the outcomes; the first report is applied — damage,
- *     eliminations, places, rating — and the next round is planned.
+ *     and reports in; at the first report the room plays the round itself (the same
+ *     shared code) and applies its own outcomes — damage, eliminations, places,
+ *     rating — and the next round is planned. A report only says when: a modified
+ *     client can't hand out the damage, and one that disagrees is logged as a desync.
  * On the 3rd round of every stage the round opens with the carousel (an item
  * draft, lowest HP first) and waits for it. Clients report the rookie copies they
  * hold, so the room keeps the shared unit pool every shop rolls from.
  * The rules (pairings, ghosts, places, rating) live in src/game/lobby.ts, shared
- * with the clients. Clients are trusted, like the 1v1 room: a game among friends.
+ * with the clients. The boards themselves are still the clients' word (only their
+ * shape is checked: the shop and the gold live on the client) — see docs/AUDIT.md.
  */
 
 interface Seat {
@@ -135,7 +139,8 @@ const standingsOf = (room: Room): Standing[] =>
 
 const alivePlayers = (room: Room) => room.seats.filter((s) => s.inMatch && s.alive);
 
-/** A report must give every player still standing exactly one sane outcome. */
+/** A report must give every player still standing exactly one sane outcome (only taken
+ *  for a match that started on older rules, which the room can no longer replay). */
 function parseOutcomes(raw: unknown, alive: number[]): Outcome[] | null {
   if (!Array.isArray(raw)) return null;
   const out: Outcome[] = [];
@@ -473,13 +478,29 @@ export class Lobby extends DurableObject<Env> {
       return;
     }
     if (room.stage !== "match" || !room.fighting || round !== room.round || Number(m.match) !== room.match) return;
-    const outcomes = parseOutcomes(m.results, alivePlayers(room).map((s) => s.seat));
+    const alive = alivePlayers(room).map((s) => s.seat);
+    let outcomes: Outcome[] | null;
+    let verdict = hash;
+    if (room.version === RULES_VERSION) {
+      // the room plays the round itself, exactly as every client does (vsFights.ts): the
+      // report's own outcomes are only compared, never applied
+      const fight = await this.ctx.storage.get<LobbyFight>("lastFight");
+      if (!fight || fight.match !== room.match || fight.round !== round) return;
+      const all = roundOutcomes(round, fight.plan, fight.boards, Object.keys(fight.boards).map(Number), fight.augments ?? {}, fight.variant ?? 0);
+      verdict = outcomesHash(all);
+      if (hash !== verdict) console.warn(`[lobby] desync in round ${round}: room ${verdict} vs report ${hash}`);
+      // someone who surrendered mid-fight is out already
+      outcomes = all.filter((o) => alive.includes(o.seat));
+    } else {
+      // a match that started before an update runs on rules this build can't replay
+      outcomes = parseOutcomes(m.results, alive);
+    }
     if (!outcomes) return;
 
     const r = applyOutcomes(standingsOf(room), outcomes);
     const placed = this.writeStandings(room, r.standings);
     if (room.plan && (room.plan.pairs.length > 0 || room.plan.ghost)) room.history.push(room.plan);
-    room.report = { round, hash };
+    room.report = { round, hash: verdict };
     room.fighting = false;
     room.round++;
     if (r.over) {
@@ -555,7 +576,9 @@ export class Lobby extends DurableObject<Env> {
   private async augment(room: Room, me: Seat, m: Record<string, unknown>) {
     const id = String(m.id ?? "");
     const mine = room.augments[me.seat] ?? [];
-    if (room.stage !== "match" || !me.alive || !AUGMENTS[id] || mine.includes(id) || mine.length >= MAX_AUGMENTS) return;
+    // one per augment round the room has reached
+    const due = AUGMENT_ROUNDS.filter((r) => r <= room.round).length;
+    if (room.stage !== "match" || !me.alive || !AUGMENTS[id] || mine.includes(id) || mine.length >= Math.min(due, MAX_AUGMENTS)) return;
     room.augments[me.seat] = [...mine, id];
     await this.save(room);
     this.broadcast({ t: "roster", snap: this.snapshot(room) });
