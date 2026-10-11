@@ -1,5 +1,6 @@
 import type { Element, Fighter } from "./types";
 import { elementsOf } from "./synergies";
+import { sustainHp } from "./items";
 
 /**
  * Augments (Teamfight Tactics): in a VS match, three times per match every player
@@ -115,7 +116,7 @@ export function applyAugments(fighters: Fighter[], augments: string[]): void {
           f.dmgReduction = Math.min(0.5, f.dmgReduction + 0.15);
           break;
         case "holyaura":
-          f.shield += Math.round(f.maxHp * 0.25);
+          f.shield += Math.round(sustainHp(f) * 0.25);
           break;
         case "nightmarepact":
           f.lifesteal += 0.25;

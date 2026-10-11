@@ -14,8 +14,9 @@ export interface ItemDef {
   from?: [string, string];
 }
 
-/** What a component gives — on its own, and inside every item made from it. Multipliers
- *  (attack, max HP, attack speed, mana gain) or flat (range, lifesteal). */
+/** What a component gives — on its own, and inside every item made from it: shares (attack,
+ *  max HP, attack speed, mana gain, lifesteal) or flat range. A Digimon's items add up — two
+ *  +35% HP parts make +70%, never ×1.82: stacking one stat stays linear. */
 interface Stats {
   atk?: number;
   hp?: number;
@@ -26,40 +27,47 @@ interface Stats {
 }
 
 const PART: Record<string, Stats> = {
-  powerchip: { atk: 1.3 },
-  guardplate: { hp: 1.35 },
-  turbodisk: { as: 1.25 },
+  powerchip: { atk: 0.3 },
+  guardplate: { hp: 0.35 },
+  turbodisk: { as: 0.25 },
   datalens: { range: 1 },
-  manacore: { mana: 1.6 },
+  manacore: { mana: 0.6 },
   vampirecode: { ls: 0.2 },
   // Digitama gives no stats of its own: it makes Digimentals and Digivices
   digitama: {},
 };
 
-function applyStats(f: Fighter, s: Stats) {
-  if (s.atk) f.attack = Math.round(f.attack * s.atk);
+const STAT_KEYS = ["atk", "hp", "as", "range", "mana", "ls"] as const;
+const addStats = (to: Required<Stats>, s: Stats) => {
+  for (const k of STAT_KEYS) to[k] += s[k] ?? 0;
+};
+const noStats = (): Required<Stats> => ({ atk: 0, hp: 0, as: 0, range: 0, mana: 0, ls: 0 });
+
+function applyStats(f: Fighter, s: Required<Stats>) {
+  if (s.atk) f.attack = Math.round(f.attack * (1 + s.atk));
   if (s.hp) {
-    f.maxHp = Math.round(f.maxHp * s.hp);
+    f.maxHp = Math.round(f.maxHp * (1 + s.hp));
     f.hp = f.maxHp;
+    f.itemHp = 1 + s.hp;
   }
-  if (s.as) f.attackSpeed *= s.as;
+  if (s.as) f.attackSpeed *= 1 + s.as;
   if (s.range) f.range += s.range;
-  if (s.mana) f.manaMult *= s.mana;
+  if (s.mana) f.manaMult *= 1 + s.mana;
   if (s.ls) f.lifesteal += s.ls;
 }
 
-/** The stats of some parts together, as the tooltip says them ("+69% attack" for two chips). */
+/** The stats of some parts together, as the tooltip says them ("+60% attack" for two chips). */
 function statText(parts: Stats[]): string {
-  const mul = (k: "atk" | "hp" | "as" | "mana") => parts.reduce((m, s) => m * (s[k] ?? 1), 1);
-  const sum = (k: "range" | "ls") => parts.reduce((n, s) => n + (s[k] ?? 0), 0);
-  const pct = (m: number) => Math.round((m - 1) * 100);
+  const s = noStats();
+  for (const p of parts) addStats(s, p);
+  const pct = (v: number) => Math.round(v * 100);
   const out: string[] = [];
-  if (mul("atk") !== 1) out.push(`+${pct(mul("atk"))}% attack`);
-  if (mul("hp") !== 1) out.push(`+${pct(mul("hp"))}% max HP`);
-  if (mul("as") !== 1) out.push(`+${pct(mul("as"))}% attack speed`);
-  if (sum("range")) out.push(`+${sum("range")} range`);
-  if (mul("mana") !== 1) out.push(`+${pct(mul("mana"))}% mana gain`);
-  if (sum("ls")) out.push(`${Math.round(sum("ls") * 100)}% lifesteal`);
+  if (s.atk) out.push(`+${pct(s.atk)}% attack`);
+  if (s.hp) out.push(`+${pct(s.hp)}% max HP`);
+  if (s.as) out.push(`+${pct(s.as)}% attack speed`);
+  if (s.range) out.push(`+${s.range} range`);
+  if (s.mana) out.push(`+${pct(s.mana)}% mana gain`);
+  if (s.ls) out.push(`${pct(s.ls)}% lifesteal`);
   return out.join(", ");
 }
 
@@ -165,8 +173,8 @@ export function fuseResult(a: string, b: string): string | null {
 
 /** What each item does beyond its parts' stats. A second copy on one Digimon adds its stats
  *  again; its effect adds up where it's an amount, and doesn't where it's a rhythm (a crit
- *  every 4th attack stays every 4th). */
-const EFFECT: Record<string, (f: Fighter, p: Procs) => void> = {
+ *  every 4th attack stays every 4th). Relics have no parts: they add their stats to `s`. */
+const EFFECT: Record<string, (f: Fighter, p: Procs, s: Required<Stats>) => void> = {
   gigablade: (_, p) => {
     p.critEvery = Math.min(p.critEvery ?? Infinity, 4);
     p.critMult = 2;
@@ -227,12 +235,12 @@ const EFFECT: Record<string, (f: Fighter, p: Procs) => void> = {
     p.overheal = Math.max(p.overheal ?? 0, 0.4);
   },
   // ---- relics: no parts, so their stats live here
-  holyring: (f, p) => {
-    f.attackSpeed *= 1.15;
+  holyring: (_, p, s) => {
+    s.as += 0.15;
     p.ccImmune = 10;
   },
-  blackgear: (f, p) => {
-    f.attack = Math.round(f.attack * 1.15);
+  blackgear: (_, p, s) => {
+    s.atk += 0.15;
     p.wounding = 5;
   },
 };
@@ -241,14 +249,20 @@ const EFFECT: Record<string, (f: Fighter, p: Procs) => void> = {
  *  parts (a component is its own part), then its effect. A Digimental's element counts in
  *  synergies.ts; the Accel Disk's aura is laid once the board is set (applyAuras). */
 export function applyItems(f: Fighter, items: string[]): void {
+  const stats = noStats();
   for (const id of items) {
     const def = ITEMS[id];
     if (!def) continue;
-    for (const part of def.from ?? [id]) if (PART[part]) applyStats(f, PART[part]);
+    for (const part of def.from ?? [id]) if (PART[part]) addStats(stats, PART[part]);
     const effect = EFFECT[id];
-    if (effect) effect(f, (f.procs ??= {}));
+    if (effect) effect(f, (f.procs ??= {}), stats);
   }
+  applyStats(f, stats);
 }
+
+/** The max HP shields, heals and regeneration are sized on: without what items added — HP
+ *  items make a Digimon last longer, not also heal and shield it for more (that compounds). */
+export const sustainHp = (f: Fighter) => f.maxHp / (f.itemHp ?? 1);
 
 /** Accel Disk: allies that start the battle next to its holder (the 8 cells around it) attack
  *  faster. Called once a side's fighters stand on their cells (applySynergies). */

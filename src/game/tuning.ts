@@ -90,11 +90,11 @@ export const WAVES = {
    *  one candidate per round, picked by its seed. Candidates are tuned to the same pass
    *  rate on the same 600 bot boards (`npm run runsim` prints "boss candidates"). */
   bosses: [
-    [{ id: "skullsatamon", hp: 1.65, atk: 1.02, adds: 2, minions: MINIONS.solo5 }],
+    [{ id: "skullsatamon", hp: 1.9, atk: 1.02, adds: 2, minions: MINIONS.solo5 }],
     [
-      { id: "machinedramon", hp: 1.14, atk: 0.8, adds: 3, minions: MINIONS.solo10 },
-      { id: "mitamamon", hp: 1.04, atk: 0.58, adds: 3, minions: MINIONS.solo10 },
-      { id: "eater", hp: 0.9, atk: 0.53, adds: 3, minions: ["eaterbit"] },
+      { id: "machinedramon", hp: 0.96, atk: 0.8, adds: 3, minions: MINIONS.solo10 },
+      { id: "mitamamon", hp: 0.88, atk: 0.58, adds: 3, minions: MINIONS.solo10 },
+      { id: "eater", hp: 1.0, atk: 0.62, adds: 3, minions: ["eaterbit"] },
     ],
     // (the Eater, an R10 candidate: it devours the weakest of your team — battle.ts)
   // the final boss of every run: Lucemon Falldown Mode, and when he falls, Satan Mode
@@ -220,7 +220,7 @@ export type Difficulty = "easy" | "normal" | "hard";
 export const DIFFICULTY: Record<Difficulty, { hp: number; atk: number; damage: number; xp: number }> = {
   easy: { hp: 0.8, atk: 0.85, damage: 0.75, xp: 0.75 },
   normal: { hp: 1, atk: 1, damage: 1, xp: 1 },
-  hard: { hp: 1.15, atk: 1.08, damage: 1.25, xp: 1.5 },
+  hard: { hp: 1.22, atk: 1.1, damage: 1.25, xp: 1.5 },
 };
 export const isDifficulty = (d: unknown): d is Difficulty => d === "easy" || d === "normal" || d === "hard";
 
@@ -283,21 +283,21 @@ export const VS = {
    *  starred Megas, the element synergies, 38 lines and the anime's finals, Oct 2026). A match meets one candidate per
    *  round, picked by the room's variant; candidates match. */
   bosses: [
-    [{ id: "skullsatamon", hp: 2.3, atk: 1.26, adds: 3, addCount: 2, minions: MINIONS.vs10 }],
+    [{ id: "skullsatamon", hp: 2.6, atk: 1.26, adds: 3, addCount: 2, minions: MINIONS.vs10 }],
     [
-      { id: "machinedramon", hp: 3.6, atk: 1.7, adds: 5, addCount: 2, minions: MINIONS.vs20 },
+      { id: "machinedramon", hp: 3.35, atk: 1.7, adds: 5, addCount: 2, minions: MINIONS.vs20 },
       { id: "mitamamon", hp: 3.55, atk: 1.42, adds: 5, addCount: 2, minions: MINIONS.vs20 },
     ],
     [
-      { id: "zeed", hp: 6.2, atk: 2.25, adds: 5, addCount: 2, minions: MINIONS.vs30 },
-      { id: "apollomon", hp: 6.3, atk: 2.5, adds: 5, addCount: 2, minions: MINIONS.vs30 },
+      { id: "zeed", hp: 8.0, atk: 2.25, adds: 5, addCount: 2, minions: MINIONS.vs30 },
+      { id: "apollomon", hp: 7.9, atk: 2.5, adds: 5, addCount: 2, minions: MINIONS.vs30 },
     ],
     [
       { id: "gracenovamon", hp: 9.5, atk: 3.0, adds: 5, addCount: 3, minions: MINIONS.vs40 },
-      { id: "piedmon", hp: 10.0, atk: 3.2, adds: 5, addCount: 3, minions: MINIONS.darkMasters },
+      { id: "piedmon", hp: 10.9, atk: 3.2, adds: 5, addCount: 3, minions: MINIONS.darkMasters },
       {
         id: "lucemonfm",
-        hp: 5.5,
+        hp: 6.0,
         atk: 2.6,
         adds: 5,
         addCount: 3,

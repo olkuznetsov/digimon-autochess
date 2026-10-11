@@ -1,6 +1,6 @@
 import type { Attribute, Fighter } from "./types";
 import { FORMS, STAR3_ULT, STAR_MULT, attributeMultiplier, statsFor } from "./creatures";
-import { applyItems } from "./items";
+import { applyItems, sustainHp } from "./items";
 import { ultimateFor, type UltCtx, type UltFx } from "./ultimates";
 import { COLS, ROWS } from "./board";
 
@@ -32,6 +32,17 @@ const WINDUP_MIN = 0.1;
 /** A ranged attack's shot flies this long before it lands (Electric strikes at once). */
 export const SHOT_FLIGHT = 0.2;
 const MANA_PER_HIT_TAKEN = 5;
+/** Lifesteal heals at most this share of the damage dealt, however much a Digimon stacks. */
+export const LIFESTEAL_CAP = 0.5;
+/** Overtime, after OVERTIME_AT seconds: every hit lands harder — OVERTIME_RAMP more a second —
+ *  and healing and shields come in at OVERTIME_MEND, so a stalemate can't last (the screen
+ *  plays it twice as fast, too). */
+export const OVERTIME_AT = 30;
+/** Shields wear off — this share a second — and never grow past max HP: a shield is a
+ *  moment's cover, not a second health bar that piles up cast after cast. */
+const SHIELD_DECAY = 0.2;
+const OVERTIME_RAMP = 0.1;
+const OVERTIME_MEND = 0.5;
 
 /** Cosmetic events emitted by stepCombat for the FX layer (damage numbers,
  *  projectiles, casts, death bursts). The balance sim simply doesn't pass a collector. */
@@ -150,7 +161,7 @@ function heal(f: Fighter, amount: number) {
   const over = f.hp + got - f.maxHp;
   f.hp = Math.min(f.maxHp, f.hp + got);
   const cap = f.procs?.overheal;
-  if (cap && over > 0) f.shield = Math.max(f.shield, Math.min(f.shield + over, f.maxHp * cap));
+  if (cap && over > 0) f.shield = Math.max(f.shield, Math.min(f.shield + over, sustainHp(f) * cap));
 }
 
 /** Crest of Courage: one more stack per hit dealt or taken. */
@@ -182,6 +193,9 @@ interface Hit {
  */
 interface Tick {
   hits: Hit[];
+  /** overtime: what every hit is multiplied by, and every heal and shield */
+  ramp: number;
+  mend: number;
   shields: Map<Fighter, number>;
   heals: Map<Fighter, number>;
   stuns: Map<Fighter, number>;
@@ -199,7 +213,7 @@ const add = (m: Map<Fighter, number>, f: Fighter, v: number) => m.set(f, (m.get(
 function hit(t: Tick, src: Fighter, tgt: Fighter, raw: number, mult: number, ability: boolean, crit = false): number {
   const execute = src.procs?.execute && tgt.hp < tgt.maxHp * EXECUTE_BELOW ? 1 + src.procs.execute : 1;
   const amount = raw * execute * (1 - tgt.dmgReduction) * (tgt.broodGuard ? BROOD_GUARD : 1);
-  t.hits.push({ src, tgt, amount, mult, ability, ls: src.lifesteal, ...(crit ? { crit } : {}) });
+  t.hits.push({ src, tgt, amount, mult, ability, ls: Math.min(LIFESTEAL_CAP, src.lifesteal), ...(crit ? { crit } : {}) });
   return amount;
 }
 
@@ -318,8 +332,8 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], t: Tick)
   });
   fr.castKey++;
   if (fr.procs?.overclock) fr.procs.overclocked = OVERCLOCK_TIME;
-  if (fr.castShield > 0) add(t.shields, fr, fr.maxHp * fr.castShield);
-  if (fr.procs?.castHeal) add(t.heals, fr, fr.maxHp * fr.procs.castHeal);
+  if (fr.castShield > 0) add(t.shields, fr, sustainHp(fr) * fr.castShield);
+  if (fr.procs?.castHeal) add(t.heals, fr, sustainHp(fr) * fr.procs.castHeal);
   if (fr.procs?.blessing) bless(fr, fr.procs.blessing, fighters, t);
   const ctx: UltCtx = {
     caster: fr,
@@ -351,7 +365,7 @@ function bless(fr: Fighter, share: number, fighters: Fighter[], t: Tick) {
     if (r < lr - 1e-12 || (low && r <= lr + 1e-12 && preferred(fr, f, low))) low = f;
   }
   if (!low) return;
-  add(t.shields, low, fr.maxHp * share);
+  add(t.shields, low, sustainHp(fr) * share);
   procFx(low, low, "guard", t.events);
 }
 
@@ -389,7 +403,8 @@ const hitEvent = (h: { src: Fighter; tgt: Fighter; amount: number; mult: number;
 function resolve(fighters: Fighter[], t: Tick) {
   const { events } = t;
   const alive = fighters.filter((f) => f.hp > 0);
-  for (const [f, s] of t.shields) f.shield += s;
+  if (t.ramp !== 1) for (const h of t.hits) h.amount *= t.ramp;
+  for (const [f, s] of t.shields) f.shield = Math.min(Math.max(f.shield, f.maxHp), f.shield + s * t.mend);
   for (const [f, m] of t.buffs) f.attack = Math.round(f.attack * m);
   for (const [f, s] of t.stuns) if (!((f.procs?.ccImmune ?? 0) > 0)) f.stunned = Math.max(f.stunned, s); // Holy Ring
 
@@ -447,7 +462,7 @@ function resolve(fighters: Fighter[], t: Tick) {
     if (!p?.thirst || h.tgt.hp > 0 || h.src.hp <= 0 || fed.has(`${h.src.uid}>${h.tgt.uid}`)) continue;
     fed.add(`${h.src.uid}>${h.tgt.uid}`);
     p.fed = (p.fed ?? 0) + p.thirst;
-    add(t.heals, h.src, h.src.maxHp * (p.feast ?? 0));
+    add(t.heals, h.src, sustainHp(h.src) * (p.feast ?? 0));
   }
   // Spike Shell: attacks struck back after the hits (no lifesteal, no thorns on thorns)
   for (const h of t.hits) {
@@ -465,12 +480,12 @@ function resolve(fighters: Fighter[], t: Tick) {
     return low;
   });
   t.allyHeals.forEach((a, i) => lows[i] && add(t.heals, lows[i]!, a.amount));
-  for (const [f, v] of t.heals) heal(f, v);
+  for (const [f, v] of t.heals) heal(f, v * t.mend);
 
   for (const f of alive) {
     const p = f.procs;
     if (p?.rescue && f.hp > 0 && f.hp < f.maxHp * 0.4) {
-      f.shield += f.maxHp * p.rescue;
+      f.shield += sustainHp(f) * p.rescue * t.mend;
       p.rescue = 0;
       procFx(f, f, "guard", events);
     }
@@ -526,6 +541,7 @@ function bossMechanic(fr: Fighter, fighters: Fighter[], dt: number, t: Tick) {
   if (!spot) return;
   fr.mechN = (fr.mechN ?? 0) + 1;
   const bit = makeFighter("eaterbit", `${fr.uid}~${fr.mechN}`, fr.team, spot[0], spot[1], fr.mechScale ?? 1);
+  bit.leapt = true;
   fighters.push(bit);
   t.events?.push({ kind: "cast", col: fr.col, row: fr.row, attr: fr.attribute, ult: "buff", name: "Brood", stage: 5, form: fr.formId, team: fr.team, toCol: spot[0], toRow: spot[1] });
 }
@@ -535,6 +551,7 @@ function bossMechanic(fr: Fighter, fighters: Fighter[], dt: number, t: Tick) {
 function reborn(f: Fighter, fighters: Fighter[], events?: CombatEvent[]) {
   const r = f.rebirth!;
   const next = makeFighter(r.formId, `${f.uid}+`, f.team, f.col, f.row);
+  next.leapt = true;
   next.maxHp = r.maxHp;
   next.hp = r.maxHp;
   next.attack = r.attack;
@@ -562,6 +579,35 @@ function reborn(f: Fighter, fighters: Fighter[], events?: CombatEvent[]) {
  *  same tick. */
 const snap = (x: number) => Math.round(x * 1048576) / 1048576;
 
+/** Teamfight Tactics' assassins: on its first tick an assassin leaps into the enemy backline —
+ *  behind the enemy that stands deepest in its own half (the nearest of those across, the same
+ *  choice on both sides of a mirror) — and goes for it. Bosses don't leap. */
+function leap(fr: Fighter, fighters: Fighter[]): { col: number; row: number } | null {
+  fr.leapt = true;
+  if (fr.role !== "assassin" || fr.boss) return null;
+  const up = fr.team === "player"; // the player's enemies stand at the high rows
+  let best: Fighter | null = null;
+  for (const x of fighters) {
+    if (x.team === fr.team || x.hp <= 0) continue;
+    if (!best) {
+      best = x;
+      continue;
+    }
+    const deeper = up ? x.row - best.row : best.row - x.row;
+    if (deeper > 1e-9) best = x;
+    else if (deeper > -1e-9) {
+      const dx = Math.abs(x.col - fr.col) - Math.abs(best.col - fr.col);
+      if (dx < -1e-9 || (dx <= 1e-9 && preferred(fr, x, best))) best = x;
+    }
+  }
+  if (!best) return null;
+  fr.targetUid = best.uid;
+  const row = Math.max(0, Math.min(ROWS - 1, best.row + (up ? LEAP_BEHIND : -LEAP_BEHIND)));
+  return { col: best.col, row: snap(row) };
+}
+/** How far behind its mark an assassin lands (cells). */
+const LEAP_BEHIND = 0.8;
+
 /** Equal distances: the same choice on both sides of a mirror — each team judges from its
  *  own end of the board (the other half is the 180° turn of it). */
 function preferred(fr: Fighter, a: Fighter, b: Fighter): boolean {
@@ -572,14 +618,22 @@ function preferred(fr: Fighter, a: Fighter, b: Fighter): boolean {
   return (flip ? ROWS - 1 - a.row : a.row) < (flip ? ROWS - 1 - b.row : b.row);
 }
 
+/** Overtime at this step of a fight: [hit multiplier, heal and shield multiplier]. */
+export function overtime(step: number): [number, number] {
+  const over = step * SIM_DT - OVERTIME_AT;
+  return over > 0 ? [1 + OVERTIME_RAMP * over, OVERTIME_MEND] : [1, 1];
+}
+
 /**
  * One combat tick: target acquisition, movement, attacks, mana + abilities. Every fighter
  * decides from the state the tick began with; moves and effects land together at the end
  * (see Tick). Mutates fighters in place. Pure game logic — shared by the zustand store
- * (browser) and the headless balance simulator (Node).
+ * (browser) and the headless balance simulator (Node). `step`: how many ticks the fight has
+ * run before this one (overtime counts from it — an integer, so every caller agrees).
  */
-export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent[]): void {
-  const t: Tick = { hits: [], shields: new Map(), heals: new Map(), stuns: new Map(), buffs: new Map(), allyHeals: [], events };
+export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent[], step = 0): void {
+  const [ramp, mend] = overtime(step);
+  const t: Tick = { hits: [], ramp, mend, shields: new Map(), heals: new Map(), stuns: new Map(), buffs: new Map(), allyHeals: [], events };
   const moves: { f: Fighter; col: number; row: number }[] = [];
   // a brooding Mother Eater is guarded while her Bits live (decided as the tick begins)
   for (const f of fighters) if (f.mech === "brood") f.broodGuard = fighters.some((b) => b.team === f.team && b.hp > 0 && b.formId === "eaterbit");
@@ -587,7 +641,8 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
   const acting = fighters.slice();
   for (const fr of acting) {
     if (fr.hp <= 0) continue;
-    if (fr.regen > 0) add(t.heals, fr, fr.maxHp * fr.regen * dt);
+    if (fr.shield > 0) fr.shield *= 1 - SHIELD_DECAY * dt;
+    if (fr.regen > 0) add(t.heals, fr, sustainHp(fr) * fr.regen * dt);
     if (fr.wounded) fr.wounded = Math.max(0, fr.wounded - dt);
     if ((fr.burnLeft ?? 0) > 0) {
       fr.burnLeft = Math.max(0, fr.burnLeft! - dt);
@@ -618,6 +673,13 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
       }
     }
     if (fr.mech) bossMechanic(fr, fighters, dt, t);
+    if (!fr.leapt) {
+      const spot = leap(fr, fighters);
+      if (spot) {
+        moves.push({ f: fr, ...spot });
+        continue;
+      }
+    }
 
     // the nearest enemy; out of reach a clearly closer one takes over (no chasing one enemy
     // past another), in reach the unit sticks with its target

@@ -6,6 +6,7 @@ import { carouselPick, opponentOf, ratingDelta } from "../game/lobby";
 import { isAugmentRound } from "../game/augments";
 import { ITEMS } from "../game/items";
 import { FORMS } from "../game/creatures";
+import { OVERTIME_AT, SIM_DT } from "../game/battle";
 import { PlanTimer } from "./PlanTimer";
 import { XP_TO_NEXT as XP_VIEW } from "../game/xpView";
 import { isMuted, setMuted, isMusicOn, setMusicOn, sfx } from "../audio/sfx";
@@ -44,6 +45,8 @@ export function Hud() {
   const evoPeek = useEvoPeek((s) => s.peek);
   // only the "battle started?" bit, so the HUD doesn't re-render every sim tick
   const battleTime = useGame((s) => (s.battleTime > 0 ? 1 : 0));
+  // overtime: past OVERTIME_AT the fight plays twice as fast and every hit grows (battle.ts)
+  const overtime = useGame((s) => s.phase === "battle" && s.tick * SIM_DT >= OVERTIME_AT);
   const gold = useGame((s) => s.gold);
   const level = useGame((s) => s.level);
   const xp = useGame((s) => s.xp);
@@ -307,7 +310,13 @@ export function Hud() {
         {phase === "battle" && battleTime === 0 && <div className="fight-banner">FIGHT!</div>}
         {phase === "battle" && battleTime > 0 && (
           <div className="battle-bar">
-            <div className="phase-tag battling">Battle in progress…</div>
+            {overtime ? (
+              <div className="phase-tag battling overtime" title="Hits grow stronger every second, healing and shields are halved — a fight still on at 60 s is a draw (a loss in a solo run)">
+                ⏱ Overtime — hits grow, healing halved
+              </div>
+            ) : (
+              <div className="phase-tag battling">Battle in progress…</div>
+            )}
             {!vs && (
               <button
                 className={`icon-btn speed${simSpeed > 1 ? " on" : ""}`}

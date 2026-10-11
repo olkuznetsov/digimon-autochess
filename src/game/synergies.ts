@@ -1,6 +1,6 @@
 import type { Fighter, Procs, Unit } from "./types";
 import { FORMS, ATTR_COLOR, ELEMENT_COLOR, ELEMENT_ICON } from "./creatures";
-import { EMBLEM_ELEMENT, applyAuras } from "./items";
+import { EMBLEM_ELEMENT, applyAuras, sustainHp } from "./items";
 
 export interface TraitTier {
   need: number;
@@ -230,6 +230,6 @@ export function applySynergies(fighters: Fighter[], units: Unit[]): void {
     const a = activeTier(def, counts.get(def.key) ?? 0);
     if (!a?.tier.shieldPct) continue;
     for (const f of fighters)
-      if (def.kind === "element" && elementsOf(f.formId, f.items).includes(def.key)) f.shield += Math.round(f.maxHp * a.tier.shieldPct);
+      if (def.kind === "element" && elementsOf(f.formId, f.items).includes(def.key)) f.shield += Math.round(sustainHp(f) * a.tier.shieldPct);
   }
 }

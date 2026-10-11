@@ -106,6 +106,12 @@ export interface Fighter {
   stunned: number;
   /** bumped every time this fighter casts its ultimate — drives the special01 animation */
   castKey: number;
+  /** what its items multiplied its max HP by (shields, heals and regeneration are sized on the
+   *  max HP without it — sustainHp — so stacking HP doesn't grow them too) */
+  itemHp?: number;
+  /** an assassin's leap into the enemy backline is spent (it leaps on its first tick; whatever
+   *  hatches or rises mid-fight starts with it spent) */
+  leapt?: boolean;
   /** true for the oversized boss unit on boss rounds (visual + reward) */
   boss?: boolean;
   /** equipped item ids (cosmetic reference; Digimentals count in synergies) */

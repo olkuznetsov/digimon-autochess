@@ -420,7 +420,7 @@ export const useGame = create<GameState>((set, get) => ({
     const fighters = state.fighters;
 
     const events: CombatEvent[] = [];
-    stepCombat(fighters, dt, events);
+    stepCombat(fighters, dt, events, state.tick);
     if (!silent) for (const e of events) battleSfx(e);
     let meter = state.meter;
     for (const e of events) {
@@ -467,8 +467,9 @@ export const useGame = create<GameState>((set, get) => ({
     const playersLeft = alive.some((fr) => fr.team === "player");
     const enemiesLeft = alive.some((fr) => fr.team === "enemy");
     // a VS fight still undecided after FIGHT_STEPS is a draw, as in everyone's simulation; a
-    // ladder fight after LADDER_STEPS is lost, as the worker rates it
-    const stalemate = (!!state.pvp?.fight && state.tick + 1 >= FIGHT_STEPS) || (!!state.ghost && state.tick + 1 >= LADDER_STEPS);
+    // ladder fight after LADDER_STEPS is lost, as the worker rates it; a solo one after
+    // FIGHT_STEPS is lost
+    const stalemate = state.tick + 1 >= (state.ghost ? LADDER_STEPS : FIGHT_STEPS);
 
     if (!playersLeft || !enemiesLeft || stalemate) {
       const win = playersLeft && !enemiesLeft;

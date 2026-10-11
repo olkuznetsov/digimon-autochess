@@ -55,7 +55,7 @@ function place(formIds: string[], team: "player" | "enemy"): { fighters: Fighter
 
 function fight(fighters: Fighter[]): { result: "a" | "b" | "draw"; ticks: number } {
   for (let t = 1; t <= MAX_TICKS; t++) {
-    stepCombat(fighters, DT);
+    stepCombat(fighters, DT, undefined, t - 1);
     const pa = fighters.some((f) => f.team === "player" && f.hp > 0);
     const pb = fighters.some((f) => f.team === "enemy" && f.hp > 0);
     if (!pa || !pb) return { result: pa ? "a" : pb ? "b" : "draw", ticks: t };

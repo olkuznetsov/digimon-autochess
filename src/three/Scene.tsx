@@ -14,7 +14,7 @@ import { useProfile } from "../profile/store";
 import { MenuStage } from "./MenuStage";
 import { newDrive, type UnitDrive } from "./unitDrive";
 import { juice, resetJuice, tickJuice } from "./juice";
-import { SIM_DT } from "../game/battle";
+import { OVERTIME_AT, SIM_DT } from "../game/battle";
 import { isBossRound, makeEnemyWave, makeVsWave, vsRoundKind } from "../game/tuning";
 import { ITEMS } from "../game/items";
 import { FORMS, ATTR_COLOR } from "../game/creatures";
@@ -506,7 +506,8 @@ function BattleRunner() {
   }, []);
   useFrame((_, dt) => {
     const game = useGame.getState();
-    juice.speed = game.pvp ? 1 : game.simSpeed;
+    // overtime plays twice as fast: nobody needs to watch a stalemate at its own pace
+    juice.speed = (game.pvp ? 1 : game.simSpeed) * (game.tick * SIM_DT >= OVERTIME_AT ? 2 : 1);
     if (intro.current > 0) {
       intro.current -= Math.min(dt, 0.25);
       return;

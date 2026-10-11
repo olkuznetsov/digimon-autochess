@@ -15,8 +15,9 @@ type Augs = Record<number, string[]>;
  * computes the same outcomes from the same boards (the sim is deterministic).
  */
 
-/** A fight that hasn't ended after this many steps (200 s) is a draw — on screen too. */
-export const FIGHT_STEPS = 4000;
+/** A fight that hasn't ended after this many steps (60 s — overtime from 30 s) is a draw — on
+ *  screen too. A solo fight that long is lost. */
+export const FIGHT_STEPS = 1200;
 
 const mirrorCol = (c: number) => COLS - 1 - c;
 const mirrorRow = (r: number) => ROWS - 1 - r;
@@ -102,7 +103,7 @@ export const LADDER_STEPS = 900;
 export function ladderWins(mine: WireUnit[], ghost: WireUnit[]): boolean {
   const fighters = ladderFighters(mine, ghost);
   for (let i = 0; i < LADDER_STEPS; i++) {
-    stepCombat(fighters, SIM_DT);
+    stepCombat(fighters, SIM_DT, undefined, i);
     const near = fighters.some((f) => f.hp > 0 && f.team === "player");
     const far = fighters.some((f) => f.hp > 0 && f.team === "enemy");
     if (!near || !far) return near && !far;
@@ -119,7 +120,7 @@ export function pveFighters(board: WireUnit[], round: number, seat: number, augm
 export function runFight(fighters: Fighter[]): { winner: "home" | "away" | "draw"; alive: number; enemies: number } {
   for (let i = 0; i < FIGHT_STEPS; i++) {
     if (!fighters.some((f) => f.hp > 0 && f.team === "player") || !fighters.some((f) => f.hp > 0 && f.team === "enemy")) break;
-    stepCombat(fighters, SIM_DT);
+    stepCombat(fighters, SIM_DT, undefined, i);
   }
   const alive = fighters.filter((f) => f.hp > 0);
   const home = alive.some((f) => f.team === "player");

@@ -186,6 +186,13 @@ body,
   letter-spacing: 1px;
   animation: pulse 1.2s ease-in-out infinite;
 }
+/* overtime: the fight speeds up and every hit grows */
+.phase-tag.overtime {
+  color: #fff1e6;
+  background: rgba(150, 30, 20, 0.82);
+  box-shadow: 0 0 18px rgba(255, 80, 40, 0.55);
+  animation-duration: 0.6s;
+}
 @keyframes pulse {
   50% {
     opacity: 0.55;

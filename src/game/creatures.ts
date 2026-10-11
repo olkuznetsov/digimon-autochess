@@ -596,6 +596,8 @@ interface Stat {
 // - stage multiplier ~2.25x so an evolved form respects its 3-copy cost (the babies
 //   below Rookie follow the same step)
 // - tanks carry HP identity with modest damage
+// - assassins leap into the enemy backline when a fight starts (battle.ts) and pay for it in
+//   HP (×0.78–0.85 since Oct 2026); ranged, the leap's prey, got +6% HP
 // - see the sim for the full method
 const STATS: Record<Role, [Stat, Stat, Stat, Stat, Stat]> = {
   tank: [
@@ -613,18 +615,18 @@ const STATS: Record<Role, [Stat, Stat, Stat, Stat, Stat]> = {
     { hp: 470, attack: 64, attackSpeed: 0.72, range: 1 },
   ],
   assassin: [
-    { hp: 12, attack: 4, attackSpeed: 0.8, range: 1 },
-    { hp: 28, attack: 8, attackSpeed: 0.8, range: 1 },
-    { hp: 62, attack: 18, attackSpeed: 0.8, range: 1 },
-    { hp: 140, attack: 41, attackSpeed: 0.85, range: 1 },
-    { hp: 310, attack: 91, attackSpeed: 0.9, range: 1 },
+    { hp: 10, attack: 4, attackSpeed: 0.8, range: 1 },
+    { hp: 22, attack: 8, attackSpeed: 0.8, range: 1 },
+    { hp: 53, attack: 18, attackSpeed: 0.8, range: 1 },
+    { hp: 109, attack: 41, attackSpeed: 0.85, range: 1 },
+    { hp: 242, attack: 91, attackSpeed: 0.9, range: 1 },
   ],
   ranged: [
-    { hp: 11, attack: 3, attackSpeed: 0.8, range: 3 },
-    { hp: 26, attack: 7, attackSpeed: 0.8, range: 3 },
-    { hp: 58, attack: 15, attackSpeed: 0.8, range: 3 },
-    { hp: 130, attack: 35, attackSpeed: 0.82, range: 3 },
-    { hp: 285, attack: 78, attackSpeed: 0.85, range: 3 },
+    { hp: 12, attack: 3, attackSpeed: 0.8, range: 3 },
+    { hp: 28, attack: 7, attackSpeed: 0.8, range: 3 },
+    { hp: 61, attack: 15, attackSpeed: 0.8, range: 3 },
+    { hp: 138, attack: 35, attackSpeed: 0.82, range: 3 },
+    { hp: 302, attack: 78, attackSpeed: 0.85, range: 3 },
   ],
   caster: [
     { hp: 14, attack: 3, attackSpeed: 0.7, range: 2 },

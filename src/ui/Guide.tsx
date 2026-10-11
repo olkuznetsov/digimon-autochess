@@ -82,6 +82,9 @@ function Basics() {
           <li>🛒 <b>Buy Digimon</b> in the shop — the price is the stage: ⛂1 Fresh, ⛂2 In-Training, ⛂3 Rookie, ⛂4 Champion, ⛂5 Mega. They wait on your bench; a full bench still takes the copy that merges right away.</li>
           <li>🖱 <b>Drag them onto your half</b> of the board. Your level is how many can fight.</li>
           <li>⚔ <b>The battle plays itself</b>: units attack, fill their mana and cast their ultimate.</li>
+          <li>🗡️ <b>Assassins leap</b> into the enemy backline when the fight starts — guard your ranged and casters, or bait the leap with a decoy at the back.</li>
+          <li>⏱ <b>Overtime</b> at 30 s: the fight plays twice as fast, every hit grows stronger each second and healing and shields are halved. A fight still on at 60 s is a draw in VS (both lose) and a loss in a solo run.</li>
+          <li>🛡️ <b>Shields wear off</b> over a few seconds, and shields, heals and regeneration are sized on a Digimon's own HP — HP items make it last longer, not heal more. Lifesteal tops out at 50%.</li>
           <li>♥ Lose and you take damage; at 0 the run (or match) is over.</li>
         </ul>
       </section>
@@ -534,7 +537,7 @@ function Items() {
           Any two base items fuse into one: pick one, then a glowing partner in your tray — or put the second on a Digimon
           that holds the first, and they fuse right there. Every pair makes its own item, and it <b>keeps both parts'
           stats</b> (exactly as if the Digimon held the two) and adds an effect no other item has — fusing never loses
-          anything and frees a slot. A <b>Digimental</b> (Digitama + a base item) makes its holder
+          anything and frees a slot. A Digimon's items add up: two +35% HP parts make +70%. A <b>Digimental</b> (Digitama + a base item) makes its holder
           count for an element — a baby too; two Digitama make a <b>Digivice</b>: one more Digimon on the board, straight from the item tray — nobody needs to hold it.
         </p>
         <div className="fuse-wrap">

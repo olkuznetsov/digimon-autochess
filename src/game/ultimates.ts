@@ -1,4 +1,5 @@
 import type { Fighter, Role } from "./types";
+import { sustainHp } from "./items";
 
 /**
  * Per-form ultimate abilities. Every Champion and Mega has its OWN signature move
@@ -81,7 +82,7 @@ const bulwark = (pct: number, team = false): Effect => ({
   fx: "guard",
   cast: (c) => {
     const targets = team ? c.allies : [c.caster];
-    for (const a of targets) c.shield(a, c.caster.maxHp * pct);
+    for (const a of targets) c.shield(a, sustainHp(c.caster) * pct);
   },
 });
 
