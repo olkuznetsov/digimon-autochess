@@ -596,8 +596,9 @@ interface Stat {
 // - stage multiplier ~2.25x so an evolved form respects its 3-copy cost (the babies
 //   below Rookie follow the same step)
 // - tanks carry HP identity with modest damage
-// - assassins leap into the enemy backline when a fight starts (battle.ts) and pay for it in
-//   HP (×0.78–0.85 since Oct 2026); ranged, the leap's prey, got +6% HP
+// - assassins leap into the enemy backline when a fight starts, untargetable in the air
+//   (battle.ts), and pay for it: HP ×0.78–0.85 and attack ×0.9 since Oct 2026; ranged, the
+//   leap's prey, got +6% HP
 // - see the sim for the full method
 const STATS: Record<Role, [Stat, Stat, Stat, Stat, Stat]> = {
   tank: [
