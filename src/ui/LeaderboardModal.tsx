@@ -63,7 +63,7 @@ export function LeaderboardModal({ onClose }: { onClose: () => void }) {
         <div className="help-title">
           RANKING <span className="jp">ランキング</span>
         </div>
-        <span className="lb-season">Season 2 · tier rules</span>
+        <span className="lb-season">Season 3 · overtime &amp; leaps</span>
         <div className="lb-tabs">
           <button className={`lb-tab${tab === "best" ? " on" : ""}`} onClick={() => setTab("best")}>
             Best runs

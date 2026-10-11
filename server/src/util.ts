@@ -9,9 +9,10 @@ import { COLS, FRONT_ROW } from "../../src/game/board";
  *  so the room's handlers ignore it (a plain `accept()` socket closed by the room shows
  *  up as an uncaught "Network connection lost" in the worker). */
 /** The leaderboard season in play: a Leaderboard Durable Object of its own. Season 2
- *  started with the tier rules (Oct 2026) — season 1's scores ("global") stay in storage,
+ *  started with the tier rules (Oct 2026), season 3 with overtime, leaping assassins and
+ *  items that add up (12 Oct 2026) — earlier seasons' scores ("global", "s2") stay in storage,
  *  untouched, and come back by pointing this at them. */
-export const LB_SEASON = "s2";
+export const LB_SEASON = "s3";
 
 export function outdatedSocket(ctx: DurableObjectState): Response {
   const [client, server] = Object.values(new WebSocketPair());
