@@ -456,14 +456,21 @@ export function Hud() {
                   <span className="fr-place">#{s.placement}</span>
                   <Avatar formId={s.partner} className="rank-face" />
                   <span className="fr-name">{s.name}</span>
+                  {s.bot && <span className="bot-tag">🤖</span>}
                   {s.placement === 1 && <span>🏆</span>}
                 </div>
               ))}
           </div>
           {me?.inMatch && me.placement !== null && (
             <div className="go-sub">
-              Rating {ratingDelta(pvp.snap.players, me.placement) >= 0 ? "+" : ""}
-              {ratingDelta(pvp.snap.players, me.placement)}
+              {players.some((s) => s.bot) ? (
+                "Unrated — a match with bots"
+              ) : (
+                <>
+                  Rating {ratingDelta(pvp.snap.players, me.placement) >= 0 ? "+" : ""}
+                  {ratingDelta(pvp.snap.players, me.placement)}
+                </>
+              )}
             </div>
           )}
           {pvp.snap.host === pvp.seat ? (

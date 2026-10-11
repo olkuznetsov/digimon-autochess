@@ -607,6 +607,7 @@ function Versus() {
         <h3>A VS match (2–8 tamers)</h3>
         <ul>
           <li>🌐 <b>Find a match</b> plays strangers; <b>Create lobby</b> gives a code for friends.</li>
+          <li>🤖 The host can fill empty seats with <b>bots</b> (+ Add bot in the lobby): each plays a real run of the game's bot, its board growing round by round, and takes a combat augment on augment rounds. A match with bots is unrated, and once no tamer is left standing it ends at once.</li>
           <li>⚔ Every fight round you face one other tamer — everyone meets everyone before rematches. With an odd count, one of you fights a 👻 <b>ghost copy</b> of someone's board.</li>
           <li>🐾 Rounds 1–2 and every 5th: <b>wild Digimon</b> (loot). ☠ Every 10th: a <b>boss</b> (a fused item for the win).</li>
           <li>🎠 The 3rd round of each stage opens with the <b>carousel</b>: one shared set of items, lowest HP picks first.</li>

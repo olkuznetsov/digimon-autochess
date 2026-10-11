@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useGame, pvpName } from "../game/store";
 import { MAX_PLAYERS } from "../game/lobby";
-import { lobbyConnect, lobbyLeave, OUTDATED_MESSAGE, randomCode } from "../net/lobby";
+import { lobbyAddBot, lobbyConnect, lobbyKickBot, lobbyLeave, OUTDATED_MESSAGE, randomCode } from "../net/lobby";
 import { queueJoin, queueLeave, type QueueStatus } from "../net/queue";
 import { Avatar } from "./Portrait";
 
@@ -204,16 +204,27 @@ export function LobbyModal({ onClose, initialCode = "" }: { onClose: () => void;
         )}
         <div className="lobby-seats">
           {seats.map((s) => (
-            <div key={s.seat} className={`lobby-seat${s.seat === pvp.seat ? " me" : ""}${s.online ? "" : " away"}`}>
+            <div key={s.seat} className={`lobby-seat${s.seat === pvp.seat ? " me" : ""}${s.online ? "" : " away"}${s.bot ? " bot" : ""}`}>
               <Avatar formId={s.partner} className="seat-face" />
               <span className="lobby-name">{s.name}</span>
+              {s.bot && <span className="bot-tag" title="A bot: it plays a recorded run's boards">🤖 BOT</span>}
               {s.seat === pvp.snap.host && <span title="Host — starts the match">👑</span>}
               {!s.online && <span title="Disconnected">📡</span>}
+              {s.bot && isHost && (
+                <button className="bot-kick" title="Remove this bot" onClick={() => lobbyKickBot(s.seat)}>
+                  ✕
+                </button>
+              )}
             </div>
           ))}
           {seats.length < MAX_PLAYERS && (
             <div className="lobby-seat empty">
               {seats.length}/{MAX_PLAYERS} — waiting for tamers…
+              {isHost && !isPublic && (
+                <button className="bot-add" onClick={lobbyAddBot} title="Fill a seat with a bot">
+                  + Add bot
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -223,7 +234,7 @@ export function LobbyModal({ onClose, initialCode = "" }: { onClose: () => void;
           </div>
         ) : isHost ? (
           <button className="action" disabled={online < 2} onClick={pvpStart}>
-            {online < 2 ? "Need at least 2 tamers" : `⚔ Start match · ${online} tamers`}
+            {online < 2 ? "Need at least 2 tamers — or add a bot" : `⚔ Start match · ${online} tamers`}
           </button>
         ) : (
           <div className="pvp-waiting">Waiting for {pvpName(pvp, pvp.snap.host)} to start…</div>

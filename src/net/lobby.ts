@@ -172,6 +172,10 @@ export function lobbyClose() {
   ws = null;
 }
 
+/** The host seats a bot in the room / unseats one (server/src/bots.ts). */
+export const lobbyAddBot = () => net.send?.({ t: "addbot" });
+export const lobbyKickBot = (seat: number) => net.send?.({ t: "kick", seat });
+
 /** Leave the room (mid-match that's a surrender) and go back to the solo run. */
 export function lobbyLeave() {
   net.send?.({ t: "leave" });

@@ -2372,6 +2372,44 @@ html, body {
 .lobby-name {
   flex: 1;
 }
+.lobby-seat.bot {
+  border-color: rgba(120, 200, 255, 0.35);
+}
+.bot-tag {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: #9fd8ff;
+  background: rgba(60, 130, 200, 0.22);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+.bot-kick {
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.bot-kick:hover {
+  color: #ff8a8a;
+}
+.bot-add {
+  margin-left: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 1px solid rgba(120, 200, 255, 0.45);
+  background: rgba(60, 130, 200, 0.18);
+  color: #cfeaff;
+  border-radius: 8px;
+  padding: 3px 10px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bot-add:hover {
+  background: rgba(60, 130, 200, 0.32);
+}
 .final-ranks {
   display: flex;
   flex-direction: column;

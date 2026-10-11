@@ -320,6 +320,8 @@ export interface LobbySeat {
   ready: boolean;
   /** augments picked this match (public, like in TFT) */
   augments: string[];
+  /** a bot the host seated: it plays a recorded run's boards (server/src/bots.ts) */
+  bot?: boolean;
 }
 
 /** The room as the server sends it on every change. */

@@ -28,6 +28,7 @@ import { isCarouselRound } from "../../src/game/tuning";
 import { formOf, isPlayable } from "../../src/game/creatures";
 import { AUGMENTS, AUGMENT_ROUNDS, MAX_AUGMENTS } from "../../src/game/augments";
 import { outcomesHash, roundOutcomes } from "../../src/game/vsFights";
+import { botAugment, botBoard, botIdentity, botRuns, type Bot } from "./bots";
 
 /**
  * A lobby for 2–8 players, one Durable Object per room code. Players gather in
@@ -62,6 +63,8 @@ interface Seat {
   alive: boolean;
   placement: number | null;
   ready: boolean;
+  /** a bot the host seated (bots.ts): no socket, its run's board every round */
+  bot?: Bot;
 }
 
 interface Room {
@@ -139,6 +142,21 @@ const standingsOf = (room: Room): Standing[] =>
 
 const alivePlayers = (room: Room) => room.seats.filter((s) => s.inMatch && s.alive);
 
+/** The tamers are all out and only bots stand: they finish in the order of their HP — nobody
+ *  needs to watch bots play on. True if it ended the match. */
+function botsOnly(room: Room): boolean {
+  const alive = alivePlayers(room);
+  if (room.stage !== "match" || alive.length === 0 || !alive.every((s) => s.bot)) return false;
+  [...alive].sort((a, b) => b.hp - a.hp || a.seat - b.seat).forEach((s, i) => {
+    s.alive = false;
+    s.placement = i + 1;
+  });
+  room.stage = "over";
+  room.plan = null;
+  room.fighting = false;
+  return true;
+}
+
 /** A report must give every player still standing exactly one sane outcome (only taken
  *  for a match that started on older rules, which the room can no longer replay). */
 function parseOutcomes(raw: unknown, alive: number[]): Outcome[] | null {
@@ -199,13 +217,14 @@ export class Lobby extends DurableObject<Env> {
         seat: s.seat,
         name: s.name,
         partner: s.partner ?? null,
-        online: online.has(s.seat),
+        online: online.has(s.seat) || !!s.bot,
         inMatch: s.inMatch,
         hp: Math.max(0, s.hp),
         alive: s.alive,
         placement: s.placement,
         ready: s.ready,
         augments: room.augments[s.seat] ?? [],
+        ...(s.bot ? { bot: true } : {}),
       })),
     };
   }
@@ -351,6 +370,59 @@ export class Lobby extends DurableObject<Env> {
     else if (m.t === "arrived") await this.arrive(room, me, m);
     else if (m.t === "pick") await this.pick(room, me, m);
     else if (m.t === "augment") await this.augment(room, me, m);
+    else if (m.t === "addbot") await this.addBot(room, me);
+    else if (m.t === "kick") await this.kick(room, me, m);
+  }
+
+  /** The host seats a bot (in the lobby, or between matches). */
+  private async addBot(room: Room, me: Seat) {
+    if (room.stage === "match" || room.public || me.seat !== this.host(room, this.online()) || room.seats.length >= MAX_PLAYERS) return;
+    let n = 0;
+    while (room.seats.some((s) => s.seat === n)) n++;
+    // the first bot name nobody here goes by
+    let index = 0;
+    while (room.seats.some((s) => s.name === botIdentity(index).name)) index++;
+    const { name, partner } = botIdentity(index);
+    const seat: Seat = { seat: n, name, partner, pid: "", lb: null, inMatch: false, hp: START_HP, alive: true, placement: null, ready: false, bot: { run: index } };
+    room.seats = [...room.seats, seat].sort((a, b) => a.seat - b.seat);
+    await this.save(room);
+    await this.schedule({ ttl: true });
+    this.broadcast({ t: "roster", snap: this.snapshot(room) });
+  }
+
+  /** The host unseats a bot. */
+  private async kick(room: Room, me: Seat, m: Record<string, unknown>) {
+    if (room.stage === "match" || me.seat !== this.host(room, this.online())) return;
+    const target = room.seats.find((s) => s.seat === Number(m.seat));
+    if (!target?.bot) return;
+    room.seats = room.seats.filter((s) => s !== target);
+    await this.save(room);
+    this.broadcast({ t: "roster", snap: this.snapshot(room) });
+  }
+
+  /** Every bot still standing locks in its board for the round — and, on augment rounds,
+   *  takes a combat augment first. */
+  private async planBots(room: Room) {
+    if (room.stage !== "match" || room.fighting) return;
+    const bots = alivePlayers(room).filter((s) => s.bot);
+    if (bots.length === 0) return;
+    const boards: Record<string, BoardUnit[]> = {};
+    for (const s of bots) {
+      const board = botBoard(s.bot!, room.round);
+      boards[`ready:${s.seat}`] = board;
+      boards[`board:${s.seat}`] = board;
+      s.ready = true;
+      const aug = botAugment(room.seed, s.seat, room.round, room.augments[s.seat] ?? []);
+      if (aug) room.augments[s.seat] = [...(room.augments[s.seat] ?? []), aug];
+    }
+    await this.ctx.storage.put(boards);
+    await this.save(room);
+    for (const s of bots) {
+      this.broadcast({ t: "board", seat: s.seat, board: boards[`board:${s.seat}`] });
+      this.broadcast({ t: "ready", seat: s.seat, round: room.round });
+    }
+    this.broadcast({ t: "roster", snap: this.snapshot(room) });
+    await this.maybeFight(room);
   }
 
   private async start(room: Room, me: Seat) {
@@ -376,8 +448,9 @@ export class Lobby extends DurableObject<Env> {
     }
     if (retired) this.broadcast({ t: "roster", snap: this.snapshot(room) });
     const online = this.online();
-    const players = room.seats.filter((s) => online.has(s.seat));
-    if (players.length < 2) return;
+    // the tamers here, and the bots the host seated (a match needs one tamer at least)
+    const players = room.seats.filter((s) => online.has(s.seat) || s.bot);
+    if (players.length < 2 || players.every((s) => s.bot)) return;
     room.auto = null;
     // whoever is gone by now sits this one out
     room.seats = players.map((s) => ({ ...s, inMatch: true, hp: START_HP, alive: true, placement: null, ready: false }));
@@ -394,11 +467,18 @@ export class Lobby extends DurableObject<Env> {
     room.held = {};
     room.augments = {};
     room.plan = planRound(players.map((s) => s.seat), 1, [], room.seed);
+    // every match deals its bots fresh runs (all different), and their avatars follow
+    const bots = room.seats.filter((s) => s.bot);
+    botRuns(room.seed, bots.length).forEach((run, i) => {
+      bots[i].bot = { run };
+      bots[i].partner = botIdentity(i, run).partner;
+    });
     this.beginRound(room);
     await this.ctx.storage.delete([...SEAT_KEYS, "lastFight"]);
     await this.save(room);
     await this.schedule({ ttl: true, deadline: null, tick: null });
     this.broadcast({ t: "started", snap: this.snapshot(room) });
+    await this.planBots(room);
   }
 
   private async ready(room: Room, me: Seat, m: Record<string, unknown>) {
@@ -503,6 +583,10 @@ export class Lobby extends DurableObject<Env> {
     room.report = { round, hash: verdict };
     room.fighting = false;
     room.round++;
+    if (!r.over && botsOnly(room)) {
+      r.over = true;
+      placed.push(...room.seats.filter((s) => s.bot && s.inMatch && !placed.includes(s)));
+    }
     if (r.over) {
       room.stage = "over";
       room.plan = null;
@@ -514,6 +598,7 @@ export class Lobby extends DurableObject<Env> {
     await this.schedule({ ttl: true, tick: room.carousel ? room.roundAt + CAROUSEL_WAIT_MS : null });
     this.broadcast({ t: "standings", round, eliminated: r.eliminated, snap: this.snapshot(room) });
     await this.rate(room, placed);
+    await this.planBots(room);
   }
 
   private async giveUp(room: Room, me: Seat) {
@@ -521,6 +606,7 @@ export class Lobby extends DurableObject<Env> {
     const r = surrender(standingsOf(room), me.seat);
     const placed = this.writeStandings(room, r.standings);
     me.ready = false;
+    if (!r.over && botsOnly(room)) r.over = true;
     if (r.over) {
       room.stage = "over";
       room.plan = null;
@@ -616,11 +702,10 @@ export class Lobby extends DurableObject<Env> {
     const alive = alivePlayers(room);
     if (!c.opensAt) {
       if (!alive.some((s) => online.has(s.seat) && !room.arrived.includes(s.seat))) await this.openCarousel(room);
-    } else if (alive.every((s) => Object.values(c.taken).includes(s.seat))) {
-      c.done = true;
-      await this.save(room);
+    } else if (alive.every((s) => s.bot || Object.values(c.taken).includes(s.seat))) {
+      // every tamer has picked: the bots take what's left, in pick order
       await this.schedule({ tick: null });
-      this.broadcast({ t: "roster", snap: this.snapshot(room) });
+      await this.closeCarousel(room);
     }
   }
 
@@ -661,6 +746,8 @@ export class Lobby extends DurableObject<Env> {
 
   /** Placed players' rating goes straight to the leaderboard (rated players only). */
   private async rate(room: Room, placed: Seat[]) {
+    // a match with bots is for fun: no rating moves
+    if (room.seats.some((s) => s.inMatch && s.bot)) return;
     const lb = this.env.LB.getByName(LB_SEASON);
     for (const s of placed) {
       if (!s.lb || s.placement === null) continue;

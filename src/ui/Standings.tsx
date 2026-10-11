@@ -45,7 +45,10 @@ export function Standings() {
             <span className="st-name">
               {against && <span className="st-tag">{opp?.ghost ? "👻" : "⚔"}</span>}
               <Avatar formId={s.partner} className="st-face" />
-              <span className="st-label">{s.name}</span>
+              <span className="st-label">
+                {s.bot && "🤖 "}
+                {s.name}
+              </span>
               {!s.online && <span className="st-off" title="Offline — their last board plays">📡</span>}
               {(s.augments ?? []).length > 0 && (
                 <span className="st-augs" title={(s.augments ?? []).map((id) => AUGMENTS[id]?.name ?? id).join(", ")}>

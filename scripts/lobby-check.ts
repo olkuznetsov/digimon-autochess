@@ -29,6 +29,9 @@ import { AUGMENT_IDS, augmentOffer } from "../src/game/augments";
 import { roundOutcomes } from "../src/game/vsFights";
 import { FORMS, PLAYABLE_IDS } from "../src/game/creatures";
 import { COLS, PLAYER_ROWS } from "../src/game/board";
+import { botAugment, botBoard, botRuns } from "../server/src/bots";
+import BOT_RUNS from "../server/src/bot-runs.json";
+import { cleanUnits } from "../server/src/util";
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.split("=")));
 const MATCHES = Number(args.matches ?? 2000);
@@ -243,6 +246,28 @@ VS.bosses.forEach((candidates, tier) => {
   met.push(`R${round} ${[...seen].join("/")}`);
 });
 console.log(`bosses by variant: ${met.join("  ")}`);
+
+// VS bots: every recorded board of every round is one the room accepts, a match's bots play
+// different runs, and their augments are combat ones they don't hold yet
+{
+  const runs = (BOT_RUNS as unknown[]).length;
+  let bad = 0;
+  for (let run = 0; run < runs; run++)
+    for (let round = 1; round <= 45; round++) {
+      const b = botBoard({ run }, round);
+      if (b.length === 0 || cleanUnits(b)?.length !== b.length) bad++;
+    }
+  if (bad) fail(`${bad} bot boards the room would refuse`);
+  for (const seed of [1, 777, 2 ** 30]) if (new Set(botRuns(seed, 7)).size !== 7) fail(`seed ${seed}: two bots of a match play one run`);
+  const owned: string[] = [];
+  for (const round of [4, 9, 14]) {
+    const a = botAugment(42, 1, round, owned);
+    if (!a || owned.includes(a)) fail(`bot augment at R${round}: ${a}`);
+    else owned.push(a);
+  }
+  if (botAugment(42, 1, 5, []) !== null) fail("a bot took an augment off an augment round");
+  console.log(`bots: ${runs} runs × 45 rounds of valid boards; a match's bots play different runs; augments ${owned.join(", ")}`);
+}
 
 const sums = [2, 3, 4, 5, 6, 7, 8].map((n) => Array.from({ length: n }, (_, i) => ratingDelta(n, i + 1)));
 console.log(`\nrating by place: ${sums.map((r) => `${r.length}p [${r.join(" ")}]`).join("  ")}`);
