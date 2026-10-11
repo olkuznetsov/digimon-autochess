@@ -32,6 +32,9 @@ export interface UnitDrive {
   win: boolean;
   /** bump to play a materialize-in (battle start, digivolution) */
   spawnKey: number;
+  /** an assassin's leap under way: where it took off and when (juice clock), how long the
+   *  arc lasts — Creature flies it there instead of gliding (cleared on landing) */
+  hop: { x: number; z: number; at: number; dur: number } | null;
   /** 0..1 hp for the label (battle) */
   hpFrac: number;
   manaFrac: number;
@@ -57,6 +60,7 @@ export function newDrive(x = 0, z = 0, yaw = 0): UnitDrive {
     dead: false,
     win: false,
     spawnKey: 0,
+    hop: null,
     hpFrac: 1,
     manaFrac: 0,
     shieldFrac: 0,

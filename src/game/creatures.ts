@@ -616,10 +616,10 @@ const STATS: Record<Role, [Stat, Stat, Stat, Stat, Stat]> = {
   ],
   assassin: [
     { hp: 10, attack: 4, attackSpeed: 0.8, range: 1 },
-    { hp: 22, attack: 8, attackSpeed: 0.8, range: 1 },
-    { hp: 53, attack: 18, attackSpeed: 0.8, range: 1 },
-    { hp: 109, attack: 41, attackSpeed: 0.85, range: 1 },
-    { hp: 242, attack: 91, attackSpeed: 0.9, range: 1 },
+    { hp: 22, attack: 7, attackSpeed: 0.8, range: 1 },
+    { hp: 53, attack: 16, attackSpeed: 0.8, range: 1 },
+    { hp: 109, attack: 37, attackSpeed: 0.85, range: 1 },
+    { hp: 242, attack: 80, attackSpeed: 0.9, range: 1 },
   ],
   ranged: [
     { hp: 12, attack: 3, attackSpeed: 0.8, range: 3 },

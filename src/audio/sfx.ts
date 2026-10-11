@@ -121,6 +121,11 @@ export function battleSfx(e: CombatEvent) {
   }
   // a shot leaving: its hit sounds when it lands
   if (e.kind === "shot") return;
+  // an assassin's leap: a rush of air
+  if (e.kind === "leap") {
+    if (allow("leap", 120)) noise(0.18, { filter: "highpass", freq: 1400, vol: 0.07 });
+    return;
+  }
   // Wind's dodge: a whoosh; Fire's burn: a soft crackle
   if (e.tag === "miss") {
     if (allow("miss", 140)) noise(0.06, { filter: "highpass", freq: 2600, vol: 0.05 });

@@ -47,7 +47,7 @@ const OVERTIME_MEND = 0.5;
 /** Cosmetic events emitted by stepCombat for the FX layer (damage numbers,
  *  projectiles, casts, death bursts). The balance sim simply doesn't pass a collector. */
 export interface CombatEvent {
-  kind: "hit" | "death" | "cast" | "shot";
+  kind: "hit" | "death" | "cast" | "shot" | "leap";
   col: number;
   row: number;
   attr: Attribute;
@@ -232,7 +232,7 @@ function onAttack(fr: Fighter, target: Fighter, dealt: number, fighters: Fighter
   if (p.chainEvery && p.attacks % p.chainEvery === 0) {
     procFx(fr, target, "blast", t.events);
     for (const e of fighters) {
-      if (e.team === fr.team || e.hp <= 0 || dist(e, target) > CHAIN_RADIUS) continue;
+      if (e.team === fr.team || e.hp <= 0 || airborne(e) || dist(e, target) > CHAIN_RADIUS) continue;
       const m = attributeMultiplier(fr.attribute, e.attribute);
       hit(t, fr, e, fr.attack * atkMult(fr) * (p.chainFactor ?? 1) * m, m, true);
     }
@@ -245,7 +245,7 @@ function secondTarget(fr: Fighter, target: Fighter, fighters: Fighter[]): Fighte
   let best: Fighter | null = null;
   let bestD = Infinity;
   for (const x of fighters) {
-    if (x === target || x.team === fr.team || x.hp <= 0) continue;
+    if (x === target || x.team === fr.team || x.hp <= 0 || airborne(x)) continue;
     const d = dist(fr, x);
     if (d > fr.range + 0.05) continue;
     if (d < bestD - 1e-9 || (best && d <= bestD + 1e-9 && preferred(fr, x, best))) {
@@ -339,7 +339,7 @@ function castAbility(fr: Fighter, target: Fighter, fighters: Fighter[], t: Tick)
     caster: fr,
     target,
     allies: fighters.filter((x) => x.team === fr.team && x.hp > 0),
-    enemies: fighters.filter((x) => x.team !== fr.team && x.hp > 0),
+    enemies: fighters.filter((x) => x.team !== fr.team && x.hp > 0 && !airborne(x)),
     deal: (tgt, factor) => {
       const m = attributeMultiplier(fr.attribute, tgt.attribute);
       hit(t, fr, tgt, fr.attack * atkMult(fr) * factor * m * (fr.procs?.ultPower ?? 1), m * factor, true);
@@ -519,7 +519,7 @@ function bossMechanic(fr: Fighter, fighters: Fighter[], dt: number, t: Tick) {
     fr.mechT += DEVOUR_EVERY;
     let prey: Fighter | null = null;
     for (const f of fighters) {
-      if (f.team === fr.team || f.hp <= 0) continue;
+      if (f.team === fr.team || f.hp <= 0 || airborne(f)) continue;
       if (!prey || f.hp < prey.hp - 1e-9 || (f.hp <= prey.hp + 1e-9 && preferred(fr, f, prey))) prey = f;
     }
     if (!prey) return;
@@ -607,6 +607,10 @@ function leap(fr: Fighter, fighters: Fighter[]): { col: number; row: number } | 
 }
 /** How far behind its mark an assassin lands (cells). */
 const LEAP_BEHIND = 0.8;
+/** How long a leap is in the air (seconds): the screen plays its arc, the assassin acts after
+ *  — and, as in Teamfight Tactics, nothing can target it until it lands. */
+export const LEAP_TIME = 0.45;
+const airborne = (x: Fighter) => (x.leapLeft ?? 0) > 1e-9;
 
 /** Equal distances: the same choice on both sides of a mirror — each team judges from its
  *  own end of the board (the other half is the 180° turn of it). */
@@ -634,7 +638,9 @@ export function overtime(step: number): [number, number] {
 export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent[], step = 0): void {
   const [ramp, mend] = overtime(step);
   const t: Tick = { hits: [], ramp, mend, shields: new Map(), heals: new Map(), stuns: new Map(), buffs: new Map(), allyHeals: [], events };
-  const moves: { f: Fighter; col: number; row: number }[] = [];
+  const moves: { f: Fighter; col: number; row: number; leap?: boolean }[] = [];
+  // the air time of leaps already made runs down before anyone decides (everyone sees the same)
+  for (const f of fighters) if (f.leapLeft) f.leapLeft = f.leapLeft - dt > 1e-9 ? f.leapLeft - dt : 0;
   // a brooding Mother Eater is guarded while her Bits live (decided as the tick begins)
   for (const f of fighters) if (f.mech === "brood") f.broodGuard = fighters.some((b) => b.team === f.team && b.hp > 0 && b.formId === "eaterbit");
   // the list as the tick began: what hatches during it starts acting the next one
@@ -664,6 +670,11 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
       fr.swing = undefined;
       continue;
     }
+    // still in the air after a leap
+    if (airborne(fr)) {
+      fr.moving = false;
+      continue;
+    }
     if (fr.swing !== undefined) {
       fr.swing -= dt;
       if (fr.swing <= 1e-9) {
@@ -676,20 +687,21 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
     if (!fr.leapt) {
       const spot = leap(fr, fighters);
       if (spot) {
-        moves.push({ f: fr, ...spot });
+        moves.push({ f: fr, ...spot, leap: true });
+        t.events?.push({ kind: "leap", col: spot.col, row: spot.row, fromCol: fr.col, fromRow: fr.row, attr: fr.attribute, src: fr.uid, team: fr.team });
         continue;
       }
     }
 
     // the nearest enemy; out of reach a clearly closer one takes over (no chasing one enemy
     // past another), in reach the unit sticks with its target
-    let target = fighters.find((x) => x.uid === fr.targetUid && x.hp > 0);
+    let target = fighters.find((x) => x.uid === fr.targetUid && x.hp > 0 && !airborne(x));
     const chasing = target ? dist(fr, target) : Infinity;
     if (chasing > fr.range + 0.05) {
       let best: Fighter | null = null;
       let bestD = Infinity;
       for (const x of fighters) {
-        if (x.team === fr.team || x.hp <= 0) continue;
+        if (x.team === fr.team || x.hp <= 0 || airborne(x)) continue;
         const d = dist(fr, x);
         if (d < bestD - 1e-9 || (best && d <= bestD + 1e-9 && preferred(fr, x, best))) {
           bestD = d;
@@ -750,6 +762,8 @@ export function stepCombat(fighters: Fighter[], dt: number, events?: CombatEvent
   for (const m of moves) {
     m.f.col = m.col;
     m.f.row = m.row;
+    // a leap takes off with the rest of the tick's moves: in the air from the next tick on
+    if (m.leap) m.f.leapLeft = LEAP_TIME;
   }
   resolve(fighters, t);
 }

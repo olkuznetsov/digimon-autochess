@@ -7,7 +7,7 @@ import type { Element } from "../game/types";
 import { cellToWorld } from "../game/board";
 import { juice, addTrauma, hitStop, slowMo, screenFlash } from "./juice";
 import { useSettings } from "../settings";
-import { SHOT_FLIGHT } from "../game/battle";
+import { LEAP_TIME, SHOT_FLIGHT } from "../game/battle";
 
 /** Effects run on the juice clock: they freeze in hit-stop, slow in slow-mo and
  *  keep playing after the battle ends (the final blow). */
@@ -1049,7 +1049,28 @@ function TagSparks({ fx }: { fx: Fx }) {
   return null;
 }
 
+/** An assassin's leap: sand kicked up where it takes off, and again where it lands. */
+function LeapDust({ fx }: { fx: Fx }) {
+  const age = useAge();
+  const landed = useRef(false);
+  useEffect(() => {
+    if (fx.fromCol == null || fx.fromRow == null) return;
+    const [x, z] = cellToWorld(fx.fromCol, fx.fromRow);
+    spawnSparks(x, 0.15, z, "#e8d6a8", 10, 0.7);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useFrame(() => {
+    if (landed.current || age() < LEAP_TIME) return;
+    landed.current = true;
+    const [x, z] = cellToWorld(fx.col, fx.row);
+    spawnSparks(x, 0.15, z, "#e8d6a8", 14, 0.85);
+    addTrauma(0.08);
+  });
+  return null;
+}
+
 const ShotM = memo(Shot);
+const LeapDustM = memo(LeapDust);
 const ImpactM = memo(Impact);
 const TagSparksM = memo(TagSparks);
 const DeathRingM = memo(DeathRing);
@@ -1091,6 +1112,8 @@ export function BattleFx() {
           <ShotM key={f.id} fx={f} />
         ) : f.kind === "cast" ? (
           <CastFx key={f.id} fx={f} />
+        ) : f.kind === "leap" ? (
+          <LeapDustM key={f.id} fx={f} />
         ) : (
           <DeathRingM key={f.id} fx={f} />
         ),

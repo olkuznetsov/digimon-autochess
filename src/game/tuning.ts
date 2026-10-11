@@ -90,7 +90,7 @@ export const WAVES = {
    *  one candidate per round, picked by its seed. Candidates are tuned to the same pass
    *  rate on the same 600 bot boards (`npm run runsim` prints "boss candidates"). */
   bosses: [
-    [{ id: "skullsatamon", hp: 1.9, atk: 1.02, adds: 2, minions: MINIONS.solo5 }],
+    [{ id: "skullsatamon", hp: 1.9, atk: 1.13, adds: 2, minions: MINIONS.solo5 }],
     [
       { id: "machinedramon", hp: 0.96, atk: 0.8, adds: 3, minions: MINIONS.solo10 },
       { id: "mitamamon", hp: 0.88, atk: 0.58, adds: 3, minions: MINIONS.solo10 },
@@ -283,7 +283,7 @@ export const VS = {
    *  starred Megas, the element synergies, 38 lines and the anime's finals, Oct 2026). A match meets one candidate per
    *  round, picked by the room's variant; candidates match. */
   bosses: [
-    [{ id: "skullsatamon", hp: 2.6, atk: 1.26, adds: 3, addCount: 2, minions: MINIONS.vs10 }],
+    [{ id: "skullsatamon", hp: 2.6, atk: 1.4, adds: 3, addCount: 2, minions: MINIONS.vs10 }],
     [
       { id: "machinedramon", hp: 3.35, atk: 1.7, adds: 5, addCount: 2, minions: MINIONS.vs20 },
       { id: "mitamamon", hp: 3.55, atk: 1.42, adds: 5, addCount: 2, minions: MINIONS.vs20 },
@@ -294,7 +294,7 @@ export const VS = {
     ],
     [
       { id: "gracenovamon", hp: 9.5, atk: 3.0, adds: 5, addCount: 3, minions: MINIONS.vs40 },
-      { id: "piedmon", hp: 10.9, atk: 3.2, adds: 5, addCount: 3, minions: MINIONS.darkMasters },
+      { id: "piedmon", hp: 10.9, atk: 3.55, adds: 5, addCount: 3, minions: MINIONS.darkMasters },
       {
         id: "lucemonfm",
         hp: 6.0,

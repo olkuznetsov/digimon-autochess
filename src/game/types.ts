@@ -109,6 +109,9 @@ export interface Fighter {
   /** what its items multiplied its max HP by (shields, heals and regeneration are sized on the
    *  max HP without it — sustainHp — so stacking HP doesn't grow them too) */
   itemHp?: number;
+  /** seconds an assassin is still in the air after its leap: it lands on its spot at once in
+   *  the sim, but acts only once the leap has played out on screen */
+  leapLeft?: number;
   /** an assassin's leap into the enemy backline is spent (it leaps on its first tick; whatever
    *  hatches or rises mid-fight starts with it spent) */
   leapt?: boolean;

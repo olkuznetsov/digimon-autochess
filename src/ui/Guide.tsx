@@ -82,7 +82,7 @@ function Basics() {
           <li>🛒 <b>Buy Digimon</b> in the shop — the price is the stage: ⛂1 Fresh, ⛂2 In-Training, ⛂3 Rookie, ⛂4 Champion, ⛂5 Mega. They wait on your bench; a full bench still takes the copy that merges right away.</li>
           <li>🖱 <b>Drag them onto your half</b> of the board. Your level is how many can fight.</li>
           <li>⚔ <b>The battle plays itself</b>: units attack, fill their mana and cast their ultimate.</li>
-          <li>🗡️ <b>Assassins leap</b> into the enemy backline when the fight starts — guard your ranged and casters, or bait the leap with a decoy at the back.</li>
+          <li>🗡️ <b>Assassins leap</b> into the enemy backline when the fight starts — nothing can target them in the air, they strike once they land. Guard your ranged and casters, or bait the leap with a decoy at the back.</li>
           <li>⏱ <b>Overtime</b> at 30 s: the fight plays twice as fast, every hit grows stronger each second and healing and shields are halved. A fight still on at 60 s is a draw in VS (both lose) and a loss in a solo run.</li>
           <li>🛡️ <b>Shields wear off</b> over a few seconds, and shields, heals and regeneration are sized on a Digimon's own HP — HP items make it last longer, not heal more. Lifesteal tops out at 50%.</li>
           <li>♥ Lose and you take damage; at 0 the run (or match) is over.</li>

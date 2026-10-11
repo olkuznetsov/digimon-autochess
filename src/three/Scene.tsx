@@ -14,7 +14,7 @@ import { useProfile } from "../profile/store";
 import { MenuStage } from "./MenuStage";
 import { newDrive, type UnitDrive } from "./unitDrive";
 import { juice, resetJuice, tickJuice } from "./juice";
-import { OVERTIME_AT, SIM_DT } from "../game/battle";
+import { LEAP_TIME, OVERTIME_AT, SIM_DT } from "../game/battle";
 import { isBossRound, makeEnemyWave, makeVsWave, vsRoundKind } from "../game/tuning";
 import { ITEMS } from "../game/items";
 import { FORMS, ATTR_COLOR } from "../game/creatures";
@@ -414,6 +414,7 @@ function BattleUnit({ uid }: { uid: string }) {
   const [x0, z0] = viewXZ(f0.col, f0.row, flip);
   const drive = useRef<UnitDrive>(newDrive(x0, z0, team === "player" ? 0 : Math.PI));
   const prev = useRef({ cooldown: f0.cooldown, hp: f0.hp });
+  const leapt = useRef(false);
 
   useFrame(() => {
     const hit = findFighter(uid);
@@ -422,6 +423,12 @@ function BattleUnit({ uid }: { uid: string }) {
     const s = useGame.getState();
     const d = drive.current;
     const [x, z] = viewXZ(f.col, f.row, s.viewFlip);
+    // an assassin's leap: the sim set it down behind its mark at once; the arc takes off from
+    // where it stood (Creature flies it), on the effects clock so 2× and overtime keep pace
+    if ((f.leapLeft ?? 0) > 0 && !leapt.current) {
+      leapt.current = true;
+      d.hop = { x: d.x, z: d.z, at: juice.now, dur: LEAP_TIME };
+    }
     d.x = x;
     d.z = z;
     const target = !dead && f.targetUid ? s.fighters.find((o) => o.uid === f.targetUid) : undefined;
@@ -429,7 +436,7 @@ function BattleUnit({ uid }: { uid: string }) {
       const [tx, tz] = viewXZ(target.col, target.row, s.viewFlip);
       if ((tx - x) ** 2 + (tz - z) ** 2 > 1e-4) d.yaw = Math.atan2(tx - x, tz - z);
     }
-    d.moving = f.moving && !dead;
+    d.moving = (f.moving || !!d.hop) && !dead;
     d.cooldown = f.cooldown;
     d.attackInterval = 1 / f.attackSpeed;
     d.engaged = !!target && !f.moving;

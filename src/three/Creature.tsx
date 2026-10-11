@@ -6,11 +6,14 @@ import { ProceduralCreature } from "./ProceduralCreature";
 import { CreatureModel } from "./CreatureModel";
 import { modelFor, tweakFor } from "./models";
 import { angleDelta, newDrive, type UnitDrive } from "./unitDrive";
+import { juice } from "./juice";
 import type { Stage } from "../game/types";
 import { useGame } from "../game/store";
 
 /** pip colour by a Mega's star level */
 const STAR_PIP = ["", "#ffd34d", "#bfefff", "#ff7ad9"];
+/** How high an assassin's leap arcs (world units; a cell is 1.1). */
+const HOP_HEIGHT = 1.6;
 
 /** model size by stage: the babies are small, a Mega towers */
 const STAGE_SCALE = [0.5, 0.6, 0.75, 1.02, 1.29];
@@ -140,6 +143,23 @@ export function Creature({
       g.position.set(d.x, lift, d.z);
       if (!placed.current) g.rotation.y = d.yaw;
       placed.current = true;
+    } else if (d.hop) {
+      // a leap: an arc from where it took off to where it lands, its shadow left on the sand
+      const u = Math.min(1, (juice.now - d.hop.at) / d.hop.dur);
+      const e = u * u * (3 - 2 * u);
+      const y = Math.sin(Math.PI * u) * HOP_HEIGHT;
+      g.position.set(d.hop.x + (d.x - d.hop.x) * e, y, d.hop.z + (d.z - d.hop.z) * e);
+      if (ground.current) {
+        ground.current.position.y = -y;
+        ground.current.scale.setScalar(1 - 0.35 * (y / HOP_HEIGHT));
+      }
+      if (u >= 1) {
+        d.hop = null;
+        if (ground.current) {
+          ground.current.position.y = 0;
+          ground.current.scale.setScalar(1);
+        }
+      }
     } else {
       // battle: frame-rate independent glide between 20 Hz sim steps
       const k = 1 - Math.exp(-dt * 16);
