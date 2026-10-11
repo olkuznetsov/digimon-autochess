@@ -249,7 +249,7 @@ export const MODEL_HASH: Record<string, string> = {
   slayerdramon: "4fd956c465",
   starmon: "e42a1f3cbe",
   stingmon: "bdfd4f2bc8",
-  strikedramon: "3db5c3816c",
+  strikedramon: "f2bcceb961",
   sukamon: "b6cb3eb5a0",
   sunflowmon: "438df9e4a6",
   superstarmon: "f7167cfb58",

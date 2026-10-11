@@ -53,6 +53,12 @@
  *     claw still flies a square. Left alone: a part that flies off whole (no shared skin: a
  *     thrown weapon), a soft body's stretch (Kuramon's bounce is short) and a part hidden by
  *     sending it a thousand times away (Cherrymon's weapon).
+ * 12. hidden with the parent: to hide Strikedramon's hair in its special the animators scaled
+ *     J_hair01 to 0 and its child J_hair02 to 10^12 — 0 × 10^12 is still hidden at the keys,
+ *     but between them three.js interpolates both (½ × 5·10^11) and for a frame or two the
+ *     hair blew up across the whole board. A key past 1000 under a parent scaled to ~0 at that
+ *     moment becomes 0: hidden all the same at the keys, and between them it shrinks with its
+ *     parent instead.
  *
  * Geometry, textures and animation stay visually lossless (meshopt "medium" quantizes
  * vertices; gltf-transform re-derives the skins' inverse bind matrices for that — verified
@@ -118,6 +124,8 @@ for (const file of files) {
 
   const fixed = harmonizeScale(doc);
   const chains = compensateChains(doc);
+  // before anything measures the poses: an exploding key would read as a limb flung away
+  const hidden = hideWithParents(doc);
   const zeroRot = fixZeroRotations(doc);
   const rooted = tameRootMotion(doc);
   const telescopes = tameTelescopes(doc);
@@ -147,7 +155,8 @@ for (const file of files) {
       (chains.length ? `   chains: ${chains.join(", ")}` : "") +
       (zeroRot.length ? `   zero rotations fixed: ${zeroRot.join(", ")}` : "") +
       (rooted.length ? `   root motion: ${rooted.join(", ")}` : "") +
-      (telescopes.length ? `   telescopes: ${telescopes.join(", ")}` : ""),
+      (telescopes.length ? `   telescopes: ${telescopes.join(", ")}` : "") +
+      (hidden.length ? `   hidden with the parent: ${hidden.join(", ")}` : ""),
   );
 }
 
@@ -442,6 +451,31 @@ function fixZeroRotations(doc) {
         out.setElement(i, j >= 0 ? keys[j] : ch.getTargetNode().getRotation());
       }
       fixed.push(`${anim.getName()}:${ch.getTargetNode().getName()}`);
+    }
+  }
+  return fixed;
+}
+
+/** Exploding scale keys under a hidden parent (step 12) become 0. */
+function hideWithParents(doc) {
+  const fixed = [];
+  for (const anim of doc.getRoot().listAnimations()) {
+    const scaleOf = new Map(anim.listChannels().filter((c) => c.getTargetPath() === "scale").map((c) => [c.getTargetNode(), c.getSampler()]));
+    for (const [node, smp] of scaleOf) {
+      const parent = node.getParentNode();
+      const ps = parent && scaleOf.get(parent);
+      if (!ps) continue;
+      const times = smp.getInput().getArray();
+      const out = smp.getOutput();
+      let n = 0;
+      for (let i = 0; i < out.getCount(); i++) {
+        const k = out.getElement(i, []);
+        if (Math.max(...k.map(Math.abs)) < 1000) continue;
+        if (Math.min(...sampleAt(ps, times[i]).map(Math.abs)) >= 1e-6) continue;
+        out.setElement(i, [0, 0, 0]);
+        n++;
+      }
+      if (n) fixed.push(`${anim.getName()}:${node.getName()}`);
     }
   }
   return fixed;
