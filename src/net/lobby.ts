@@ -114,7 +114,8 @@ function open() {
         g.pvpFight(m as unknown as LobbyFight);
         break;
       case "standings":
-        g.pvpSync(m.snap as LobbySnapshot, (m.eliminated as number[]) ?? []);
+        // round null: a surrender or a player leaving, not a round's result
+        g.pvpSync(m.snap as LobbySnapshot, (m.eliminated as number[]) ?? [], undefined, m.round === null);
         break;
       case "outdated":
         outdated();

@@ -161,7 +161,8 @@ export interface GameState {
   /** the host started a match (or a new one) */
   pvpStarted: (snap: LobbySnapshot) => void;
   /** the room changed (players, HP, places, next pairings); `eliminated` = just knocked out */
-  pvpSync: (snap: LobbySnapshot, eliminated: number[], lastFight?: LobbyFight) => void;
+  /** `gaveUp`: standings a surrender (or a player leaving) brought, not a round's result */
+  pvpSync: (snap: LobbySnapshot, eliminated: number[], lastFight?: LobbyFight, gaveUp?: boolean) => void;
   pvpSeatReady: (seat: number, round: number) => void;
   pvpBoard: (seat: number, board: PvpBoardUnit[]) => void;
   /** everyone is locked in: simulate the round, report it, play our own fight */

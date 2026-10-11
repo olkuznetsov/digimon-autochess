@@ -691,9 +691,9 @@ export const useGame = create<GameState>((set, get) => ({
     });
   },
 
-  pvpSync: (snap, eliminated, lastFight) => {
+  pvpSync: (snap, eliminated, lastFight, gaveUp = false) => {
     const state = get();
-    const pvp = state.pvp;
+    let pvp = state.pvp;
     if (!pvp) return;
     if (snap.stage !== "lobby" && snap.match !== pvp.snap.match) {
       // a new match started while we were away
@@ -701,12 +701,18 @@ export const useGame = create<GameState>((set, get) => ({
       catchUp(snap, lastFight);
       return;
     }
-    // the fight on screen hasn't ended yet: these standings would spoil it
-    if (state.phase === "battle" && pvp.fight && snap.round > pvp.fight.round) {
+    const me = snap.seats.find((s) => s.seat === pvp!.seat);
+    if (state.phase === "battle" && pvp.fight && gaveUp && (snap.stage === "over" || (me?.inMatch && !me.alive))) {
+      // a surrender ended the match, or it was ours: the fight on screen counts for nothing
+      // now — it ends at once (a stalemate would otherwise hold the result back to its end)
+      set({ pvp: { ...pvp, pending: null } });
+      finishBattleNow();
+      pvp = get().pvp!;
+    } else if (state.phase === "battle" && pvp.fight && snap.round > pvp.fight.round) {
+      // the fight on screen hasn't ended yet: these standings would spoil it
       set({ pvp: { ...pvp, pending: { snap, eliminated: [...(pvp.pending?.eliminated ?? []), ...eliminated] } } });
       return;
     }
-    const me = snap.seats.find((s) => s.seat === pvp.seat);
     if (eliminated.includes(pvp.seat)) sfx.lose();
     else if (eliminated.length > 0) sfx.drop();
     if (snap.stage === "over" && pvp.snap.stage !== "over" && me?.placement === 1) sfx.win();
